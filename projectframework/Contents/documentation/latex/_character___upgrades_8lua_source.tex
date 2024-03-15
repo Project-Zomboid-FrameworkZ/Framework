@@ -1,0 +1,27 @@
+\doxysection{Character\+\_\+\+Upgrades.\+lua}
+\hypertarget{_character___upgrades_8lua_source}{}\label{_character___upgrades_8lua_source}\index{Character\_Upgrades.lua@{Character\_Upgrades.lua}}
+\mbox{\hyperlink{_character___upgrades_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00001}00001\ -\/-\/[[}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00002}00002\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00003}00003\ }
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00004}00004\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UpgradeSystem\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UpgradeSystem\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00005}00005\ }
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00006}00006\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UpgradeSystem.registerUpgrade(factionID,\ upgradeName,\ upgradeFunction)}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00007}00007\ \ \ \ \ \textcolor{keywordflow}{if}\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Factions[factionID]\ then}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00008}00008\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Factions[factionID].upgrades[upgradeName]\ =\ upgradeFunction}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00009}00009\ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00010}00010\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Invalid\ faction:\ "{}}\ ..\ factionID)}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00011}00011\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00012}00012\ end}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00014}00014\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UpgradeSystem.applyUpgrade(character,\ faction,\ upgradeName)}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00015}00015\ \ \ \ \ \textcolor{keywordflow}{if}\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Factions[faction]\ and\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Factions[faction].upgrades[upgradeName]\ then}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00016}00016\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Factions[faction].upgrades[upgradeName](character)}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00017}00017\ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00018}00018\ \ \ \ \ \ \ \ \ print(\textcolor{stringliteral}{"{}Invalid\ faction\ or\ upgrade:\ "{}}\ ..\ faction\ ..\ \textcolor{stringliteral}{"{},\ "{}}\ ..\ upgradeName)}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00019}00019\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00020}00020\ end}
+\DoxyCodeLine{\Hypertarget{_character___upgrades_8lua_source_l00021}00021\ -\/-\/]]}
+
+\end{DoxyCode}

@@ -1,0 +1,21 @@
+\doxysection{3000\+\_\+\+UI\+\_\+\+Helper.\+lua}
+\hypertarget{3000___u_i___helper_8lua_source}{}\label{3000___u_i___helper_8lua_source}\index{3000\_UI\_Helper.lua@{3000\_UI\_Helper.lua}}
+\mbox{\hyperlink{3000___u_i___helper_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00001}00001\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00003}00003\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UI\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00005}00005\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UI.GetMiddle(length,\ fontSize,\ text)}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00006}00006\ \ \ \ \ local\ width\ =\ getTextManager():MeasureStringX(fontSize,\ text)}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00008}00008\ \ \ \ \ return\ (length\ -\/\ width)\ /\ 2}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00009}00009\ end}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00011}00011\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UI.GetHeight(fontSize,\ text)}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00012}00012\ \ \ \ \ local\ height\ =\ getTextManager():MeasureStringY(fontSize,\ text)}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00013}00013\ }
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00014}00014\ \ \ \ \ return\ height}
+\DoxyCodeLine{\Hypertarget{3000___u_i___helper_8lua_source_l00015}00015\ end}
+
+\end{DoxyCode}

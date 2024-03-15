@@ -1,0 +1,211 @@
+\doxysection{Entities Class Reference}
+\hypertarget{class_entities}{}\label{class_entities}\index{Entities@{Entities}}
+
+
+\doxylink{class_entities}{Entities} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_e_n_t_i_t_y}{ENTITY} object.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_entities_a32b222a0be79494aa6e3065b744f58a7}{New}} (name)
+\begin{DoxyCompactList}\small\item\em Create a new entity object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_entities_a5aad02db1f0521a26ae3a480d081b4a5}{Initialize}} (data, name)
+\begin{DoxyCompactList}\small\item\em Initialize an entity. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_entities_ae1e65f5b34e093ce2fb0ccad21454f6e}{Get\+Entity\+By\+ID}} (entity\+ID)
+\begin{DoxyCompactList}\small\item\em Get an entity by their ID. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_entities_a344c262fc64482ad6d8b9f773d7b92a1}{Get\+Data}} (world\+Object, index)
+\item 
+\mbox{\hyperlink{class_entities_aeecd43d25b62cd02297d01c632fdf9b6}{Set\+Data}} (world\+Object, index, value)
+\item 
+\mbox{\hyperlink{class_entities_aaf618dd8c70c70749861bc1c5699a8bf}{Is\+Entity}} (object)
+\begin{DoxyCompactList}\small\item\em Checks if an object is an entity (needs optimization from cached entities). \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_entities_a056925c91a7ddbc8f7f7c25403021463}{Emit\+Sound}} (world\+Object, sound)
+\item 
+\mbox{\hyperlink{class_entities_acfe11b35dd1aa948db867dc9b5f2cda1}{Load\+Gridsquare}} (square)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{class_entities}{Entities} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_e_n_t_i_t_y}{ENTITY} object. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_entities_a056925c91a7ddbc8f7f7c25403021463}\label{class_entities_a056925c91a7ddbc8f7f7c25403021463} 
+\index{Entities@{Entities}!EmitSound@{EmitSound}}
+\index{EmitSound@{EmitSound}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{EmitSound()}{EmitSound()}}
+{\footnotesize\ttfamily Emit\+Sound (\begin{DoxyParamCaption}\item[{world\+Object}]{,  }\item[{sound}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00137}{137}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00137\ :\mbox{\hyperlink{class_entities_a056925c91a7ddbc8f7f7c25403021463}{EmitSound}}(worldObject,\ sound)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_a344c262fc64482ad6d8b9f773d7b92a1}\label{class_entities_a344c262fc64482ad6d8b9f773d7b92a1} 
+\index{Entities@{Entities}!GetData@{GetData}}
+\index{GetData@{GetData}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{GetData()}{GetData()}}
+{\footnotesize\ttfamily Get\+Data (\begin{DoxyParamCaption}\item[{world\+Object}]{,  }\item[{index}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00095}{95}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00095\ :\mbox{\hyperlink{class_entities_a344c262fc64482ad6d8b9f773d7b92a1}{GetData}}(worldObject,\ index)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_ae1e65f5b34e093ce2fb0ccad21454f6e}\label{class_entities_ae1e65f5b34e093ce2fb0ccad21454f6e} 
+\index{Entities@{Entities}!GetEntityByID@{GetEntityByID}}
+\index{GetEntityByID@{GetEntityByID}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{GetEntityByID()}{GetEntityByID()}}
+{\footnotesize\ttfamily Get\+Entity\+By\+ID (\begin{DoxyParamCaption}\item[{entity\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Get an entity by their ID. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em entity\+ID} & \href{var_types.html\#string}{\texttt{ string}} The entity\textquotesingle{}s ID. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} Entity Object 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00089}{89}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00089\ :\mbox{\hyperlink{class_entities_ae1e65f5b34e093ce2fb0ccad21454f6e}{GetEntityByID}}(entityID)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_a5aad02db1f0521a26ae3a480d081b4a5}\label{class_entities_a5aad02db1f0521a26ae3a480d081b4a5} 
+\index{Entities@{Entities}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}\item[{data}]{,  }\item[{name}]{ }\end{DoxyParamCaption})}
+
+
+
+Initialize an entity. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em data} & \href{var_types.html\#table}{\texttt{ table}} The entity\textquotesingle{}s object data \\
+\hline
+{\em name} & \href{var_types.html\#string}{\texttt{ string}} The entity\textquotesingle{}s name (i.\+e. ID) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} Entity ID 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00080}{80}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00080\ :\mbox{\hyperlink{class_entities_a5aad02db1f0521a26ae3a480d081b4a5}{Initialize}}(data,\ name)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_aaf618dd8c70c70749861bc1c5699a8bf}\label{class_entities_aaf618dd8c70c70749861bc1c5699a8bf} 
+\index{Entities@{Entities}!IsEntity@{IsEntity}}
+\index{IsEntity@{IsEntity}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{IsEntity()}{IsEntity()}}
+{\footnotesize\ttfamily Is\+Entity (\begin{DoxyParamCaption}\item[{object}]{ }\end{DoxyParamCaption})}
+
+
+
+Checks if an object is an entity (needs optimization from cached entities). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em object} & \href{var_types.html\#table}{\texttt{ table}} The object to check. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the object is an entity and its entity ID if it is an entity. 
+
+\href{var_types.html\#integer}{\texttt{ integer}} The entity ID if the object is an entity. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00125}{125}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00125\ :\mbox{\hyperlink{class_entities_aaf618dd8c70c70749861bc1c5699a8bf}{IsEntity}}(\textcolor{keywordtype}{object})}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_acfe11b35dd1aa948db867dc9b5f2cda1}\label{class_entities_acfe11b35dd1aa948db867dc9b5f2cda1} 
+\index{Entities@{Entities}!LoadGridsquare@{LoadGridsquare}}
+\index{LoadGridsquare@{LoadGridsquare}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{LoadGridsquare()}{LoadGridsquare()}}
+{\footnotesize\ttfamily Load\+Gridsquare (\begin{DoxyParamCaption}\item[{square}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00231}{231}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00231\ :\mbox{\hyperlink{2000___framework_8lua_aa12f6ad47bece8491f2887ab12399742}{LoadGridsquare}}(square)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_a32b222a0be79494aa6e3065b744f58a7}\label{class_entities_a32b222a0be79494aa6e3065b744f58a7} 
+\index{Entities@{Entities}!New@{New}}
+\index{New@{New}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{New()}{New()}}
+{\footnotesize\ttfamily New (\begin{DoxyParamCaption}\item[{name}]{ }\end{DoxyParamCaption})}
+
+
+
+Create a new entity object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & \href{var_types.html\#string}{\texttt{ string}} The entity\textquotesingle{}s name (i.\+e. ID). \\
+\hline
+{\em square} & \href{var_types.html\#table}{\texttt{ table}} The square the entity is on. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The entity\textquotesingle{}s object table. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00065}{65}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00065\ :\mbox{\hyperlink{class_entities_a32b222a0be79494aa6e3065b744f58a7}{New}}(name)}
+
+\end{DoxyCode}
+\Hypertarget{class_entities_aeecd43d25b62cd02297d01c632fdf9b6}\label{class_entities_aeecd43d25b62cd02297d01c632fdf9b6} 
+\index{Entities@{Entities}!SetData@{SetData}}
+\index{SetData@{SetData}!Entities@{Entities}}
+\doxysubsubsection{\texorpdfstring{SetData()}{SetData()}}
+{\footnotesize\ttfamily Set\+Data (\begin{DoxyParamCaption}\item[{world\+Object}]{,  }\item[{index}]{,  }\item[{value}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00107}{107}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00107\ :\mbox{\hyperlink{class_entities_aeecd43d25b62cd02297d01c632fdf9b6}{SetData}}(worldObject,\ index,\ value)}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_entities_8lua}{Entities.\+lua}}\end{DoxyCompactItemize}

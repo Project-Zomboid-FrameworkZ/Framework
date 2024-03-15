@@ -1,0 +1,251 @@
+\doxysection{Entities.\+lua}
+\hypertarget{_entities_8lua_source}{}\label{_entities_8lua_source}\index{Entities.lua@{Entities.lua}}
+\mbox{\hyperlink{_entities_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00001}00001\ -\/-\/\ Refactor\ entities\ with\ a\ cache\ of\ tiles\ \textcolor{keywordflow}{for}\ the\ index\ and\ then\ the\ entity?\ Or\ pop\ up\ option\ \textcolor{keywordflow}{for}\ selecting\ entity\ on\ \textcolor{keywordtype}{object}\ spawned?\ Cache\ would\ still\ be\ needed.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00002}00002\ -\/-\/\ It\ might\ be\ better\ to\ extend\ an\ entity\ by\ tile,\ but\ still\ use\ the\ cache.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00003}00003\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00004}00004\ -\/-\/!\ \(\backslash\)page\ globalVars\ Global\ Variables}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00005}00005\ -\/-\/!\ \(\backslash\)section\ \mbox{\hyperlink{class_entities}{Entities}}\ \mbox{\hyperlink{class_entities}{Entities}}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00006}00006\ -\/-\/!\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Entities\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00007}00007\ -\/-\/!\ See\ \mbox{\hyperlink{class_entities}{Entities}}\ \textcolor{keywordflow}{for}\ the\ \textcolor{keyword}{module}\ on\ entities.\(\backslash\)n\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00008}00008\ -\/-\/!\ ProjectFramework.Entities.List\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00009}00009\ -\/-\/!\ A\ list\ of\ all\ non-\/instanced\ entities\ in\ the\ game.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00011}00011\ ProjectFramework\ =\ ProjectFramework\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00013}00013\ -\/-\/!\ \(\backslash\)brief\ Entities\ module\ for\ ProjectFramework.\ Defines\ and\ interacts\ with\ ENTITY\ object.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00014}\mbox{\hyperlink{class_entities}{00014}}\ -\/-\/!\ \(\backslash\)class\ Entities}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00015}00015\ ProjectFramework.Entities\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00016}00016\ ProjectFramework.Entities.\_\_index\ =\ ProjectFramework.Entities}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00017}00017\ ProjectFramework.Entities.List\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00018}00018\ ProjectFramework.Entities\ =\ ProjectFramework.Foundation:NewModule(ProjectFramework.Entities,\ "{}Entities"{})}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00020}00020\ -\/-\/!\ \(\backslash\)brief\ Entity\ class\ for\ ProjectFramework.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00021}\mbox{\hyperlink{class_e_n_t_i_t_y}{00021}}\ -\/-\/!\ \(\backslash\)class\ ENTITY}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00022}00022\ local\ ENTITY\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00023}00023\ ENTITY.\_\_index\ =\ ENTITY}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00025}00025\ -\/-\/!\ \(\backslash\)brief\ Initialize\ an\ entity.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00026}00026\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ entity's\ ID.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00027}\mbox{\hyperlink{class_e_n_t_i_t_y_a87b5e80080e1cf9c1d87023a79579f79}{00027}}\ function\ ENTITY:Initialize()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00028}00028\ \ \ \ \ -\/-\/if\ not\ self.worldObj\ then\ return\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00030}00030\ \ \ \ \ -\/-\/local\ entityModData\ =\ self.worldObj:getModData()["{}ProjectFramework\_Entity"{}]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00031}00031\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00032}00032\ \ \ \ \ return\ ProjectFramework.Entities:Initialize(self,\ self.name)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00033}00033\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00035}00035\ -\/-\/!\ \(\backslash\)brief\ Validate\ the\ entity's\ data.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00036}00036\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ any\ of\ the\ entity's\ new\ data\ was\ initialized.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00037}\mbox{\hyperlink{class_e_n_t_i_t_y_a88293852a723eb6e455ad7b0f47e4bf0}{00037}}\ function\ ENTITY:ValidateEntityData(worldObject)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00038}00038\ \ \ \ \ local\ entityModData\ =\ worldObject:getModData()["{}PFW\_ENT"{}]}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00039}00039\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00040}00040\ \ \ \ \ if\ not\ entityModData\ then\ return\ false\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00042}00042\ \ \ \ \ local\ initializedNewData\ =\ false}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00043}00043\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00044}00044\ \ \ \ \ if\ not\ entityModData.persistData\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00045}00045\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00046}00046\ \ \ \ \ \ \ \ \ entityModData.persistData\ =\ self.persistData\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00047}00047\ \ \ \ \ else}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00048}00048\ \ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(self.persistData)\ do}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ entityModData.persistData[k]\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00050}00050\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00051}00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entityModData.persistData[k]\ =\ v}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00052}00052\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00053}00053\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00054}00054\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00055}00055\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00056}00056\ \ \ \ \ worldObject:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00057}00057\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00058}00058\ \ \ \ \ return\ initializedNewData}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00059}00059\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00061}00061\ -\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ entity\ object.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00062}00062\ -\/-\/!\ \(\backslash\)param\ name\ \(\backslash\)string\ The\ entity's\ name\ (i.e.\ ID).}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00063}00063\ -\/-\/!\ \(\backslash\)param\ square\ \(\backslash\)table\ The\ square\ the\ entity\ is\ on.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00064}00064\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ entity's\ object\ table.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00065}\mbox{\hyperlink{class_entities_a32b222a0be79494aa6e3065b744f58a7}{00065}}\ function\ ProjectFramework.Entities:New(name)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00066}00066\ \ \ \ \ local\ object\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00067}00067\ \ \ \ \ \ \ \ \ name\ =\ name,}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00068}00068\ \ \ \ \ \ \ \ \ description\ =\ "{}No\ description\ available."{}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00069}00069\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00071}00071\ \ \ \ \ setmetatable(object,\ ENTITY)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00073}00073\ \ \ \ \ return\ object}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00074}00074\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00075}00075\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00076}00076\ -\/-\/!\ \(\backslash\)brief\ Initialize\ an\ entity.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00077}00077\ -\/-\/!\ \(\backslash\)param\ data\ \(\backslash\)table\ The\ entity's\ object\ data}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00078}00078\ -\/-\/!\ \(\backslash\)param\ name\ \(\backslash\)string\ The\ entity's\ name\ (i.e.\ ID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00079}00079\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ Entity\ ID}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00080}\mbox{\hyperlink{class_entities_a5aad02db1f0521a26ae3a480d081b4a5}{00080}}\ function\ ProjectFramework.Entities:Initialize(data,\ name)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00081}00081\ \ \ \ \ ProjectFramework.Entities.List[name]\ =\ data}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00082}00082\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00083}00083\ \ \ \ \ return\ name}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00084}00084\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00085}00085\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00086}00086\ -\/-\/!\ \(\backslash\)brief\ Get\ an\ entity\ by\ their\ ID.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00087}00087\ -\/-\/!\ \(\backslash\)param\ entityID\ \(\backslash\)string\ The\ entity's\ ID.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00088}00088\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ Entity\ Object}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00089}\mbox{\hyperlink{class_entities_ae1e65f5b34e093ce2fb0ccad21454f6e}{00089}}\ function\ ProjectFramework.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00090}00090\ \ \ \ \ local\ entity\ =\ ProjectFramework.Entities.List[entityID]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00091}00091\ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00092}00092\ \ \ \ \ return\ entity}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00093}00093\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00095}\mbox{\hyperlink{class_entities_a344c262fc64482ad6d8b9f773d7b92a1}{00095}}\ function\ ProjectFramework.Entities:GetData(worldObject,\ index)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00096}00096\ \ \ \ \ if\ worldObject\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00097}00097\ \ \ \ \ \ \ \ \ local\ entityPersistData\ =\ worldObject:getModData()["{}PFW\_ENT"{}]}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00098}00098\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00099}00099\ \ \ \ \ \ \ \ \ if\ entityPersistData\ and\ entityPersistData[index]\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00100}00100\ \ \ \ \ \ \ \ \ \ \ \ \ return\ entityPersistData[index]}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00101}00101\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00102}00102\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00103}00103\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00104}00104\ \ \ \ \ return\ nil}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00105}00105\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00107}\mbox{\hyperlink{class_entities_aeecd43d25b62cd02297d01c632fdf9b6}{00107}}\ function\ ProjectFramework.Entities:SetData(worldObject,\ index,\ value)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00108}00108\ \ \ \ \ if\ worldObject\ and\ index\ and\ value\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00109}00109\ \ \ \ \ \ \ \ \ local\ entityPersistData\ =\ worldObject:getModData()["{}PFW\_ENT"{}]}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00110}00110\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00111}00111\ \ \ \ \ \ \ \ \ if\ entityPersistData\ and\ entityPersistData.persistData\ and\ entityPersistData.persistData[index]\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00112}00112\ \ \ \ \ \ \ \ \ \ \ \ \ entityPersistData.persistData[index]\ =\ value}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00113}00113\ \ \ \ \ \ \ \ \ \ \ \ \ worldObject:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00114}00114\ \ \ \ \ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00115}00115\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00116}00116\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00117}00117\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00118}00118\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00119}00119\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00120}00120\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00121}00121\ -\/-\/!\ \(\backslash\)brief\ Checks\ if\ an\ object\ is\ an\ entity\ (needs\ optimization\ from\ cached\ entities).}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00122}00122\ -\/-\/!\ \(\backslash\)param\ object\ \(\backslash\)table\ The\ object\ to\ check.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00123}00123\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ object\ is\ an\ entity\ and\ its\ entity\ ID\ if\ it\ is\ an\ entity.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00124}00124\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)integer\ The\ entity\ ID\ if\ the\ object\ is\ an\ entity.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00125}\mbox{\hyperlink{class_entities_aaf618dd8c70c70749861bc1c5699a8bf}{00125}}\ function\ ProjectFramework.Entities:IsEntity(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00126}00126\ \ \ \ \ for\ id,\ entity\ in\ pairs(ProjectFramework.Entities.List)\ do}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00127}00127\ \ \ \ \ \ \ \ \ for\ k,\ tile\ in\ pairs(entity.tiles)\ do}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00128}00128\ \ \ \ \ \ \ \ \ \ \ \ \ if\ tile\ ==\ object:getSprite():getName()\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00129}00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ return\ true,\ id}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00130}00130\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00131}00131\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00132}00132\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00133}00133\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00134}00134\ \ \ \ \ return\ false,\ nil}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00135}00135\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00137}\mbox{\hyperlink{class_entities_a056925c91a7ddbc8f7f7c25403021463}{00137}}\ function\ ProjectFramework.Entities:EmitSound(worldObject,\ sound)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00138}00138\ \ \ \ \ if\ worldObject\ and\ sound\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00139}00139\ \ \ \ \ \ \ \ \ getSoundManager():PlayWorldSound(sound,\ worldObject:getSquare(),\ 0,\ 8,\ 1,\ false)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00140}00140\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00141}00141\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00142}00142\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00143}00143\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00144}00144\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00145}00145\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00147}00147\ -\/-\/!\ \(\backslash\)brief\ Called\ when\ an\ object\ is\ added\ to\ the\ world.\ Adds\ the\ entity\ to\ the\ object's\ mod\ data.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00148}00148\ -\/-\/!\ \(\backslash\)param\ object\ \(\backslash\)table\ The\ object\ that\ was\ added\ to\ the\ world.}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00149}\mbox{\hyperlink{_entities_8lua_a9572da9b999605776e499f9ce1929479}{00149}}\ function\ ProjectFramework.Entities.OnObjectAdded(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00150}00150\ \ \ \ \ local\ isEntity,\ entityID\ =\ ProjectFramework.Entities:IsEntity(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00151}00151\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00152}00152\ \ \ \ \ if\ isEntity\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00153}00153\ \ \ \ \ \ \ \ \ local\ entity\ =\ ProjectFramework.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00154}00154\ \ \ \ \ \ \ \ \ local\ coordinates\ =\ \{x\ =\ object:getX(),\ y\ =\ object:getY(),\ z\ =\ object:getZ()\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00155}00155\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00156}00156\ \ \ \ \ \ \ \ \ if\ entity\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00157}00157\ \ \ \ \ \ \ \ \ \ \ \ \ entity:Initialize()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00158}00158\ \ \ \ \ \ \ \ \ \ \ \ \ object:getModData()["{}PFW\_ENT"{}]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00159}00159\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ id\ =\ entityID,}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00160}00160\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ data\ =\ entity.persistData\ or\ \{\},}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00161}00161\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ coordinates\ =\ coordinates\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00162}00162\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00163}00163\ \ \ \ \ \ \ \ \ \ \ \ \ object:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00164}00164\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00165}00165\ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity.OnSpawn\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00166}00166\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity:OnSpawn(getPlayer(),\ object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00167}00167\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00168}00168\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00169}00169\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00170}00170\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00171}00171\ Events.OnObjectAdded.Add(ProjectFramework.Entities.OnObjectAdded)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00172}00172\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00173}\mbox{\hyperlink{_entities_8lua_a40de6d9052ea449926c3f00bf8d6e33c}{00173}}\ function\ ProjectFramework.Entities.OnObjectAboutToBeRemoved(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00174}00174\ \ \ \ \ local\ isEntity,\ entityID\ =\ ProjectFramework.Entities:IsEntity(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00175}00175\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00176}00176\ \ \ \ \ if\ isEntity\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00177}00177\ \ \ \ \ \ \ \ \ local\ entity\ =\ ProjectFramework.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00178}00178\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00179}00179\ \ \ \ \ \ \ \ \ if\ entity\ and\ entity.OnRemove\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00180}00180\ \ \ \ \ \ \ \ \ \ \ \ \ entity:OnRemove(getPlayer(),\ object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00181}00181\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00182}00182\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00183}00183\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00184}00184\ Events.OnObjectAboutToBeRemoved.Add(ProjectFramework.Entities.OnObjectAboutToBeRemoved)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00185}00185\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00186}\mbox{\hyperlink{_entities_8lua_a65174e2f20875cb8b866ba33be59740f}{00186}}\ function\ ProjectFramework.Entities.OnPreFillWorldObjectContextMenu(player,\ context,\ worldObjects,\ test)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00187}00187\ \ \ \ \ local\ playerObj\ =\ getSpecificPlayer(player)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00188}00188\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00189}00189\ \ \ \ \ local\ interact\ =\ context:addOptionOnTop("{}Interact"{})}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00190}00190\ \ \ \ \ local\ interactContext\ =\ ISContextMenu:getNew(context)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00191}00191\ \ \ \ \ context:addSubMenu(interact,\ interactContext)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00193}00193\ \ \ \ \ for\ k,\ v\ in\ pairs(worldObjects)\ do}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00194}00194\ \ \ \ \ \ \ \ \ if\ v:getModData()["{}PFW\_ENT"{}]\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00195}00195\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entityID\ =\ v:getModData()["{}PFW\_ENT"{}].id}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00196}00196\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entity\ =\ ProjectFramework.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00197}00197\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00198}00198\ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00199}00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ canContext\ =\ false}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00200}00200\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00201}00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity:ValidateEntityData(v)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00202}00202\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00203}00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity.CanContext\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00204}00204\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canContext\ =\ entity:CanContext(playerObj,\ v)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00205}00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00206}00206\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00207}00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ canContext\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00208}00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity.OnContext\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00209}00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ context\ =\ entity:OnContext(playerObj,\ v,\ interactContext)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00210}00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ entity.OnUse\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00211}00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOptionOnTop("{}Use\ "{}\ ..\ entity.name,\ entity,\ entity.OnUse,\ playerObj,\ v)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00212}00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00213}00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00214}00214\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00215}00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOption("{}Examine\ "{}\ ..\ entity.name,\ entity,\ function(entity,\ playerObj)\ playerObj:Say(entity.description)\ end,\ playerObj)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00216}00216\ \ \ \ \ \ \ \ \ \ \ \ \ else}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00217}00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOption("{}Malformed\ Entity"{})}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00218}00218\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00219}00219\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00220}00220\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00221}00221\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00222}00222\ \ \ \ \ if\ interactContext:isEmpty()\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00223}00223\ \ \ \ \ \ \ \ \ interactContext:addOption("{}No\ Interactions\ Available"{})}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00224}00224\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00225}00225\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00226}00226\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00227}00227\ function\ ProjectFramework.Entities.OnGameStart()}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00228}00228\ \ \ \ \ Events.OnPreFillWorldObjectContextMenu.Add(ProjectFramework.Entities.OnPreFillWorldObjectContextMenu)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00229}00229\ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00230}00230\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00231}\mbox{\hyperlink{class_entities_acfe11b35dd1aa948db867dc9b5f2cda1}{00231}}\ function\ ProjectFramework.Entities:LoadGridsquare(square)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00232}00232\ \ \ \ \ for\ i\ =\ 0,\ square:getObjects():size()\ -\/\ 1\ do}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00233}00233\ \ \ \ \ \ \ \ \ local\ object\ =\ square:getObjects():get(i)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00234}00234\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00235}00235\ \ \ \ \ \ \ \ \ if\ object\ and\ object:getModData()["{}PFW\_ENT"{}]\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00236}00236\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entityID\ =\ object:getModData()["{}PFW\_ENT"{}].id}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entity\ =\ ProjectFramework.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00238}00238\ }
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity\ and\ not\ entity.isInitialized\ then}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity:OnInitialize(object)}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity.isInitialized\ =\ true}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00243}00243\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00244}00244\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_entities_8lua_source_l00245}00245\ end}
+
+\end{DoxyCode}

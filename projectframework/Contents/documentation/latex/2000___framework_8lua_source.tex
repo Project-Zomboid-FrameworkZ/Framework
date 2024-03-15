@@ -1,0 +1,167 @@
+\doxysection{2000\+\_\+\+Framework.\+lua}
+\hypertarget{2000___framework_8lua_source}{}\label{2000___framework_8lua_source}\index{2000\_Framework.lua@{2000\_Framework.lua}}
+\mbox{\hyperlink{2000___framework_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00001}00001\ -\/-\/!\ \(\backslash\)mainpage\ Main\ Page}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00002}00002\ -\/-\/!\ Created\ By\ RJ\_RayJay}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00003}00003\ -\/-\/!\ \(\backslash\)section\ Introduction}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00004}00004\ -\/-\/!\ Project\ HL2RP\ is\ a\ roleplay\ framework\ \textcolor{keywordflow}{for}\ the\ game\ Project\ Zomboid.\ This\ framework\ is\ designed\ to\ be\ a\ base\ \textcolor{keywordflow}{for}\ roleplay\ servers,\ providing\ a\ variety\ of\ features\ and\ systems\ to\ help\ server\ owners\ create\ a\ unique\ and\ enjoyable\ roleplay\ experience\ \textcolor{keywordflow}{for}\ their\ players.\ We\ have\ plans\ to\ make\ a\ standalone\ framework\ \textcolor{keywordflow}{for}\ Project\ Zomboid,\ but\ \textcolor{keywordflow}{for}\ now,\ we\ are\ focusing\ on\ the\ Project\ HL2RP\ framework\ integrated\ with\ the\ HL2RP\ gamemode.}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00005}00005\ -\/-\/!\ \(\backslash\)section\ Features}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00006}00006\ -\/-\/!\ The\ Project\ HL2RP\ framework\ includes\ a\ variety\ of\ features\ and\ systems\ to\ help\ server\ owners\ create\ a\ unique\ and\ enjoyable\ roleplay\ experience\ \textcolor{keywordflow}{for}\ their\ players.\ Some\ of\ the\ features\ and\ systems\ include:}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00007}00007\ -\/-\/!\ -\/\ \mbox{\hyperlink{class_characters}{Characters}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00008}00008\ -\/-\/!\ -\/\ \mbox{\hyperlink{class_factions}{Factions}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00009}00009\ -\/-\/!\ -\/\ \mbox{\hyperlink{class_entities}{Entities}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00010}00010\ -\/-\/!\ -\/\ Items}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00011}00011\ -\/-\/!\ -\/\ \mbox{\hyperlink{class_inventories}{Inventories}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00012}00012\ -\/-\/!\ -\/\ Trading}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00013}00013\ -\/-\/!\ -\/\ Crafting}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00014}00014\ -\/-\/!\ -\/\ Skills}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00015}00015\ -\/-\/!\ -\/\ Vehicles}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00016}00016\ -\/-\/!\ -\/\ Housing}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00017}00017\ -\/-\/!\ -\/\ Jobs}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00018}00018\ -\/-\/!\ -\/\ Quests}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00019}00019\ -\/-\/!\ -\/\ Events}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00020}00020\ -\/-\/!\ -\/\ Admin}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00021}00021\ -\/-\/!\ -\/\ ...and\ more!}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00022}00022\ -\/-\/!\ \(\backslash\)section\ Installation}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00023}00023\ -\/-\/!\ To\ install\ the\ Project\ HL2RP\ framework,\ simply\ download\ the\ latest\ release\ from\ the\ Steam\ Workshop\ and\ add\ the\ Workshop\ ID/Mod\ ID\ into\ your\ Project\ Zomboid\ server\textcolor{stringliteral}{'s\ config\ file.\ After\ installing,\ you\ can\ start\ your\ server\ and\ the\ framework\ will\ be\ ready\ to\ use.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00024}00024\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ Usage}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00025}00025\ \textcolor{stringliteral}{-\/-\/!\ The\ Project\ HL2RP\ framework\ is\ designed\ to\ be\ easy\ to\ use\ and\ extend.\ The\ framework\ is\ built\ using\ Lua,\ a\ lightweight,\ multi-\/paradigm\ programming\ language\ designed\ primarily\ for\ embedded\ use\ in\ applications.\ The\ framework\ is\ designed\ to\ be\ modular,\ allowing\ server\ owners\ to\ easily\ add,\ remove,\ and\ modify\ features\ and\ systems\ to\ suit\ their\ needs.\ The\ framework\ also\ includes\ extensive\ documentation\ to\ help\ server\ owners\ understand\ how\ to\ use\ and\ extend\ the\ framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00026}00026\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ Contributing}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00027}00027\ \textcolor{stringliteral}{-\/-\/!\ The\ Project\ HL2RP\ framework\ is\ an\ open-\/source\ project\ and\ we\ welcome\ contributions\ from\ the\ community.\ If\ you\ would\ like\ to\ contribute\ to\ the\ framework,\ you\ can\ do\ so\ by\ forking\ the\ GitHub\ repository,\ making\ your\ changes,\ and\ submitting\ a\ pull\ request.\ We\ also\ welcome\ bug\ reports,\ feature\ requests,\ and\ feedback\ from\ the\ community.\ If\ you\ have\ any\ questions\ or\ need\ help\ with\ the\ framework,\ you\ can\ join\ the\ Project\ HL2RP\ Discord\ server\ and\ ask\ for\ assistance\ in\ the\ \#support\ channel.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00028}00028\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ License}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00029}00029\ \textcolor{stringliteral}{-\/-\/!\ The\ Project\ HL2RP\ framework\ is\ licensed\ under\ the\ MIT\ License,\ a\ permissive\ open-\/source\ license\ that\ allows\ you\ to\ use,\ modify,\ and\ distribute\ the\ framework\ for\ free.\ You\ can\ find\ the\ full\ text\ of\ the\ MIT\ License\ in\ the\ LICENSE\ file\ included\ with\ the\ framework.\ We\ chose\ the\ MIT\ License\ because\ we\ believe\ in\ the\ power\ of\ open-\/source\ software\ and\ want\ to\ encourage\ collaboration\ and\ innovation\ in\ the\ Project\ Zomboid\ community.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00030}00030\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ Support}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00031}00031\ \textcolor{stringliteral}{-\/-\/!\ If\ you\ need\ help\ with\ the\ Project\ HL2RP\ framework,\ you\ can\ join\ the\ Project\ HL2RP\ Discord\ server\ and\ ask\ for\ assistance\ in\ the\ \#support\ channel.\ We\ have\ a\ friendly\ and\ knowledgeable\ community\ that\ is\ always\ willing\ to\ help\ with\ any\ questions\ or\ issues\ you\ may\ have.\ We\ also\ have\ a\ variety\ of\ resources\ available\ to\ help\ you\ get\ started\ with\ the\ framework,\ including\ documentation,\ tutorials,\ and\ example\ code.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00032}00032\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ Conclusion}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00033}00033\ \textcolor{stringliteral}{-\/-\/!\ The\ Project\ HL2RP\ framework\ is\ a\ powerful\ and\ flexible\ tool\ for\ creating\ roleplay\ servers\ in\ Project\ Zomboid.\ Whether\ you\ are\ a\ server\ owner\ looking\ to\ create\ a\ unique\ roleplay\ experience\ for\ your\ players\ or\ a\ developer\ looking\ to\ contribute\ to\ an\ open-\/source\ project,\ the\ Project\ HL2RP\ framework\ has\ something\ for\ everyone.\ We\ hope\ you\ enjoy\ using\ the\ framework\ and\ look\ forward\ to\ seeing\ the\ amazing\ roleplay\ experiences\ you\ create\ with\ it.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00034}00034\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ Links}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00035}00035\ \textcolor{stringliteral}{-\/-\/!\ -\/\ GitHub\ Repository:\ Coming\ Soon(tm)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00036}00036\ \textcolor{stringliteral}{-\/-\/!\ -\/\ Discord\ Server:\ https://discord.gg/dEZwKHPeWZ}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00037}00037\ \textcolor{stringliteral}{-\/-\/!\ -\/\ Documentation:\ https://hl2rp-\/docs.pixelport.community}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00038}00038\ \textcolor{stringliteral}{-\/-\/!\ -\/\ Tutorials:\ Coming\ Soon(tm)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00039}00039\ \textcolor{stringliteral}{-\/-\/!\ -\/\ Example\ Code:\ Coming\ Soon(tm)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00040}00040\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00041}00041\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00042}00042\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)page\ globalVars\ Global\ Variables}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00043}00043\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ ProjectFramework\ ProjectFramework}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00044}00044\ \textcolor{stringliteral}{-\/-\/!\ ProjectFramework}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00045}00045\ \textcolor{stringliteral}{-\/-\/!\ The\ global\ table\ that\ contains\ all\ of\ the\ framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00046}00046\ \textcolor{stringliteral}{-\/-\/!\ [table]:\ /var\_types.html\#table\ "{}table"{}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00047}00047\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)page\ varTypes\ Variable\ Types}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00048}00048\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ string\ string}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00049}00049\ \textcolor{stringliteral}{-\/-\/!\ A\ string\ is\ a\ sequence\ of\ characters.\ Strings\ are\ used\ to\ represent\ text\ and\ are\ enclosed\ in\ double\ quotes\ or\ single\ quotes.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00050}00050\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ boolean\ boolean}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00051}00051\ \textcolor{stringliteral}{-\/-\/!\ A\ boolean\ is\ a\ value\ that\ can\ be\ either\ true\ or\ false.\ Booleans\ are\ used\ to\ represent\ logical\ values.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00052}00052\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ integer\ integer}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00053}00053\ \textcolor{stringliteral}{-\/-\/!\ A\ integer\ is\ a\ numerical\ value\ without\ any\ decimal\ points.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00054}00054\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ float\ float}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00055}00055\ \textcolor{stringliteral}{-\/-\/!\ A\ float\ is\ a\ numerical\ value\ with\ decimal\ points.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00056}00056\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ table\ table}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00057}00057\ \textcolor{stringliteral}{-\/-\/!\ A\ table\ is\ a\ collection\ of\ key-\/value\ pairs.\ It\ is\ the\ only\ data\ structure\ available\ in\ Lua\ that\ allows\ you\ to\ store\ data\ with\ arbitrary\ keys\ and\ values.\ Tables\ are\ used\ to\ represent\ arrays,\ sets,\ records,\ and\ other\ data\ structures.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00058}00058\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ function\ function}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00059}00059\ \textcolor{stringliteral}{-\/-\/!\ A\ function\ is\ a\ block\ of\ code\ that\ can\ be\ called\ and\ executed.\ Functions\ are\ used\ to\ encapsulate\ and\ reuse\ code.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00060}00060\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ nil\ nil}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00061}00061\ \textcolor{stringliteral}{-\/-\/!\ Nil\ is\ a\ special\ value\ that\ represents\ the\ absence\ of\ a\ value.\ Nil\ is\ used\ to\ indicate\ that\ a\ variable\ has\ no\ value.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00062}00062\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ any\ any}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00063}00063\ \textcolor{stringliteral}{-\/-\/!\ Any\ is\ a\ placeholder\ that\ represents\ any\ type\ of\ value.\ It\ is\ used\ to\ indicate\ that\ a\ variable\ can\ hold\ any\ type\ of\ value.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00064}00064\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ mixed\ mixed}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00065}00065\ \textcolor{stringliteral}{-\/-\/!\ Mixed\ is\ a\ placeholder\ that\ represents\ a\ combination\ of\ different\ types\ of\ values.\ It\ is\ used\ to\ indicate\ that\ a\ variable\ can\ hold\ a\ variety\ of\ different\ types\ of\ values.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00066}00066\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)section\ class\ class}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00067}00067\ \textcolor{stringliteral}{-\/-\/!\ Class\ is\ a\ placeholder\ that\ represents\ a\ class\ of\ objects\ by\ a\ table\ set\ to\ a\ metatable.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00068}00068\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00069}00069\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ ProjectFramework\ global\ table.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00070}\mbox{\hyperlink{class_project_framework}{00070}}\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)class\ ProjectFramework}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00071}00071\ \textcolor{stringliteral}{ProjectFramework\ =\ ProjectFramework\ or\ \{\}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00072}00072\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00073}00073\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ Foundation\ for\ ProjectFramework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00074}\mbox{\hyperlink{class_foundation}{00074}}\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)class\ Foundation}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00075}00075\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)memberof\ ProjectFramework}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00076}00076\ \textcolor{stringliteral}{ProjectFramework.Foundation\ =\ \{\}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00077}00077\ \textcolor{stringliteral}{ProjectFramework.Foundation.\_\_index\ =\ ProjectFramework.Foundation}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00078}00078\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00079}00079\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ Modules\ for\ ProjectFramework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00080}00080\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)memberof\ ProjectFramework}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00081}00081\ \textcolor{stringliteral}{ProjectFramework.Modules\ =\ \{\}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00082}00082\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00083}00083\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ instance\ of\ the\ ProjectFramework\ Framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00084}00084\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ new\ instance\ of\ the\ ProjectFramework\ Framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00085}00085\ \textcolor{stringliteral}{function\ ProjectFramework.Foundation.New()}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00086}00086\ \textcolor{stringliteral}{\ \ \ \ local\ object\ =\ \{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00087}00087\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ version\ =\ "{}1.0.0"{}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00088}00088\ \textcolor{stringliteral}{\ \ \ \ \}}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00089}00089\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00090}00090\ \textcolor{stringliteral}{\ \ \ \ setmetatable(object,\ ProjectFramework.Foundation)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00091}00091\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00092}00092\ \textcolor{stringliteral}{\ \ \ \ return\ object}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00093}00093\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00094}00094\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00095}00095\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ module\ for\ the\ ProjectFramework\ Framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00096}00096\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)param\ MODULE\_TABLE\ \(\backslash\)table\ The\ table\ to\ use\ as\ the\ module.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00097}00097\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)param\ moduleName\ \(\backslash\)string\ The\ name\ of\ the\ module.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00098}00098\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ new\ module.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00099}\mbox{\hyperlink{class_foundation_afbd1a23548ba3ec18cce6f49975fa87d}{00099}}\ \textcolor{stringliteral}{function\ ProjectFramework.Foundation:NewModule(MODULE\_TABLE,\ moduleName)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00100}00100\ \textcolor{stringliteral}{\ \ \ \ if\ (not\ ProjectFramework.Modules[moduleName])\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00101}00101\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ local\ object\ =\ \{\};}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00102}00102\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ setmetatable(object,\ MODULE\_TABLE)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00103}00103\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ MODULE\_TABLE.\_\_index\ =\ MODULE\_TABLE}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00104}00104\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ ProjectFramework.Modules[moduleName]\ =\ object}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00105}00105\ \textcolor{stringliteral}{\ \ \ \ end;}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00106}00106\ \textcolor{stringliteral}{\ \ \ \ }}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00107}00107\ \textcolor{stringliteral}{\ \ \ \ return\ ProjectFramework.Modules[moduleName]}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00108}00108\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00109}00109\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00110}00110\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)brief\ Get\ the\ version\ of\ the\ ProjectFramework\ Framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00111}00111\ \textcolor{stringliteral}{-\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ version\ of\ the\ ProjectFramework\ Framework.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00112}\mbox{\hyperlink{class_foundation_ac9a300b28f440e32170130534117802e}{00112}}\ \textcolor{stringliteral}{function\ ProjectFramework.Foundation:GetVersion()}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00113}00113\ \textcolor{stringliteral}{\ \ \ \ return\ self.version}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00114}00114\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00115}00115\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00116}00116\ \textcolor{stringliteral}{if\ isClient()\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00117}00117\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00118}\mbox{\hyperlink{2000___framework_8lua_aa12f6ad47bece8491f2887ab12399742}{00118}}\ \textcolor{stringliteral}{\ \ \ \ function\ ProjectFramework.Foundation.LoadGridsquare(square)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00119}00119\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(ProjectFramework.Modules)\ do}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00120}00120\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ if\ v.LoadGridsquare\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00121}00121\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.LoadGridsquare(v,\ square)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00122}00122\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00123}00123\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00124}00124\ \textcolor{stringliteral}{\ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00125}00125\ \textcolor{stringliteral}{\ \ \ \ Events.LoadGridsquare.Add(ProjectFramework.Foundation.LoadGridsquare)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00126}00126\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00127}00127\ \textcolor{stringliteral}{\ \ \ \ -\/-\/!\ \(\backslash\)brief\ Called\ when\ the\ game\ starts.\ Executes\ the\ OnGameStart\ function\ for\ all\ modules.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00128}00128\ \textcolor{stringliteral}{\ \ \ \ function\ ProjectFramework.Foundation.OnGameStart()}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00129}00129\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(ProjectFramework.Modules)\ do}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00130}00130\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnGameStart\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00131}00131\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnGameStart(v)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00132}00132\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00133}00133\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00134}00134\ \textcolor{stringliteral}{\ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00135}00135\ \textcolor{stringliteral}{\ \ \ \ Events.OnGameStart.Add(ProjectFramework.Foundation.OnGameStart)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00136}00136\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00137}00137\ \textcolor{stringliteral}{\ \ \ \ -\/-\/!\ \(\backslash\)brief\ Called\ when\ the\ player\ disconnects.\ Executes\ the\ OnDisconnect\ function\ for\ all\ modules.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00138}00138\ \textcolor{stringliteral}{\ \ \ \ function\ ProjectFramework.Foundation.OnDisconnect()}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00139}00139\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(ProjectFramework.Modules)\ do}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00140}00140\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnDisconnect\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00141}00141\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnDisconnect(v)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00142}00142\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00143}00143\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00144}00144\ \textcolor{stringliteral}{\ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00145}00145\ \textcolor{stringliteral}{\ \ \ \ Events.OnDisconnect.Add(ProjectFramework.Foundation.OnDisconnect)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00146}00146\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00147}00147\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00148}00148\ \textcolor{stringliteral}{if\ not\ isClient()\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00149}00149\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00150}00150\ \textcolor{stringliteral}{\ \ \ \ -\/-\/!\ \(\backslash\)brief\ Called\ when\ the\ server\ starts.\ Executes\ the\ OnServerStarted\ function\ for\ all\ modules.}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00151}00151\ \textcolor{stringliteral}{\ \ \ \ function\ ProjectFramework.Foundation.OnServerStarted()}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00152}00152\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(ProjectFramework.Modules)\ do}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00153}00153\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnServerStarted\ then}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00154}00154\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnServerStarted(v)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00155}00155\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00156}00156\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00157}00157\ \textcolor{stringliteral}{\ \ \ \ end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00158}00158\ \textcolor{stringliteral}{\ \ \ \ Events.OnServerStarted.Add(ProjectFramework.Foundation.OnServerStarted)}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00159}00159\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00160}00160\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{\Hypertarget{2000___framework_8lua_source_l00161}00161\ \textcolor{stringliteral}{ProjectFramework.Foundation.New()}}
+
+\end{DoxyCode}

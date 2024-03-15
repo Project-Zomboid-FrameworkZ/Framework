@@ -1,0 +1,356 @@
+\doxysection{lua2dox.\+lua File Reference}
+\hypertarget{lua2dox_8lua}{}\label{lua2dox_8lua}\index{lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{class_t_core___clock}{TCore\+\_\+\+Clock}}
+\begin{DoxyCompactList}\small\item\em a clock \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_core___i_o}{TCore\+\_\+\+IO}}
+\begin{DoxyCompactList}\small\item\em io to console \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_core___commandline}{TCore\+\_\+\+Commandline}}
+\begin{DoxyCompactList}\small\item\em reads/parses commandline \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_stream___read}{TStream\+\_\+\+Read}}
+\begin{DoxyCompactList}\small\item\em file buffer \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_stream___write}{TStream\+\_\+\+Write}}
+\begin{DoxyCompactList}\small\item\em output stream \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_lua2_do_x__filter}{TLua2\+Do\+X\+\_\+filter}}
+\begin{DoxyCompactList}\small\item\em input filter \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{class_t_app}{TApp}}
+\begin{DoxyCompactList}\small\item\em this application \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+function \mbox{\hyperlink{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}{class}} (Base\+Class, Class\+Initialiser)
+\item 
+function \mbox{\hyperlink{lua2dox_8lua_a0421fdbec10b89d53d59415d44c59d27}{TCore\+\_\+\+IO\+\_\+write}} (Str)
+\begin{DoxyCompactList}\small\item\em write to stdout \end{DoxyCompactList}\item 
+function \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\+\_\+\+IO\+\_\+writeln}} (Str)
+\begin{DoxyCompactList}\small\item\em write to stdout \end{DoxyCompactList}\item 
+function \mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\+\_\+trim}} (Str)
+\begin{DoxyCompactList}\small\item\em trims a string \end{DoxyCompactList}\item 
+function \mbox{\hyperlink{lua2dox_8lua_a4d016c3f7d73e2c1a61c4a68fe83ba50}{string\+\_\+split}} (Str, Pattern)
+\begin{DoxyCompactList}\small\item\em split a string \end{DoxyCompactList}\item 
+static function \mbox{\hyperlink{lua2dox_8lua_ae7e7b6d8a8be87a0c1cb6325bc116bca}{TString\+\_\+remove\+Comment\+From\+Line}} (Line)
+\begin{DoxyCompactList}\small\item\em trim comment off end of string \end{DoxyCompactList}\item 
+static function \mbox{\hyperlink{lua2dox_8lua_ae35ec7ece19a3c4e6b986bbd17f78d30}{get\+Magic\+Directive}} (Line)
+\begin{DoxyCompactList}\small\item\em get directive from magic \end{DoxyCompactList}\item 
+static function \mbox{\hyperlink{lua2dox_8lua_ae5a652afc9e335937dc48ade4b697f44}{check\+Comment4fn}} (Fn\+\_\+magic, Magic\+Lines)
+\begin{DoxyCompactList}\small\item\em check comment for fn \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{lua2dox_8lua_ae5a652afc9e335937dc48ade4b697f44}\label{lua2dox_8lua_ae5a652afc9e335937dc48ade4b697f44} 
+\index{lua2dox.lua@{lua2dox.lua}!checkComment4fn@{checkComment4fn}}
+\index{checkComment4fn@{checkComment4fn}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{checkComment4fn()}{checkComment4fn()}}
+{\footnotesize\ttfamily static function check\+Comment4fn (\begin{DoxyParamCaption}\item[{Fn\+\_\+magic}]{,  }\item[{Magic\+Lines}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+check comment for fn 
+
+....\textbackslash{} macro...stuff ....@ macro...stuff 
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00346}{346}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00374\ :getContents(Filename))\ then}
+\DoxyCodeLine{00375\ \ \ \ \ \ \ \ \ -\/-\/\ output\ the\ file}
+\DoxyCodeLine{00376\ \ \ \ \ \ \ \ \ local\ line}
+\DoxyCodeLine{00377\ \ \ \ \ \ \ \ \ local\ fn\_magic\ -\/-\/\ function\ name/def\ from\ \ magic\ comment}
+\DoxyCodeLine{00378\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00379\ \ \ \ \ \ \ \ \ outStream:writelnTail(\textcolor{stringliteral}{'//\ \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#'})}
+\DoxyCodeLine{00380\ \ \ \ \ \ \ \ \ outStream:writelnTail(\textcolor{stringliteral}{'//\ app\ run:'}\ ..\ AppStamp)}
+\DoxyCodeLine{00381\ \ \ \ \ \ \ \ \ outStream:writelnTail(\textcolor{stringliteral}{'//\ \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#'})}
+\DoxyCodeLine{00382\ \ \ \ \ \ \ \ \ outStream:writelnTail()}
+\DoxyCodeLine{00383\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00384\ \ \ \ \ \ \ \ \ while\ not\ (err\ or\ inStream:eof())\ do}
+\DoxyCodeLine{00385\ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ \mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\_trim}}(inStream:getLine())}
+\DoxyCodeLine{00386\ -\/-\/\ \ \ \ \ \ \ \ \ \ TCore\_Debug\_show\_var(\textcolor{stringliteral}{'inStream'},inStream)}
+\DoxyCodeLine{00387\ -\/-\/\ \ \ \ \ \ \ \ \ \ TCore\_Debug\_show\_var(\textcolor{stringliteral}{'line'},line\ )}
+\DoxyCodeLine{00388\ \ \ \ \ \ \ \ \ \ \ \ \ if\ string.sub(line,1,2)==\textcolor{stringliteral}{'-\/-\/'}\ then\ -\/-\/\ its\ a\ comment}
+\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ string.sub(line,3,3)==\textcolor{stringliteral}{'!'}\ then\ -\/-\/\ it\textcolor{stringliteral}{'s\ a\ magic\ comment}}
+\DoxyCodeLine{00390\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ magic\ =\ string.sub(line,4)}}
+\DoxyCodeLine{00391\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln('}}
+\DoxyCodeLine{00392\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ \mbox{\hyperlink{lua2dox_8lua_ae5a652afc9e335937dc48ade4b697f44}{checkComment4fn}}(fn\_magic,magic)}
+\DoxyCodeLine{00393\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ string.sub(line,3,4)==\textcolor{stringliteral}{'[['}\ then\ -\/-\/\ it\textcolor{stringliteral}{'s\ a\ long\ comment}}
+\DoxyCodeLine{00394\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ string.sub(line,5)\ -\/-\/\ nibble\ head}}
+\DoxyCodeLine{00395\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ comment\ =\ '}\textcolor{stringliteral}{'}}
+\DoxyCodeLine{00396\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ closeSquare,hitend,thisComment}}
+\DoxyCodeLine{00397\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ while\ (not\ err)\ and\ (not\ hitend)\ and\ (not\ inStream:eof())\ do}}
+\DoxyCodeLine{00398\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ closeSquare\ =\ string.find(line,'}]]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00399\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ closeSquare\ then\ -\/-\/\ need\ to\ look\ on\ another\ line}}
+\DoxyCodeLine{00400\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ thisComment\ =\ line\ ..\ '}\(\backslash\)n\textcolor{stringliteral}{'}}
+\DoxyCodeLine{00401\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line\ =\ inStream:getLine()}}
+\DoxyCodeLine{00402\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else}}
+\DoxyCodeLine{00403\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ thisComment\ =\ string.sub(line,1,closeSquare-\/1)}}
+\DoxyCodeLine{00404\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ hitend\ =\ true}}
+\DoxyCodeLine{00405\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00406\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ unget\ the\ tail\ of\ the\ line}}
+\DoxyCodeLine{00407\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ in\ most\ cases\ it'}s\ empty.\ This\ may\ make\ us\ less\ efficient\ but}
+\DoxyCodeLine{00408\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ easier\ to\ program}
+\DoxyCodeLine{00409\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ inStream:ungetLine(\mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\_trim}}(string.sub(line,closeSquare+2)))}
+\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ comment\ =\ comment\ ..\ thisComment}
+\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00413\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ string.sub(comment,1,1)==\textcolor{stringliteral}{'!'}\ then\ -\/-\/\ it\textcolor{stringliteral}{'s\ a\ long\ magic\ comment}}
+\DoxyCodeLine{00414\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:write('}\textcolor{comment}{/*'\ ..\ comment\ ..\ '*/}\ \ \textcolor{stringliteral}{')}}
+\DoxyCodeLine{00415\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ checkComment4fn(fn\_magic,comment)}}
+\DoxyCodeLine{00416\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else\ -\/-\/\ discard}}
+\DoxyCodeLine{00417\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:write('}\textcolor{comment}{/*\ zz:'\ ..\ comment\ ..\ '*/}\ \ \textcolor{stringliteral}{')}}
+\DoxyCodeLine{00418\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ nil}}
+\DoxyCodeLine{00419\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{00420\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else}}
+\DoxyCodeLine{00421\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln('}\textcolor{comment}{//\ zz:"{}'\ ..\ line\ ..\ '"{}')}}
+\DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ nil}
+\DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00424\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ string.find(line,\textcolor{stringliteral}{'\string^function'})\ or\ string.find(line,\textcolor{stringliteral}{'\string^local\%s+function'})\ then}
+\DoxyCodeLine{00425\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ it\textcolor{stringliteral}{'s\ a\ function}}
+\DoxyCodeLine{00426\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ pos\_fn\ =\ string.find(line,'}function\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00427\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ function}}
+\DoxyCodeLine{00428\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ ....v...}}
+\DoxyCodeLine{00429\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ pos\_fn\ then}}
+\DoxyCodeLine{00430\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ we'}ve\ got\ a\ function}
+\DoxyCodeLine{00431\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ fn\_type}
+\DoxyCodeLine{00432\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ string.find(line,\textcolor{stringliteral}{'\string^local\%s+'})\ then}
+\DoxyCodeLine{00433\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_type\ =\ \textcolor{stringliteral}{'static\ '}}
+\DoxyCodeLine{00434\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else}
+\DoxyCodeLine{00435\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_type\ =\ \textcolor{stringliteral}{''}}
+\DoxyCodeLine{00436\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00437\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ fn\ =\ \mbox{\hyperlink{lua2dox_8lua_ae7e7b6d8a8be87a0c1cb6325bc116bca}{TString\_removeCommentFromLine}}(\mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\_trim}}(string.sub(line,pos\_fn+8)))}
+\DoxyCodeLine{00438\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ fn\_magic\ then}
+\DoxyCodeLine{00439\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\ =\ fn\_magic}
+\DoxyCodeLine{00440\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ nil}
+\DoxyCodeLine{00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00442\ }
+\DoxyCodeLine{00443\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ string.sub(fn,1,1)==\textcolor{stringliteral}{'('}\ then}
+\DoxyCodeLine{00444\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ it\textcolor{stringliteral}{'s\ an\ anonymous\ function}}
+\DoxyCodeLine{00445\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writelnComment(line)}}
+\DoxyCodeLine{00446\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else}}
+\DoxyCodeLine{00447\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ fn\ has\ a\ name,\ so\ is\ interesting}}
+\DoxyCodeLine{00448\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00449\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ want\ to\ fix\ for\ iffy\ declarations}}
+\DoxyCodeLine{00450\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ open\_paren\ =\ string.find(fn,'}[\%(\{]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00451\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ fn0\ =\ fn}}
+\DoxyCodeLine{00452\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ open\_paren\ then}}
+\DoxyCodeLine{00453\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn0\ =\ string.sub(fn,1,open\_paren-\/1)}}
+\DoxyCodeLine{00454\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ we\ might\ have\ a\ missing\ close\ paren}}
+\DoxyCodeLine{00455\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ not\ string.find(fn,'}\%)\textcolor{stringliteral}{')\ then}}
+\DoxyCodeLine{00456\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\ =\ fn\ ..\ '}\ \_\_\_MissingCloseParenHere\_\_\_)\textcolor{stringliteral}{'}}
+\DoxyCodeLine{00457\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{00458\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}}
+\DoxyCodeLine{00459\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00460\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ colon\ =\ string.find(fn0,'}[\%:]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00461\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ dot\ =\ string.find(fn0,'}[\%.\%:]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00462\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ unusedStart,\ classStart\ =\ string.find(fn0,'}.*[\%.]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00463\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ unusedStart,\ classEnd\ =\ string.find(fn0,'}.*[\%.\%:]\textcolor{stringliteral}{')}}
+\DoxyCodeLine{00464\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ dot\ or\ (classStart\ and\ classEnd)\ then\ -\/-\/\ it'}s\ a\ method}
+\DoxyCodeLine{00465\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ klass\ =\ classStart\ and\ classEnd\ and\ \textcolor{keywordtype}{string}.sub(fn,classStart,classEnd-\/1)\ or\ \textcolor{keywordtype}{string}.sub(fn,1,dot-\/1)}
+\DoxyCodeLine{00466\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ method\ =\ \textcolor{keywordtype}{string}.sub(fn,dot+1)}
+\DoxyCodeLine{00467\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(\textcolor{stringliteral}{'function\ '}\ ..\ klass\ ..\ \textcolor{stringliteral}{'::'}\ ..\ method\ ..\ ftail\ ..\ \textcolor{stringliteral}{'\{\}'})}
+\DoxyCodeLine{00468\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(klass\ ..\ \textcolor{stringliteral}{'::'}\ ..\ method\ ..\ ftail\ ..\ \textcolor{stringliteral}{'\{\}'})}
+\DoxyCodeLine{00469\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln(\textcolor{stringliteral}{'/*!\ \(\backslash\)\(\backslash\)memberof\ '}\ ..\ klass\ ..\ \textcolor{stringliteral}{'\ */\ '}\ ..\ (colon\ and\ \textcolor{keywordtype}{string}.gsub(method,\ \textcolor{stringliteral}{"{}:"{}},\ \textcolor{stringliteral}{"{}::"{}})\ or\ method)\ ..\ \textcolor{stringliteral}{'\{\}'}\ )}
+\DoxyCodeLine{00470\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00471\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ add\ vanilla\ function}
+\DoxyCodeLine{00472\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00473\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln(fn\_type\ ..\ \textcolor{stringliteral}{'function\ '}\ ..\ fn\ ..\ \textcolor{stringliteral}{'\{\}'})}
+\DoxyCodeLine{00474\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00475\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00476\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00477\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{this}:warning(inStream:getLineNo(),\textcolor{stringliteral}{'something\ weird\ here'})}
+\DoxyCodeLine{00478\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00479\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ fn\_magic\ =\ nil\ -\/-\/\ mustn\textcolor{stringliteral}{'t\ indavertently\ use\ it\ again}}
+\DoxyCodeLine{00480\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ elseif\ string.find(line,'}=\%s*\mbox{\hyperlink{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}{class}}\%(\textcolor{stringliteral}{')\ then}}
+\DoxyCodeLine{00481\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ it'}s\ a\ \mbox{\hyperlink{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}{class}}\ declaration}
+\DoxyCodeLine{00482\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ tailComment}
+\DoxyCodeLine{00483\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ line,tailComment\ =\ \mbox{\hyperlink{lua2dox_8lua_ae7e7b6d8a8be87a0c1cb6325bc116bca}{TString\_removeCommentFromLine}}(line)}
+\DoxyCodeLine{00484\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ equals\ =\ string.find(line,\textcolor{stringliteral}{'='})}
+\DoxyCodeLine{00485\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ klass\ =\ \mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\_trim}}(string.sub(line,1,equals-\/1))}
+\DoxyCodeLine{00486\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ tail\ =\ \ \mbox{\hyperlink{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}{string\_trim}}(string.sub(line,equals+1))}
+\DoxyCodeLine{00487\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ \mbox{\hyperlink{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}{class}}(wibble\ wibble)}
+\DoxyCodeLine{00488\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ ....v.}
+\DoxyCodeLine{00489\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ parent\ =\ string.sub(tail,7,-\/2)}
+\DoxyCodeLine{00490\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ \#parent>0\ then}
+\DoxyCodeLine{00491\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ parent\ =\ \textcolor{stringliteral}{'\ :public\ '}\ ..\ parent}
+\DoxyCodeLine{00492\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00493\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln(\textcolor{stringliteral}{'class\ '}\ ..\ klass\ ..\ parent\ ..\ \textcolor{stringliteral}{'\{\};'})}
+\DoxyCodeLine{00494\ \ \ \ \ \ \ \ \ \ \ \ \ else}
+\DoxyCodeLine{00495\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/\ we\ don\textcolor{stringliteral}{'t\ know\ what\ this\ line\ means,\ so\ we\ can\ probably\ just\ comment\ it\ out}}
+\DoxyCodeLine{00496\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ \#line>0\ then}}
+\DoxyCodeLine{00497\ \textcolor{stringliteral}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln('}\textcolor{comment}{//\ zz:\ '\ ..\ line)}}
+\DoxyCodeLine{00498\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ else}
+\DoxyCodeLine{00499\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ outStream:writeln()\ -\/-\/\ keep\ this\ line\ blank}
+\DoxyCodeLine{00500\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00501\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00502\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00503\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00504\ \ \ \ \ \ \ \ \ -\/-\/\ output\ the\ tail}
+\DoxyCodeLine{00505\ \ \ \ \ \ \ \ \ outStream:write\_tailLines()}
+\DoxyCodeLine{00506\ \ \ \ \ else}
+\DoxyCodeLine{00507\ \ \ \ \ \ \ \ \ outStream:writeln(\textcolor{stringliteral}{'!empty\ file'})}
+\DoxyCodeLine{00508\ \ \ \ \ end}
+\DoxyCodeLine{00509\ end}
+\DoxyCodeLine{00510\ }
+\DoxyCodeLine{00511\ -\/-\/!\ \(\backslash\)brief\ this\ application}
+\DoxyCodeLine{00512\ \mbox{\hyperlink{class_t_app}{TApp}}\ =\ \mbox{\hyperlink{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}{class}}()}
+\DoxyCodeLine{00513\ }
+\DoxyCodeLine{00514\ -\/-\/!\ \(\backslash\)brief\ constructor}
+\DoxyCodeLine{00515\ function\ \mbox{\hyperlink{class_t_app}{TApp}}.init(this)}
+\DoxyCodeLine{00516\ \ \ \ \ local\ t0\ =\ \mbox{\hyperlink{class_t_core___clock}{TCore\_Clock}}()}
+\DoxyCodeLine{00517\ \ \ \ \ this.timestamp\ =\ t0:getTimeStamp()}
+\DoxyCodeLine{00518\ \ \ \ \ this.name\ =\ \textcolor{stringliteral}{'Lua2DoX'}}
+\DoxyCodeLine{00519\ \ \ \ \ this.version\ =\ \textcolor{stringliteral}{'0.2\ 20130128'}}
+\DoxyCodeLine{00520\ \ \ \ \ this.copyright\ =\ \textcolor{stringliteral}{'Copyright\ (c)\ Simon\ Dales\ 2012-\/13'}}
+\DoxyCodeLine{00521\ end}
+\DoxyCodeLine{00522\ }
+\DoxyCodeLine{00523\ function\ \mbox{\hyperlink{class_t_app}{TApp}}.getRunStamp(this)}
+\DoxyCodeLine{00524\ \ \ \ \ return\ this.name\ ..\ \textcolor{stringliteral}{'\ ('}\ ..\ this.version\ ..\ \textcolor{stringliteral}{')\ '}\ }
+\DoxyCodeLine{00525\ \ \ \ \ \ \ \ \ ..\ this.timestamp}
+\DoxyCodeLine{00526\ end}
+\DoxyCodeLine{00527\ }
+\DoxyCodeLine{00528\ function\ \mbox{\hyperlink{class_t_app}{TApp}}.getVersion(this)}
+\DoxyCodeLine{00529\ \ \ \ \ return\ this.name\ ..\ \textcolor{stringliteral}{'\ ('}\ ..\ this.version\ ..\ \textcolor{stringliteral}{')\ '}\ }
+\DoxyCodeLine{00530\ end}
+\DoxyCodeLine{00531\ }
+\DoxyCodeLine{00532\ function\ \mbox{\hyperlink{class_t_app}{TApp}}.getCopyright(this)}
+\DoxyCodeLine{00533\ \ \ \ \ return\ this.copyright\ }
+\DoxyCodeLine{00534\ end}
+\DoxyCodeLine{00535\ }
+\DoxyCodeLine{00536\ local\ This\_app\ =\ \mbox{\hyperlink{class_t_app}{TApp}}()}
+\DoxyCodeLine{00537\ }
+\DoxyCodeLine{00538\ -\/-\/main}
+\DoxyCodeLine{00539\ local\ cl\ =\ \mbox{\hyperlink{class_t_core___commandline}{TCore\_Commandline}}()}
+\DoxyCodeLine{00540\ }
+\DoxyCodeLine{00541\ local\ argv1\ =\ cl:getRaw(1)}
+\DoxyCodeLine{00542\ if\ argv1\ ==\ \textcolor{stringliteral}{'-\/-\/help'}\ then}
+\DoxyCodeLine{00543\ \ \ \ \ \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(This\_app:getVersion())}
+\DoxyCodeLine{00544\ \ \ \ \ \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(This\_app:getCopyright())}
+\DoxyCodeLine{00545\ \ \ \ \ \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}([[}
+\DoxyCodeLine{00546\ run\ as:}
+\DoxyCodeLine{00547\ lua2dox\_filter\ <param>}
+\DoxyCodeLine{00548\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}
+\DoxyCodeLine{00549\ Param:}
+\DoxyCodeLine{00550\ \ \ <filename>\ :\ interprets\ filename}
+\DoxyCodeLine{00551\ \ \ -\/-\/version\ \ :\ show\ version/copyright\ info}
+\DoxyCodeLine{00552\ \ \ -\/-\/help\ \ \ \ \ :\ this\ help\ text]])}
+\DoxyCodeLine{00553\ elseif\ argv1\ ==\ \textcolor{stringliteral}{'-\/-\/version'}\ then}
+\DoxyCodeLine{00554\ \ \ \ \ \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(This\_app:getVersion())}
+\DoxyCodeLine{00555\ \ \ \ \ \mbox{\hyperlink{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}{TCore\_IO\_writeln}}(This\_app:getCopyright())}
+\DoxyCodeLine{00556\ else}
+\DoxyCodeLine{00557\ \ \ \ \ -\/-\/\ it\textcolor{stringliteral}{'s\ a\ filter}}
+\DoxyCodeLine{00558\ \textcolor{stringliteral}{\ \ \ \ local\ appStamp\ =\ This\_app:getRunStamp()}}
+\DoxyCodeLine{00559\ \textcolor{stringliteral}{\ \ \ \ local\ filename\ =\ argv1}}
+\DoxyCodeLine{00560\ \textcolor{stringliteral}{\ \ \ \ }}
+\DoxyCodeLine{00561\ \textcolor{stringliteral}{\ \ \ \ local\ filter\ =\ TLua2DoX\_filter()}}
+\DoxyCodeLine{00562\ \textcolor{stringliteral}{\ \ \ \ filter:readfile(appStamp,filename)}}
+\DoxyCodeLine{00563\ \textcolor{stringliteral}{end}}
+\DoxyCodeLine{00564\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{00565\ \textcolor{stringliteral}{}}
+\DoxyCodeLine{00566\ \textcolor{stringliteral}{-\/-\/eof}}
+
+\end{DoxyCode}
+\Hypertarget{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361}\label{lua2dox_8lua_aa054d3d223ac0f3f6f0ec350708f9361} 
+\index{lua2dox.lua@{lua2dox.lua}!class@{class}}
+\index{class@{class}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{class()}{class()}}
+{\footnotesize\ttfamily function class (\begin{DoxyParamCaption}\item[{Base\+Class}]{,  }\item[{Class\+Initialiser}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00021}{21}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_ae35ec7ece19a3c4e6b986bbd17f78d30}\label{lua2dox_8lua_ae35ec7ece19a3c4e6b986bbd17f78d30} 
+\index{lua2dox.lua@{lua2dox.lua}!getMagicDirective@{getMagicDirective}}
+\index{getMagicDirective@{getMagicDirective}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{getMagicDirective()}{getMagicDirective()}}
+{\footnotesize\ttfamily static function get\+Magic\+Directive (\begin{DoxyParamCaption}\item[{Line}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+get directive from magic 
+
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00325}{325}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_a4d016c3f7d73e2c1a61c4a68fe83ba50}\label{lua2dox_8lua_a4d016c3f7d73e2c1a61c4a68fe83ba50} 
+\index{lua2dox.lua@{lua2dox.lua}!string\_split@{string\_split}}
+\index{string\_split@{string\_split}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{string\_split()}{string\_split()}}
+{\footnotesize\ttfamily function string\+\_\+split (\begin{DoxyParamCaption}\item[{Str}]{,  }\item[{Pattern}]{ }\end{DoxyParamCaption})}
+
+
+
+split a string 
+
+
+\begin{DoxyParams}{Parameters}
+{\em Str} & \\
+\hline
+{\em Pattern} & \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+table of string fragments 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00143}{143}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757}\label{lua2dox_8lua_acb648823fbd516e5f89e56a788a78757} 
+\index{lua2dox.lua@{lua2dox.lua}!string\_trim@{string\_trim}}
+\index{string\_trim@{string\_trim}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{string\_trim()}{string\_trim()}}
+{\footnotesize\ttfamily function string\+\_\+trim (\begin{DoxyParamCaption}\item[{Str}]{ }\end{DoxyParamCaption})}
+
+
+
+trims a string 
+
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00134}{134}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_a0421fdbec10b89d53d59415d44c59d27}\label{lua2dox_8lua_a0421fdbec10b89d53d59415d44c59d27} 
+\index{lua2dox.lua@{lua2dox.lua}!TCore\_IO\_write@{TCore\_IO\_write}}
+\index{TCore\_IO\_write@{TCore\_IO\_write}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{TCore\_IO\_write()}{TCore\_IO\_write()}}
+{\footnotesize\ttfamily function TCore\+\_\+\+IO\+\_\+write (\begin{DoxyParamCaption}\item[{Str}]{ }\end{DoxyParamCaption})}
+
+
+
+write to stdout 
+
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00116}{116}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642}\label{lua2dox_8lua_ab70854a1917dcbb8e2a541372b0a8642} 
+\index{lua2dox.lua@{lua2dox.lua}!TCore\_IO\_writeln@{TCore\_IO\_writeln}}
+\index{TCore\_IO\_writeln@{TCore\_IO\_writeln}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{TCore\_IO\_writeln()}{TCore\_IO\_writeln()}}
+{\footnotesize\ttfamily function TCore\+\_\+\+IO\+\_\+writeln (\begin{DoxyParamCaption}\item[{Str}]{ }\end{DoxyParamCaption})}
+
+
+
+write to stdout 
+
+
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00123}{123}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+
+\Hypertarget{lua2dox_8lua_ae7e7b6d8a8be87a0c1cb6325bc116bca}\label{lua2dox_8lua_ae7e7b6d8a8be87a0c1cb6325bc116bca} 
+\index{lua2dox.lua@{lua2dox.lua}!TString\_removeCommentFromLine@{TString\_removeCommentFromLine}}
+\index{TString\_removeCommentFromLine@{TString\_removeCommentFromLine}!lua2dox.lua@{lua2dox.lua}}
+\doxysubsubsection{\texorpdfstring{TString\_removeCommentFromLine()}{TString\_removeCommentFromLine()}}
+{\footnotesize\ttfamily static function TString\+\_\+remove\+Comment\+From\+Line (\begin{DoxyParamCaption}\item[{Line}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+trim comment off end of string 
+
+If the string has a comment on the end, this trims it off. 
+
+Definition at line \mbox{\hyperlink{lua2dox_8lua_source_l00314}{314}} of file \mbox{\hyperlink{lua2dox_8lua_source}{lua2dox.\+lua}}.
+

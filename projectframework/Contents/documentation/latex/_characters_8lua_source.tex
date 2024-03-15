@@ -1,0 +1,452 @@
+\doxysection{Characters.\+lua}
+\hypertarget{_characters_8lua_source}{}\label{_characters_8lua_source}\index{Characters.lua@{Characters.lua}}
+\mbox{\hyperlink{_characters_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00001}00001\ -\/-\/!\ \(\backslash\)page\ globalVars\ Global\ Variables}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00002}00002\ -\/-\/!\ \(\backslash\)section\ \mbox{\hyperlink{class_characters}{Characters}}\ \mbox{\hyperlink{class_characters}{Characters}}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00003}00003\ -\/-\/!\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Characters\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00004}00004\ -\/-\/!\ See\ \mbox{\hyperlink{class_characters}{Characters}}\ \textcolor{keywordflow}{for}\ the\ \textcolor{keyword}{module}\ on\ characters.\(\backslash\)n\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00005}00005\ -\/-\/!\ ProjectFramework.Characters.List\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00006}00006\ -\/-\/!\ A\ list\ of\ all\ instanced\ characters\ in\ the\ game.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00007}00007\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00008}00008\ ProjectFramework\ =\ ProjectFramework\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00010}00010\ -\/-\/!\ \(\backslash\)brief\ Characters\ module\ for\ ProjectFramework.\ Defines\ and\ interacts\ with\ CHARACTER\ object.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00011}\mbox{\hyperlink{class_characters}{00011}}\ -\/-\/!\ \(\backslash\)class\ Characters}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00012}00012\ ProjectFramework.Characters\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00013}00013\ ProjectFramework.Characters.\_\_index\ =\ ProjectFramework.Characters}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00014}00014\ ProjectFramework.Characters.List\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00015}00015\ ProjectFramework.Characters\ =\ ProjectFramework.Foundation:NewModule(ProjectFramework.Characters,\ "{}Characters"{})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00016}00016\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00017}00017\ -\/-\/!\ \(\backslash\)brief\ Character\ class\ for\ ProjectFramework.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00018}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r}{00018}}\ -\/-\/!\ \(\backslash\)class\ CHARACTER}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00019}00019\ local\ CHARACTER\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00020}00020\ CHARACTER.\_\_index\ =\ CHARACTER}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00021}00021\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00022}00022\ -\/-\/!\ \(\backslash\)brief\ Initialize\ a\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00023}00023\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ username}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00024}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a87b5e80080e1cf9c1d87023a79579f79}{00024}}\ function\ CHARACTER:Initialize()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00025}00025\ \ \ \ \ if\ not\ self.playerObj\ then\ return\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00026}00026\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00027}00027\ \ \ \ \ local\ firstConnection\ =\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00028}00028\ \ \ \ \ local\ characterModData\ =\ self.playerObj:getModData()["{}PFW\_CHAR"{}]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00030}00030\ \ \ \ \ local\ inventory\ =\ ProjectFramework.Inventories:New(self.playerObj:getUsername())}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00031}00031\ \ \ \ \ self.inventoryID\ =\ inventory:Initialize()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00032}00032\ \ \ \ \ self.inventory\ =\ inventory}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00033}00033\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00034}00034\ \ \ \ \ if\ not\ characterModData\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00035}00035\ \ \ \ \ \ \ \ \ firstConnection\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00036}00036\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00037}00037\ \ \ \ \ \ \ \ \ self.playerObj:getModData()["{}PFW\_CHAR"{}]\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00038}00038\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ self.name\ or\ "{}Unknown"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00039}00039\ \ \ \ \ \ \ \ \ \ \ \ \ description\ =\ self.description\ or\ "{}No\ description\ available."{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00040}00040\ \ \ \ \ \ \ \ \ \ \ \ \ faction\ =\ self.faction\ or\ FACTION\_CITIZEN,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00041}00041\ \ \ \ \ \ \ \ \ \ \ \ \ age\ =\ self.age\ or\ 20,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00042}00042\ \ \ \ \ \ \ \ \ \ \ \ \ heightFeet\ =\ self.heightFeet\ or\ 5,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00043}00043\ \ \ \ \ \ \ \ \ \ \ \ \ heightInches\ =\ self.heightInches\ or\ 10,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00044}00044\ \ \ \ \ \ \ \ \ \ \ \ \ eyeColor\ =\ self.eyeColor\ or\ "{}Brown"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ hairColor\ =\ self.hairColor\ or\ "{}Brown"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ physique\ =\ self.physique\ or\ "{}Average"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ weight\ =\ self.weight\ or\ "{}125"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00048}00048\ \ \ \ \ \ \ \ \ \ \ \ \ inventory\ =\ self.inventory.items\ or\ \{\},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00049}00049\ \ \ \ \ \ \ \ \ \ \ \ \ upgrades\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00050}00050\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00051}00051\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00052}00052\ \ \ \ \ \ \ \ \ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00053}00053\ \ \ \ \ \ \ \ \ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00054}00054\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00055}00055\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00056}00056\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00057}00057\ \ \ \ \ if\ firstConnection\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00058}00058\ \ \ \ \ \ \ \ \ self:InitializeDefaultItems()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00059}00059\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00060}00060\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00061}00061\ \ \ \ \ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00062}00062\ \ \ \ \ \ \ \ \ timer:Simple(5,\ function()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00063}00063\ \ \ \ \ \ \ \ \ \ \ \ \ self:ValidateCharacterData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00064}00064\ \ \ \ \ \ \ \ \ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}initialize"{},\ \{self.playerObj:getUsername()\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00065}00065\ \ \ \ \ \ \ \ \ end)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00066}00066\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00067}00067\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00068}00068\ \ \ \ \ return\ ProjectFramework.Characters:Initialize(self.username,\ self)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00069}00069\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00070}00070\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00071}00071\ -\/-\/!\ \(\backslash\)brief\ Destroy\ a\ character.\ This\ will\ remove\ the\ character\ from\ the\ list\ of\ characters\ and\ is\ usually\ called\ after\ a\ player\ has\ disconnected.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00072}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_af283f640a2de333ced2616be941ee5dd}{00072}}\ function\ CHARACTER:Destroy()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00073}00073\ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}destroy"{},\ \{self.playerObj:getUsername()\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00074}00074\ \ \ \ \ self.playerObj\ =\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00075}00075\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00076}00076\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00077}00077\ -\/-\/!\ \(\backslash\)brief\ Initialize\ the\ default\ items\ for\ a\ character\ based\ on\ their\ faction.\ Called\ when\ PFW\_CHAR\ mod\ data\ is\ first\ created.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00078}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a274250897bc7f6b9c173610b8892bdc8}{00078}}\ function\ CHARACTER:InitializeDefaultItems()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00079}00079\ \ \ \ \ local\ faction\ =\ ProjectFramework.Factions:GetFactionByID(self.faction)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00080}00080\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00081}00081\ \ \ \ \ if\ faction\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00082}00082\ \ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(faction.defaultItems)\ do}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00083}00083\ \ \ \ \ \ \ \ \ \ \ \ self:GiveItems(k,\ v)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00084}00084\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00085}00085\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00086}00086\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00087}00087\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00088}00088\ -\/-\/!\ \(\backslash\)brief\ Validate\ the\ character's\ data.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00089}00089\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ any\ of\ the\ character's\ new\ data\ was\ initialized.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00090}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced969da131dfe1040ef5e9c430ca8e}{00090}}\ function\ CHARACTER:ValidateCharacterData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00091}00091\ \ \ \ \ local\ characterModData\ =\ self.playerObj:getModData()["{}PFW\_CHAR"{}]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00092}00092\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00093}00093\ \ \ \ \ if\ not\ characterModData\ then\ return\ false\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00095}00095\ \ \ \ \ local\ initializedNewData\ =\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00096}00096\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00097}00097\ \ \ \ \ if\ not\ characterModData.name\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00098}00098\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00099}00099\ \ \ \ \ \ \ \ \ characterModData.name\ =\ self.name\ or\ "{}Unknown"{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00100}00100\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00101}00101\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00102}00102\ \ \ \ \ if\ not\ characterModData.description\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00103}00103\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00104}00104\ \ \ \ \ \ \ \ \ characterModData.description\ =\ self.description\ or\ "{}No\ description\ available."{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00105}00105\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00106}00106\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00107}00107\ \ \ \ \ if\ not\ characterModData.faction\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00108}00108\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00109}00109\ \ \ \ \ \ \ \ \ characterModData.faction\ =\ self.faction\ or\ FACTION\_CITIZEN}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00110}00110\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00111}00111\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00112}00112\ \ \ \ \ if\ not\ characterModData.age\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00113}00113\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00114}00114\ \ \ \ \ \ \ \ \ characterModData.age\ =\ self.age\ or\ 20}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00115}00115\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00116}00116\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00117}00117\ \ \ \ \ if\ not\ characterModData.heightFeet\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00118}00118\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00119}00119\ \ \ \ \ \ \ \ \ characterModData.heightFeet\ =\ self.heightFeet\ or\ 5}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00120}00120\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00121}00121\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00122}00122\ \ \ \ \ if\ not\ characterModData.heightInches\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00123}00123\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00124}00124\ \ \ \ \ \ \ \ \ characterModData.heightInches\ =\ self.heightInches\ or\ 10}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00125}00125\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00126}00126\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00127}00127\ \ \ \ \ if\ not\ characterModData.eyeColor\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00128}00128\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00129}00129\ \ \ \ \ \ \ \ \ characterModData.eyeColor\ =\ self.eyeColor\ or\ "{}Brown"{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00130}00130\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00131}00131\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00132}00132\ \ \ \ \ if\ not\ characterModData.hairColor\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00133}00133\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00134}00134\ \ \ \ \ \ \ \ \ characterModData.hairColor\ =\ self.hairColor\ or\ "{}Brown"{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00135}00135\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00136}00136\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00137}00137\ \ \ \ \ if\ not\ characterModData.physique\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00138}00138\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00139}00139\ \ \ \ \ \ \ \ \ characterModData.physique\ =\ self.physique\ or\ "{}Average"{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00140}00140\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00141}00141\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00142}00142\ \ \ \ \ if\ not\ characterModData.weight\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00143}00143\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00144}00144\ \ \ \ \ \ \ \ \ characterModData.weight\ =\ self.weight\ or\ "{}125"{}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00145}00145\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00146}00146\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00147}00147\ \ \ \ \ if\ not\ characterModData.inventory\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00148}00148\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00149}00149\ \ \ \ \ \ \ \ \ characterModData.inventory\ =\ self.inventory.items\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00150}00150\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00151}00151\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00152}00152\ \ \ \ \ if\ not\ characterModData.upgrades\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00153}00153\ \ \ \ \ \ \ \ \ initializedNewData\ =\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00154}00154\ \ \ \ \ \ \ \ \ characterModData.upgrades\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00155}00155\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00156}00156\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00157}00157\ \ \ \ \ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00158}00158\ \ \ \ \ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00159}00159\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00160}00160\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00161}00161\ \ \ \ \ self.name\ =\ characterModData.name}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00162}00162\ \ \ \ \ self.description\ =\ characterModData.description}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00163}00163\ \ \ \ \ self.faction\ =\ characterModData.faction}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00164}00164\ \ \ \ \ self.age\ =\ characterModData.age}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00165}00165\ \ \ \ \ self.heightFeet\ =\ characterModData.heightFeet}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00166}00166\ \ \ \ \ self.heightInches\ =\ characterModData.heightInches}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00167}00167\ \ \ \ \ self.eyeColor\ =\ characterModData.eyeColor}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00168}00168\ \ \ \ \ self.hairColor\ =\ characterModData.hairColor}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00169}00169\ \ \ \ \ self.physique\ =\ characterModData.physique}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00170}00170\ \ \ \ \ self.upgrades\ =\ characterModData.upgrades}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00171}00171\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00172}00172\ \ \ \ \ return\ initializedNewData}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00173}00173\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00174}00174\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00175}00175\ -\/-\/!\ \(\backslash\)brief\ Set\ the\ age\ of\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00176}00176\ -\/-\/!\ \(\backslash\)param\ age\ \(\backslash\)integer\ The\ age\ of\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00177}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a9d925e5aae07c6496c4895ae4bf846ce}{00177}}\ function\ CHARACTER:SetAge(age)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00178}00178\ \ \ \ \ self.age\ =\ age}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00179}00179\ \ \ \ \ self.playerObj:getModData()["{}PFW\_CHAR"{}].age\ =\ age}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00180}00180\ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00181}00181\ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}update"{},\ \{self.playerObj:getUsername(),\ "{}age"{},\ age\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00182}00182\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00183}00183\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00184}00184\ -\/-\/!\ \(\backslash\)brief\ Set\ the\ description\ of\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00185}00185\ -\/-\/!\ \(\backslash\)param\ description\ \(\backslash\)string\ The\ description\ of\ the\ character's\ appearance.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00186}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a495c0ebb8856ad297d5317f7f7d2d908}{00186}}\ function\ CHARACTER:SetDescription(description)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00187}00187\ \ \ \ \ self.description\ =\ description}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00188}00188\ \ \ \ \ self.playerObj:getModData()["{}PFW\_CHAR"{}].description\ =\ description}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00189}00189\ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00190}00190\ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}update"{},\ \{self.playerObj:getUsername(),\ "{}description"{},\ description\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00191}00191\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00192}00192\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00193}00193\ -\/-\/!\ \(\backslash\)brief\ Set\ the\ faction\ of\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00194}00194\ -\/-\/!\ \(\backslash\)param\ faction\ \(\backslash\)string\ The\ ID\ of\ the\ faction\ to\ set\ on\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00195}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced65cc9f16939fc1e14cb67c0d2744}{00195}}\ function\ CHARACTER:SetFaction(faction)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00196}00196\ \ \ \ \ self.faction\ =\ faction}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00197}00197\ \ \ \ \ self.playerObj:getModData()["{}PFW\_CHAR"{}].faction\ =\ faction}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00198}00198\ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00199}00199\ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}update"{},\ \{self.playerObj:getUsername(),\ "{}faction"{},\ faction\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00200}00200\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00201}00201\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00202}00202\ -\/-\/!\ \(\backslash\)brief\ Set\ the\ name\ of\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00203}00203\ -\/-\/!\ \(\backslash\)param\ name\ \(\backslash\)string\ The\ new\ name\ for\ the\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00204}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a37885efe3ed72fcd0ce976bee36d3130}{00204}}\ function\ CHARACTER:SetName(name)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00205}00205\ \ \ \ \ self.name\ =\ name}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00206}00206\ \ \ \ \ self.playerObj:getModData()["{}PFW\_CHAR"{}].name\ =\ name}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00207}00207\ \ \ \ \ self.playerObj:transmitModData()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00208}00208\ \ \ \ \ sendClientCommand("{}PFW\_CHARS"{},\ "{}update"{},\ \{self.playerObj:getUsername(),\ "{}name"{},\ name\})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00209}00209\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00210}00210\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00211}00211\ -\/-\/!\ \(\backslash\)brief\ Get\ the\ character's\ inventory.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00212}00212\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ character's\ inventory\ object.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00213}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a796295e823c7afff6a5a55316dff4410}{00213}}\ function\ CHARACTER:GetInventory()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00214}00214\ \ \ \ \ return\ ProjectFramework.Inventories:GetInventoryByID(self.inventoryID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00215}00215\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00216}00216\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00217}00217\ -\/-\/!\ \(\backslash\)brief\ Give\ a\ character\ items\ by\ the\ specified\ amount.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00218}00218\ -\/-\/!\ \(\backslash\)param\ itemID\ \(\backslash\)string\ The\ ID\ of\ the\ item\ to\ give.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00219}00219\ -\/-\/!\ \(\backslash\)param\ amount\ \(\backslash\)integer\ The\ amount\ of\ the\ item\ to\ give.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00220}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91c20e34e274c79024b390442a8fe2a1}{00220}}\ function\ CHARACTER:GiveItems(itemID,\ amount)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00221}00221\ \ \ \ \ for\ i\ =\ 1,\ amount\ do}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00222}00222\ \ \ \ \ \ \ \ \ self:GiveItem(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00223}00223\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00224}00224\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00225}00225\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00226}00226\ -\/-\/!\ \(\backslash\)brief\ Give\ a\ character\ an\ item.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00227}00227\ -\/-\/!\ \(\backslash\)param\ itemID\ \(\backslash\)string\ The\ ID\ of\ the\ item\ to\ give.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00228}00228\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ item\ was\ successfully\ given.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00229}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}{00229}}\ function\ CHARACTER:GiveItem(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00230}00230\ \ \ \ \ local\ inventory\ =\ self:GetInventory()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00231}00231\ \ \ \ \ local\ item\ =\ ProjectFramework.Items:GetItemByID(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00232}00232\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00233}00233\ \ \ \ \ if\ inventory\ and\ item\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00234}00234\ \ \ \ \ \ \ \ \ local\ worldItem\ =\ self.playerObj:getInventory():AddItem(InventoryItemFactory.CreateItem(item.id))}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00235}00235\ \ \ \ \ \ \ \ \ local\ instanceID\ =\ ProjectFramework.Items:AddInstance(item.id,\ worldItem)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00236}00236\ \ \ \ \ \ \ \ \ local\ itemData\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00237}00237\ \ \ \ \ \ \ \ \ \ \ \ \ id\ =\ item.id,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00238}00238\ \ \ \ \ \ \ \ \ \ \ \ \ instanceID\ =\ instanceID,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00239}00239\ \ \ \ \ \ \ \ \ \ \ \ \ owner\ =\ self.playerObj:getUsername(),}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00240}00240\ \ \ \ \ \ \ \ \ \ \ \ \ name\ =\ item.name\ or\ "{}Unknown"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00241}00241\ \ \ \ \ \ \ \ \ \ \ \ \ description\ =\ item.description\ or\ "{}No\ description\ available."{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00242}00242\ \ \ \ \ \ \ \ \ \ \ \ \ category\ =\ item.category\ or\ "{}Uncategorized"{},}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00243}00243\ \ \ \ \ \ \ \ \ \ \ \ \ shouldConsume\ =\ item.shouldConsume\ or\ nil,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00244}00244\ \ \ \ \ \ \ \ \ \ \ \ \ useAction\ =\ item.useAction\ or\ nil,}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00245}00245\ \ \ \ \ \ \ \ \ \ \ \ \ useTime\ =\ item.useTime\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00246}00246\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00247}00247\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00248}00248\ \ \ \ \ \ \ \ \ worldItem:getModData()["{}ProjectFramework\_Item"{}]\ =\ itemData}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00249}00249\ \ \ \ \ \ \ \ \ inventory:AddItem(itemData)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00250}00250\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00251}00251\ \ \ \ \ \ \ \ \ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00252}00252\ \ \ \ \ \ \ \ \ \ \ \ \ -\/-\/worldItem:transmitModData()\ -\/-\/\ Only\ transmit\ when\ item\ is\ on\ ground?}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00253}00253\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00254}00254\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00255}00255\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00256}00256\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00257}00257\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00258}00258\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00259}00259\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00260}00260\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00261}00261\ -\/-\/!\ \(\backslash\)brief\ Take\ an\ item\ from\ a\ character's\ inventory.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00262}00262\ -\/-\/!\ \(\backslash\)param\ itemID\ \(\backslash\)string\ The\ ID\ of\ the\ item\ to\ take.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00263}00263\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ item\ was\ successfully\ taken.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00264}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91568d66f00bbe61bb8cd7ab6aee7bd0}{00264}}\ function\ CHARACTER:TakeItem(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00265}00265\ \ \ \ \ local\ item\ =\ ProjectFramework.Items:GetItemByID(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00266}00266\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00267}00267\ \ \ \ \ if\ item\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00268}00268\ \ \ \ \ \ \ \ \ local\ inventory\ =\ self.playerObj:getInventory()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00269}00269\ \ \ \ \ \ \ \ \ local\ worldItem\ =\ inventory:getFirstTypeRecurse(item.id)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00270}00270\ \ \ \ \ \ \ \ \ local\ instanceID\ =\ worldItem:getModData()["{}ProjectFramework\_Item"{}].instanceID}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00271}00271\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00272}00272\ \ \ \ \ \ \ \ \ ProjectFramework.Items:RemoveInstance(item.id,\ instanceID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00273}00273\ \ \ \ \ \ \ \ \ inventory:DoRemoveItem(worldItem)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00274}00274\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00275}00275\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00276}00276\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00277}00277\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00278}00278\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00279}00279\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00280}00280\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00281}00281\ -\/-\/!\ \(\backslash\)brief\ Take\ an\ item\ from\ a\ character's\ inventory\ by\ its\ instance\ ID.\ Useful\ for\ taking\ a\ specific\ item\ from\ a\ stack.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00282}00282\ -\/-\/!\ \(\backslash\)param\ itemID\ \(\backslash\)string\ The\ ID\ of\ the\ item\ to\ take.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00283}00283\ -\/-\/!\ \(\backslash\)param\ instanceID\ \(\backslash\)integer\ The\ instance\ ID\ of\ the\ item\ to\ take.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00284}00284\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ item\ was\ successfully\ taken.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00285}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a200008624f3e9ce458b9d0f4ad547515}{00285}}\ function\ CHARACTER:TakeItemByInstanceID(itemID,\ instanceID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00286}00286\ \ \ \ \ local\ item\ =\ ProjectFramework.Items:GetItemByID(itemID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00287}00287\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00288}00288\ \ \ \ \ if\ item\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00289}00289\ \ \ \ \ \ \ \ \ local\ inventory\ =\ self.playerObj:getInventory()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00290}00290\ \ \ \ \ \ \ \ \ local\ worldItem\ =\ inventory:getFirstTypeRecurse(item.id)\ -\/-\/\ Search\ whole\ inventory\ for\ matching\ item\ instance\ ID\ or\ make\ an\ inventory\ module\ for\ more\ efficiency?}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00291}00291\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00292}00292\ \ \ \ \ \ \ \ \ ProjectFramework.Items:RemoveInstance(item.id,\ instanceID)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00293}00293\ \ \ \ \ \ \ \ \ inventory:DoRemoveItem(worldItem)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00294}00294\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00295}00295\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00296}00296\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00297}00297\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00298}00298\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00299}00299\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00300}00300\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00301}00301\ -\/-\/!\ \(\backslash\)brief\ Checks\ if\ a\ character\ is\ a\ citizen.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00302}00302\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ character\ is\ a\ citizen.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00303}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ab3102296da4fdaac6683ae2afaef9e6a}{00303}}\ function\ CHARACTER:IsCitizen()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00304}00304\ \ \ \ \ if\ not\ self.faction\ then\ return\ false\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00305}00305\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00306}00306\ \ \ \ \ if\ self.faction\ ==\ FACTION\_CITIZEN\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00307}00307\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00308}00308\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00309}00309\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00310}00310\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00311}00311\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00312}00312\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00313}00313\ -\/-\/!\ \(\backslash\)brief\ Checks\ if\ a\ character\ is\ a\ combine.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00314}00314\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)boolean\ Whether\ or\ not\ the\ character\ is\ a\ combine.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00315}\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a120c4b12425ee504e9e3c7977a5d8b8b}{00315}}\ function\ CHARACTER:IsCombine()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00316}00316\ \ \ \ \ if\ not\ self.faction\ then\ return\ false\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00317}00317\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00318}00318\ \ \ \ \ if\ self.faction\ ==\ FACTION\_CP\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00319}00319\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00320}00320\ \ \ \ \ elseif\ self.faction\ ==\ FACTION\_OTA\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00321}00321\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00322}00322\ \ \ \ \ elseif\ self.faction\ ==\ FACTION\_ADMINISTRATOR\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00323}00323\ \ \ \ \ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00324}00324\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00325}00325\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00326}00326\ \ \ \ \ return\ false}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00327}00327\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00328}00328\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00329}00329\ -\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ character\ object.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00330}00330\ -\/-\/!\ \(\backslash\)param\ username\ \(\backslash\)string\ The\ player's\ username\ as\ their\ ID.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00331}00331\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ new\ character\ object.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00332}\mbox{\hyperlink{class_characters_ab5e4062f88132b0b555bc4215b0e8280}{00332}}\ function\ ProjectFramework.Characters:New(username)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00333}00333\ \ \ \ \ local\ object\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00334}00334\ \ \ \ \ \ \ \ \ username\ =\ username}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00335}00335\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00336}00336\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00337}00337\ \ \ \ \ setmetatable(object,\ CHARACTER)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00338}00338\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00339}00339\ \ \ \ \ return\ object}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00340}00340\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00341}00341\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00342}00342\ -\/-\/!\ \(\backslash\)brief\ Initialize\ a\ character.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00343}00343\ -\/-\/!\ \(\backslash\)param\ username\ \(\backslash\)string\ The\ player's\ username.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00344}00344\ -\/-\/!\ \(\backslash\)param\ character\ \(\backslash\)table\ The\ character's\ object\ data.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00345}00345\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ username\ added\ to\ the\ list\ of\ characters.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00346}\mbox{\hyperlink{class_characters_ae0b3031cc27350e7533ea4768987b207}{00346}}\ function\ ProjectFramework.Characters:Initialize(username,\ character)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00347}00347\ \ \ \ \ self.List[username]\ =\ character}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00348}00348\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00349}00349\ \ \ \ \ return\ username}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00350}00350\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00351}00351\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00352}00352\ -\/-\/!\ \(\backslash\)brief\ Get\ a\ character\ by\ their\ ID\ (i.e.\ username).}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00353}00353\ -\/-\/!\ \(\backslash\)param\ username\ \(\backslash\)string\ The\ player's\ username\ to\ get\ their\ character\ object\ with.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00354}00354\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ character\ object\ from\ the\ list\ of\ characters.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00355}\mbox{\hyperlink{class_characters_a3ea137d2a0040581f2272eb14a7ce664}{00355}}\ function\ ProjectFramework.Characters:GetCharacterByID(username)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00356}00356\ \ \ \ \ local\ character\ =\ self.List[username]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00357}00357\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00358}00358\ \ \ \ \ return\ character}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00359}00359\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00360}00360\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00361}00361\ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00362}00362\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00363}00363\ \ \ \ \ -\/-\/!\ \(\backslash\)brief\ Initializes\ a\ player's\ character\ after\ joining.\ Called\ by\ OnGameStart\ event\ hook.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00364}00364\ \ \ \ \ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ username\ of\ the\ new\ character's\ player.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00365}\mbox{\hyperlink{class_characters_a5f56aed72834753ae77316fd5cbdf12c}{00365}}\ \ \ \ \ function\ ProjectFramework.Characters:OnGameStart()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00366}00366\ \ \ \ \ \ \ \ \ local\ cell\ =\ getWorld():getCell()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00367}00367\ \ \ \ \ \ \ \ \ local\ x\ =\ cell:getMaxX()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00368}00368\ \ \ \ \ \ \ \ \ local\ y\ =\ cell:getMaxY()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00369}00369\ \ \ \ \ \ \ \ \ local\ z\ =\ 0}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00370}00370\ \ \ \ \ \ \ \ \ local\ player\ =\ getPlayer()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00371}00371\ \ \ \ \ \ \ \ \ player:setInvincible(true)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00372}00372\ \ \ \ \ \ \ \ \ player:setInvisible(true)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00373}00373\ \ \ \ \ \ \ \ \ player:setGhostMode(true)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00374}00374\ \ \ \ \ \ \ \ \ player:setNoClip(true)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00375}00375\ \ \ \ \ \ \ \ \ player:setX(x)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00376}00376\ \ \ \ \ \ \ \ \ player:setY(y)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00377}00377\ \ \ \ \ \ \ \ \ player:setZ(z)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00378}00378\ \ \ \ \ \ \ \ \ player:setLx(x)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00379}00379\ \ \ \ \ \ \ \ \ player:setLy(y)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00380}00380\ \ \ \ \ \ \ \ \ player:setLz(z)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00381}00381\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00382}00382\ \ \ \ \ \ \ \ \ local\ ui\ =\ PFW\_Introduction:new(0,\ 0,\ getCore():getScreenWidth(),\ getCore():getScreenHeight(),\ getPlayer())}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00383}00383\ \ \ \ \ \ \ \ \ ui:initialise()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00384}00384\ \ \ \ \ \ \ \ \ ui:addToUIManager()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00385}00385\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00386}00386\ \ \ \ \ \ \ \ \ timer:Simple(ProjectFramework.Config.InitializationDuration,\ function()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00387}00387\ \ \ \ \ \ \ \ \ \ \ \ \ local\ character\ =\ ProjectFramework.Characters:New(player:getUsername())}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00388}00388\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00389}00389\ \ \ \ \ \ \ \ \ \ \ \ \ character.playerObj\ =\ player}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00390}00390\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00391}00391\ \ \ \ \ \ \ \ \ \ \ \ \ return\ character:Initialize()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00392}00392\ \ \ \ \ \ \ \ \ end)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00393}00393\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00394}00394\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00395}00395\ \ \ \ \ -\/-\/!\ \(\backslash\)brief\ Destroys\ a\ character\ and\ removes\ them\ from\ the\ character\ list\ after\ disconnecting.\ Called\ by\ OnDisconnect\ event\ hook.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00396}\mbox{\hyperlink{class_characters_a88c9f79b0fee55a35bfb0487ea1dd17b}{00396}}\ \ \ \ \ function\ ProjectFramework.Characters:OnDisconnect()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00397}00397\ \ \ \ \ \ \ \ \ print("{}OnDisconnect"{})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00398}00398\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00399}00399\ \ \ \ \ \ \ \ \ local\ player\ =\ getPlayer()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00400}00400\ \ \ \ \ \ \ \ \ local\ username\ =\ player:getUsername()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00401}00401\ \ \ \ \ \ \ \ \ local\ character\ =\ ProjectFramework.Characters:GetCharacterByID(username)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00402}00402\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00403}00403\ \ \ \ \ \ \ \ \ if\ character\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00404}00404\ \ \ \ \ \ \ \ \ \ \ \ \ character:Destroy()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00405}00405\ \ \ \ \ \ \ \ \ \ \ \ \ print("{}Character\ destroyed"{})}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00406}00406\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00407}00407\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00408}00408\ \ \ \ \ \ \ \ \ self.List[username]\ =\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00409}00409\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00410}00410\ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00411}00411\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00412}00412\ if\ not\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00413}00413\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00414}00414\ \ \ \ \ -\/-\/!\ \(\backslash\)brief\ Initialize\ a\ character\ called\ by\ OnServerStarted\ event\ hook.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00415}00415\ \ \ \ \ -\/-\/!\ \(\backslash\)param\ module\ \(\backslash\)string}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00416}00416\ \ \ \ \ -\/-\/!\ \(\backslash\)param\ command\ \(\backslash\)string}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00417}00417\ \ \ \ \ -\/-\/!\ \(\backslash\)param\ player\ \(\backslash\)table\ Player\ object.}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00418}00418\ \ \ \ \ -\/-\/!\ \(\backslash\)param\ args\ \(\backslash\)string}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00419}\mbox{\hyperlink{_characters_8lua_af58fb55adaab698e560fc29bc468eebd}{00419}}\ \ \ \ \ function\ ProjectFramework.Characters.OnClientCommand(module,\ command,\ player,\ args)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00420}00420\ \ \ \ \ \ \ \ \ if\ module\ ==\ "{}PFW\_CHARS"{}\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00421}00421\ \ \ \ \ \ \ \ \ \ \ \ \ if\ command\ ==\ "{}initialize"{}\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00422}00422\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ username\ =\ args[1]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00423}00423\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ character\ =\ ProjectFramework.Characters:New(username)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00424}00424\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00425}00425\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character.playerObj\ =\ player}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00426}00426\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character:Initialize()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00427}00427\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ command\ ==\ "{}destroy"{}\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00428}00428\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ username\ =\ args[1]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00429}00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ character\ =\ ProjectFramework.Characters:GetCharacterByID(username)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00430}00430\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00431}00431\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ character\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00432}00432\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character:Destroy()}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00433}00433\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00434}00434\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00435}00435\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ProjectFramework.Characters.List[username]\ =\ nil}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00436}00436\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ command\ ==\ "{}update"{}\ then}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00437}00437\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ username\ =\ args[1]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00438}00438\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ field\ =\ args[2]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00439}00439\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ newData\ =\ args[3]}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00440}00440\ }
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00441}00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ProjectFramework.Characters.List[username][field]\ =\ newData}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00442}00442\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00443}00443\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00444}00444\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00445}00445\ \ \ \ \ Events.OnClientCommand.Add(ProjectFramework.Characters.OnClientCommand)}
+\DoxyCodeLine{\Hypertarget{_characters_8lua_source_l00446}00446\ end}
+
+\end{DoxyCode}

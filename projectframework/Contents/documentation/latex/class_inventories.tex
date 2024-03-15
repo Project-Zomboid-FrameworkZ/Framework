@@ -1,0 +1,102 @@
+\doxysection{Inventories Class Reference}
+\hypertarget{class_inventories}{}\label{class_inventories}\index{Inventories@{Inventories}}
+
+
+The \doxylink{class_inventories}{Inventories} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_i_n_v_e_n_t_o_r_y}{INVENTORY} object.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_inventories_a11f854f003fa9b4768d38af62b03e084}{New}} (username, type, id)
+\begin{DoxyCompactList}\small\item\em Create a new inventory object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_inventories_acc9ed3d59884610b8729ec76d33d354a}{Initialize}} (id, object)
+\begin{DoxyCompactList}\small\item\em Initialize an inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_inventories_abe2d104c5cea5bae08d91f2b0d3b6e93}{Get\+Inventory\+By\+ID}} (id)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+The \doxylink{class_inventories}{Inventories} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_i_n_v_e_n_t_o_r_y}{INVENTORY} object. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_inventories_abe2d104c5cea5bae08d91f2b0d3b6e93}\label{class_inventories_abe2d104c5cea5bae08d91f2b0d3b6e93} 
+\index{Inventories@{Inventories}!GetInventoryByID@{GetInventoryByID}}
+\index{GetInventoryByID@{GetInventoryByID}!Inventories@{Inventories}}
+\doxysubsubsection{\texorpdfstring{GetInventoryByID()}{GetInventoryByID()}}
+{\footnotesize\ttfamily Get\+Inventory\+By\+ID (\begin{DoxyParamCaption}\item[{id}]{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00095}{95}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00095\ :\mbox{\hyperlink{class_inventories_abe2d104c5cea5bae08d91f2b0d3b6e93}{GetInventoryByID}}(\textcolor{keywordtype}{id})}
+
+\end{DoxyCode}
+\Hypertarget{class_inventories_acc9ed3d59884610b8729ec76d33d354a}\label{class_inventories_acc9ed3d59884610b8729ec76d33d354a} 
+\index{Inventories@{Inventories}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!Inventories@{Inventories}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}\item[{id}]{,  }\item[{object}]{ }\end{DoxyParamCaption})}
+
+
+
+Initialize an inventory. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em id} & \href{var_types.html\#table}{\texttt{ table}} The inventory\textquotesingle{}s id. \\
+\hline
+{\em object} & \href{var_types.html\#table}{\texttt{ table}} The inventory\textquotesingle{}s object. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#integer}{\texttt{ integer}} The inventory\textquotesingle{}s ID. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00089}{89}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00089\ :\mbox{\hyperlink{class_inventories_acc9ed3d59884610b8729ec76d33d354a}{Initialize}}(\textcolor{keywordtype}{id},\ \textcolor{keywordtype}{object})}
+
+\end{DoxyCode}
+\Hypertarget{class_inventories_a11f854f003fa9b4768d38af62b03e084}\label{class_inventories_a11f854f003fa9b4768d38af62b03e084} 
+\index{Inventories@{Inventories}!New@{New}}
+\index{New@{New}!Inventories@{Inventories}}
+\doxysubsubsection{\texorpdfstring{New()}{New()}}
+{\footnotesize\ttfamily New (\begin{DoxyParamCaption}\item[{username}]{,  }\item[{type}]{,  }\item[{id}]{ }\end{DoxyParamCaption})}
+
+
+
+Create a new inventory object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em username} & \href{var_types.html\#string}{\texttt{ string}} The owner\textquotesingle{}s username. Can be nil for no owner. \\
+\hline
+{\em type} & \href{var_types.html\#string}{\texttt{ string}} The type of inventory. Can be nil, but creates a character inventory type by default. Refer to Project\+Framework.\+Inventories.\+Types table for available types. \\
+\hline
+{\em id} & \href{var_types.html\#string}{\texttt{ string}} The inventory\textquotesingle{}s ID. Can be nil for an auto generated ID (recommended). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The new inventory object. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00065}{65}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00065\ :\mbox{\hyperlink{class_inventories_a11f854f003fa9b4768d38af62b03e084}{New}}(username,\ type,\ \textcolor{keywordtype}{id})}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_inventories_8lua}{Inventories.\+lua}}\end{DoxyCompactItemize}

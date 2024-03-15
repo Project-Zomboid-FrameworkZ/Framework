@@ -1,0 +1,29 @@
+\doxysection{Ration.\+lua}
+\hypertarget{_ration_8lua_source}{}\label{_ration_8lua_source}\index{Ration.lua@{Ration.lua}}
+\mbox{\hyperlink{_ration_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00001}00001\ local\ ITEM\ =\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Items:New(\textcolor{stringliteral}{"{}Base.Ration"{}})}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00002}00002\ ITEM.name\ =\ "{}Regular\ Ration\ Pack"{}}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00003}00003\ ITEM.description\ =\ "{}A\ ration\ pack\ for\ citizens\ of\ the\ Universal\ Union.\ It\ contains\ a\ variety\ of\ food\ and\ drink."{}}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00004}00004\ ITEM.category\ =\ "{}Opennable"{}}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00005}00005\ ITEM.shouldConsume\ =\ true}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00006}00006\ ITEM.useAction\ =\ "{}Loot"{}}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00007}00007\ ITEM.useTime\ =\ 5}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00009}00009\ function\ ITEM:CanUse(playerObj)}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00010}00010\ \ \ \ \ return\ true}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00011}00011\ end}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00012}00012\ }
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00013}00013\ function\ ITEM:OnUse(playerObj)}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00014}00014\ \ \ \ \ local\ character\ =\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_characters}{Characters}}:GetCharacterByID(playerObj:getUsername())}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00016}00016\ \ \ \ \ if\ character\ then}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00017}00017\ \ \ \ \ \ \ \ \ character:GiveItem("{}Base.BreensWater"{})}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00018}00018\ \ \ \ \ \ \ \ \ character:GiveItem("{}Base.Crackers"{})}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00019}00019\ \ \ \ \ \ \ \ \ character:GiveItem("{}Base.EmptyRation"{})}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00020}00020\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00021}00021\ end}
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{_ration_8lua_source_l00023}00023\ ITEM:Initialize()}
+
+\end{DoxyCode}

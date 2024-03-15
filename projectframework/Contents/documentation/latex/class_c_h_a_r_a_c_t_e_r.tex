@@ -1,0 +1,404 @@
+\doxysection{CHARACTER Class Reference}
+\hypertarget{class_c_h_a_r_a_c_t_e_r}{}\label{class_c_h_a_r_a_c_t_e_r}\index{CHARACTER@{CHARACTER}}
+
+
+Character class for \doxylink{class_project_framework}{Project\+Framework}.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a87b5e80080e1cf9c1d87023a79579f79}{Initialize}} ()
+\begin{DoxyCompactList}\small\item\em Initialize a character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_af283f640a2de333ced2616be941ee5dd}{Destroy}} ()
+\begin{DoxyCompactList}\small\item\em Destroy a character. This will remove the character from the list of characters and is usually called after a player has disconnected. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a274250897bc7f6b9c173610b8892bdc8}{Initialize\+Default\+Items}} ()
+\begin{DoxyCompactList}\small\item\em Initialize the default items for a character based on their faction. Called when PFW\+\_\+\+CHAR mod data is first created. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced969da131dfe1040ef5e9c430ca8e}{Validate\+Character\+Data}} ()
+\begin{DoxyCompactList}\small\item\em Validate the character\textquotesingle{}s data. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a9d925e5aae07c6496c4895ae4bf846ce}{Set\+Age}} (age)
+\begin{DoxyCompactList}\small\item\em Set the age of the character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a495c0ebb8856ad297d5317f7f7d2d908}{Set\+Description}} (description)
+\begin{DoxyCompactList}\small\item\em Set the description of the character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced65cc9f16939fc1e14cb67c0d2744}{Set\+Faction}} (faction)
+\begin{DoxyCompactList}\small\item\em Set the faction of the character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a37885efe3ed72fcd0ce976bee36d3130}{Set\+Name}} (name)
+\begin{DoxyCompactList}\small\item\em Set the name of the character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a796295e823c7afff6a5a55316dff4410}{Get\+Inventory}} ()
+\begin{DoxyCompactList}\small\item\em Get the character\textquotesingle{}s inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91c20e34e274c79024b390442a8fe2a1}{Give\+Items}} (item\+ID, amount)
+\begin{DoxyCompactList}\small\item\em Give a character items by the specified amount. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}{Give\+Item}} (item\+ID)
+\begin{DoxyCompactList}\small\item\em Give a character an item. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91568d66f00bbe61bb8cd7ab6aee7bd0}{Take\+Item}} (item\+ID)
+\begin{DoxyCompactList}\small\item\em Take an item from a character\textquotesingle{}s inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a200008624f3e9ce458b9d0f4ad547515}{Take\+Item\+By\+Instance\+ID}} (item\+ID, instance\+ID)
+\begin{DoxyCompactList}\small\item\em Take an item from a character\textquotesingle{}s inventory by its instance ID. Useful for taking a specific item from a stack. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ab3102296da4fdaac6683ae2afaef9e6a}{Is\+Citizen}} ()
+\begin{DoxyCompactList}\small\item\em Checks if a character is a citizen. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a120c4b12425ee504e9e3c7977a5d8b8b}{Is\+Combine}} ()
+\begin{DoxyCompactList}\small\item\em Checks if a character is a combine. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Character class for \doxylink{class_project_framework}{Project\+Framework}. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_af283f640a2de333ced2616be941ee5dd}\label{class_c_h_a_r_a_c_t_e_r_af283f640a2de333ced2616be941ee5dd} 
+\index{CHARACTER@{CHARACTER}!Destroy@{Destroy}}
+\index{Destroy@{Destroy}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{Destroy()}{Destroy()}}
+{\footnotesize\ttfamily Destroy (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Destroy a character. This will remove the character from the list of characters and is usually called after a player has disconnected. 
+
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00072}{72}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00072\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_af283f640a2de333ced2616be941ee5dd}{Destroy}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a796295e823c7afff6a5a55316dff4410}\label{class_c_h_a_r_a_c_t_e_r_a796295e823c7afff6a5a55316dff4410} 
+\index{CHARACTER@{CHARACTER}!GetInventory@{GetInventory}}
+\index{GetInventory@{GetInventory}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{GetInventory()}{GetInventory()}}
+{\footnotesize\ttfamily Get\+Inventory (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get the character\textquotesingle{}s inventory. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The character\textquotesingle{}s inventory object. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00213}{213}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00213\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a796295e823c7afff6a5a55316dff4410}{GetInventory}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}\label{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969} 
+\index{CHARACTER@{CHARACTER}!GiveItem@{GiveItem}}
+\index{GiveItem@{GiveItem}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{GiveItem()}{GiveItem()}}
+{\footnotesize\ttfamily Give\+Item (\begin{DoxyParamCaption}\item[{item\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Give a character an item. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em item\+ID} & \href{var_types.html\#string}{\texttt{ string}} The ID of the item to give. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the item was successfully given. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00229}{229}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00229\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}{GiveItem}}(itemID)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a91c20e34e274c79024b390442a8fe2a1}\label{class_c_h_a_r_a_c_t_e_r_a91c20e34e274c79024b390442a8fe2a1} 
+\index{CHARACTER@{CHARACTER}!GiveItems@{GiveItems}}
+\index{GiveItems@{GiveItems}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{GiveItems()}{GiveItems()}}
+{\footnotesize\ttfamily Give\+Items (\begin{DoxyParamCaption}\item[{item\+ID}]{,  }\item[{amount}]{ }\end{DoxyParamCaption})}
+
+
+
+Give a character items by the specified amount. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em item\+ID} & \href{var_types.html\#string}{\texttt{ string}} The ID of the item to give. \\
+\hline
+{\em amount} & \href{var_types.html\#integer}{\texttt{ integer}} The amount of the item to give. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00220}{220}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00220\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91c20e34e274c79024b390442a8fe2a1}{GiveItems}}(itemID,\ amount)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a87b5e80080e1cf9c1d87023a79579f79}\label{class_c_h_a_r_a_c_t_e_r_a87b5e80080e1cf9c1d87023a79579f79} 
+\index{CHARACTER@{CHARACTER}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Initialize a character. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} username 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00024}{24}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00024\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a87b5e80080e1cf9c1d87023a79579f79}{Initialize}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a274250897bc7f6b9c173610b8892bdc8}\label{class_c_h_a_r_a_c_t_e_r_a274250897bc7f6b9c173610b8892bdc8} 
+\index{CHARACTER@{CHARACTER}!InitializeDefaultItems@{InitializeDefaultItems}}
+\index{InitializeDefaultItems@{InitializeDefaultItems}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{InitializeDefaultItems()}{InitializeDefaultItems()}}
+{\footnotesize\ttfamily Initialize\+Default\+Items (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Initialize the default items for a character based on their faction. Called when PFW\+\_\+\+CHAR mod data is first created. 
+
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00078}{78}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00078\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a274250897bc7f6b9c173610b8892bdc8}{InitializeDefaultItems}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_ab3102296da4fdaac6683ae2afaef9e6a}\label{class_c_h_a_r_a_c_t_e_r_ab3102296da4fdaac6683ae2afaef9e6a} 
+\index{CHARACTER@{CHARACTER}!IsCitizen@{IsCitizen}}
+\index{IsCitizen@{IsCitizen}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{IsCitizen()}{IsCitizen()}}
+{\footnotesize\ttfamily Is\+Citizen (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Checks if a character is a citizen. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the character is a citizen. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00303}{303}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00303\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_ab3102296da4fdaac6683ae2afaef9e6a}{IsCitizen}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a120c4b12425ee504e9e3c7977a5d8b8b}\label{class_c_h_a_r_a_c_t_e_r_a120c4b12425ee504e9e3c7977a5d8b8b} 
+\index{CHARACTER@{CHARACTER}!IsCombine@{IsCombine}}
+\index{IsCombine@{IsCombine}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{IsCombine()}{IsCombine()}}
+{\footnotesize\ttfamily Is\+Combine (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Checks if a character is a combine. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the character is a combine. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00315}{315}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00315\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a120c4b12425ee504e9e3c7977a5d8b8b}{IsCombine}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a9d925e5aae07c6496c4895ae4bf846ce}\label{class_c_h_a_r_a_c_t_e_r_a9d925e5aae07c6496c4895ae4bf846ce} 
+\index{CHARACTER@{CHARACTER}!SetAge@{SetAge}}
+\index{SetAge@{SetAge}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{SetAge()}{SetAge()}}
+{\footnotesize\ttfamily Set\+Age (\begin{DoxyParamCaption}\item[{age}]{ }\end{DoxyParamCaption})}
+
+
+
+Set the age of the character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em age} & \href{var_types.html\#integer}{\texttt{ integer}} The age of the character. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00177}{177}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00177\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a9d925e5aae07c6496c4895ae4bf846ce}{SetAge}}(age)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a495c0ebb8856ad297d5317f7f7d2d908}\label{class_c_h_a_r_a_c_t_e_r_a495c0ebb8856ad297d5317f7f7d2d908} 
+\index{CHARACTER@{CHARACTER}!SetDescription@{SetDescription}}
+\index{SetDescription@{SetDescription}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{SetDescription()}{SetDescription()}}
+{\footnotesize\ttfamily Set\+Description (\begin{DoxyParamCaption}\item[{description}]{ }\end{DoxyParamCaption})}
+
+
+
+Set the description of the character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em description} & \href{var_types.html\#string}{\texttt{ string}} The description of the character\textquotesingle{}s appearance. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00186}{186}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00186\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a495c0ebb8856ad297d5317f7f7d2d908}{SetDescription}}(description)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_aaced65cc9f16939fc1e14cb67c0d2744}\label{class_c_h_a_r_a_c_t_e_r_aaced65cc9f16939fc1e14cb67c0d2744} 
+\index{CHARACTER@{CHARACTER}!SetFaction@{SetFaction}}
+\index{SetFaction@{SetFaction}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{SetFaction()}{SetFaction()}}
+{\footnotesize\ttfamily Set\+Faction (\begin{DoxyParamCaption}\item[{faction}]{ }\end{DoxyParamCaption})}
+
+
+
+Set the faction of the character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em faction} & \href{var_types.html\#string}{\texttt{ string}} The ID of the faction to set on the character. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00195}{195}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00195\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced65cc9f16939fc1e14cb67c0d2744}{SetFaction}}(faction)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a37885efe3ed72fcd0ce976bee36d3130}\label{class_c_h_a_r_a_c_t_e_r_a37885efe3ed72fcd0ce976bee36d3130} 
+\index{CHARACTER@{CHARACTER}!SetName@{SetName}}
+\index{SetName@{SetName}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{SetName()}{SetName()}}
+{\footnotesize\ttfamily Set\+Name (\begin{DoxyParamCaption}\item[{name}]{ }\end{DoxyParamCaption})}
+
+
+
+Set the name of the character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & \href{var_types.html\#string}{\texttt{ string}} The new name for the character. \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00204}{204}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00204\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a37885efe3ed72fcd0ce976bee36d3130}{SetName}}(name)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a91568d66f00bbe61bb8cd7ab6aee7bd0}\label{class_c_h_a_r_a_c_t_e_r_a91568d66f00bbe61bb8cd7ab6aee7bd0} 
+\index{CHARACTER@{CHARACTER}!TakeItem@{TakeItem}}
+\index{TakeItem@{TakeItem}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{TakeItem()}{TakeItem()}}
+{\footnotesize\ttfamily Take\+Item (\begin{DoxyParamCaption}\item[{item\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Take an item from a character\textquotesingle{}s inventory. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em item\+ID} & \href{var_types.html\#string}{\texttt{ string}} The ID of the item to take. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the item was successfully taken. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00264}{264}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00264\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a91568d66f00bbe61bb8cd7ab6aee7bd0}{TakeItem}}(itemID)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_a200008624f3e9ce458b9d0f4ad547515}\label{class_c_h_a_r_a_c_t_e_r_a200008624f3e9ce458b9d0f4ad547515} 
+\index{CHARACTER@{CHARACTER}!TakeItemByInstanceID@{TakeItemByInstanceID}}
+\index{TakeItemByInstanceID@{TakeItemByInstanceID}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{TakeItemByInstanceID()}{TakeItemByInstanceID()}}
+{\footnotesize\ttfamily Take\+Item\+By\+Instance\+ID (\begin{DoxyParamCaption}\item[{item\+ID}]{,  }\item[{instance\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Take an item from a character\textquotesingle{}s inventory by its instance ID. Useful for taking a specific item from a stack. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em item\+ID} & \href{var_types.html\#string}{\texttt{ string}} The ID of the item to take. \\
+\hline
+{\em instance\+ID} & \href{var_types.html\#integer}{\texttt{ integer}} The instance ID of the item to take. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not the item was successfully taken. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00285}{285}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00285\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_a200008624f3e9ce458b9d0f4ad547515}{TakeItemByInstanceID}}(itemID,\ instanceID)}
+
+\end{DoxyCode}
+\Hypertarget{class_c_h_a_r_a_c_t_e_r_aaced969da131dfe1040ef5e9c430ca8e}\label{class_c_h_a_r_a_c_t_e_r_aaced969da131dfe1040ef5e9c430ca8e} 
+\index{CHARACTER@{CHARACTER}!ValidateCharacterData@{ValidateCharacterData}}
+\index{ValidateCharacterData@{ValidateCharacterData}!CHARACTER@{CHARACTER}}
+\doxysubsubsection{\texorpdfstring{ValidateCharacterData()}{ValidateCharacterData()}}
+{\footnotesize\ttfamily Validate\+Character\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Validate the character\textquotesingle{}s data. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#boolean}{\texttt{ boolean}} Whether or not any of the character\textquotesingle{}s new data was initialized. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00090}{90}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00090\ :\mbox{\hyperlink{class_c_h_a_r_a_c_t_e_r_aaced969da131dfe1040ef5e9c430ca8e}{ValidateCharacterData}}()}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_characters_8lua}{Characters.\+lua}}\end{DoxyCompactItemize}

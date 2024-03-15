@@ -1,0 +1,116 @@
+\doxysection{Introduction.\+lua File Reference}
+\hypertarget{_introduction_8lua}{}\label{_introduction_8lua}\index{Introduction.lua@{Introduction.lua}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+static function \mbox{\hyperlink{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}{calculate\+Width\+Height}} (original\+Aspect\+Ratio, width, height, change\+Value)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}\label{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9} 
+\index{Introduction.lua@{Introduction.lua}!calculateWidthHeight@{calculateWidthHeight}}
+\index{calculateWidthHeight@{calculateWidthHeight}!Introduction.lua@{Introduction.lua}}
+\doxysubsubsection{\texorpdfstring{calculateWidthHeight()}{calculateWidthHeight()}}
+{\footnotesize\ttfamily static function calculate\+Width\+Height (\begin{DoxyParamCaption}\item[{original\+Aspect\+Ratio}]{,  }\item[{width}]{,  }\item[{height}]{,  }\item[{change\+Value}]{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Definition at line \mbox{\hyperlink{_introduction_8lua_source_l00093}{93}} of file \mbox{\hyperlink{_introduction_8lua_source}{Introduction.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00094\ :\ Increase\ width\ by\ 1\ and\ adjust\ height}
+\DoxyCodeLine{00095\ \ \ \ \ local\ newWidth1\ =\ width\ +\ changeValue}
+\DoxyCodeLine{00096\ \ \ \ \ local\ newHeight1\ =\ math.floor((newWidth1\ /\ originalAspectRatio)\ +\ 0.5)}
+\DoxyCodeLine{00097\ \ \ \ \ }
+\DoxyCodeLine{00098\ \ \ \ \ -\/-\/\ Scenario\ 2:\ Increase\ height\ by\ 1\ and\ adjust\ width}
+\DoxyCodeLine{00099\ \ \ \ \ local\ newHeight2\ =\ height\ +\ changeValue}
+\DoxyCodeLine{00100\ \ \ \ \ local\ newWidth2\ =\ math.floor((newHeight2\ *\ originalAspectRatio)\ +\ 0.5)}
+\DoxyCodeLine{00101\ \ \ \ \ }
+\DoxyCodeLine{00102\ \ \ \ \ -\/-\/\ Calculate\ the\ aspect\ ratio\ difference\ \textcolor{keywordflow}{for}\ both\ scenarios}
+\DoxyCodeLine{00103\ \ \ \ \ local\ difference1\ =\ math.abs((newWidth1\ /\ newHeight1)\ -\/\ originalAspectRatio)}
+\DoxyCodeLine{00104\ \ \ \ \ local\ difference2\ =\ math.abs((newWidth2\ /\ newHeight2)\ -\/\ originalAspectRatio)}
+\DoxyCodeLine{00105\ \ \ \ \ }
+\DoxyCodeLine{00106\ \ \ \ \ -\/-\/\ Choose\ the\ scenario\ with\ the\ smallest\ difference}
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keywordflow}{if}\ difference1\ <\ difference2\ then}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ newWidth1,\ newHeight1}
+\DoxyCodeLine{00109\ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ newWidth2,\ newHeight2}
+\DoxyCodeLine{00111\ \ \ \ \ end}
+\DoxyCodeLine{00112\ end}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00114\ timer:Create(\textcolor{stringliteral}{"{}IntroTick"{}},\ 0.1,\ 0,\ function()}
+\DoxyCodeLine{00115\ \ \ \ \ \textcolor{keywordflow}{if}\ PFW\_Introduction.instance\ then}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ local\ instance\ =\ PFW\_Introduction.instance}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ instance.cfw\ then}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ instance.cfw.shrinking\ ==\ \textcolor{keyword}{true}\ and\ instance.cfw.scaledWidth\ /\ instance.cfw:getWidth()\ >=\ 0.95\ then}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ width,\ height\ =\ \mbox{\hyperlink{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}{calculateWidthHeight}}(instance.cfw.width\ /\ instance.cfw.height,\ instance.cfw.scaledWidth,\ instance.cfw.scaledHeight,\ -\/1)}
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.scaledWidth\ =\ width}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.scaledHeight\ =\ height}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ instance.cfw.shrinking\ ==\ true\ then}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.shrinking\ =\ false}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00127\ \ \ \ \ }
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ if\ instance.cfw.shrinking\ ==\ false\ and\ instance.cfw.scaledWidth\ /\ instance.cfw:getWidth()\ <=\ 1\ then}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ width,\ height\ =\ \mbox{\hyperlink{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}{calculateWidthHeight}}(instance.cfw.width\ /\ instance.cfw.height,\ instance.cfw.scaledWidth,\ instance.cfw.scaledHeight,\ 1)}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.scaledWidth\ =\ width}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.scaledHeight\ =\ height}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ instance.cfw.shrinking\ ==\ false\ then}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw.shrinking\ =\ true}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw:setX(instance.width\ /\ 2\ -\/\ instance.cfw.scaledWidth\ /\ 2)}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ instance.cfw:setY(instance.height\ /\ 2\ -\/\ instance.cfw.scaledHeight\ /\ 2)}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00140\ \ \ \ \ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ if\ instance.hl2rp\ then}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ if\ instance.hl2rp.shrinking\ ==\ true\ and\ instance.hl2rp.scaledWidth\ /\ instance.hl2rp:getWidth()\ >=\ 0.95\ then}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ width,\ height\ =\ \mbox{\hyperlink{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}{calculateWidthHeight}}(instance.hl2rp.width\ /\ instance.hl2rp.height,\ instance.hl2rp.scaledWidth,\ instance.hl2rp.scaledHeight,\ -\/1)}
+\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.scaledWidth\ =\ width}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.scaledHeight\ =\ height}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ instance.hl2rp.shrinking\ ==\ true\ then}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.shrinking\ =\ false}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00150\ \ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ if\ instance.hl2rp.shrinking\ ==\ false\ and\ instance.hl2rp.scaledWidth\ /\ instance.hl2rp:getWidth()\ <=\ 1\ then}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ width,\ height\ =\ \mbox{\hyperlink{_introduction_8lua_aee596e6802c91d329b77bcd1f5760ad9}{calculateWidthHeight}}(instance.hl2rp.width\ /\ instance.hl2rp.height,\ instance.hl2rp.scaledWidth,\ instance.hl2rp.scaledHeight,\ 1)}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.scaledWidth\ =\ width}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.scaledHeight\ =\ height}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ instance.hl2rp.shrinking\ ==\ false\ then}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp.shrinking\ =\ true}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00159\ }
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp:setX(instance.width\ /\ 2\ -\/\ instance.hl2rp.scaledWidth\ /\ 2)}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \ \ \ \ instance.hl2rp:setY(instance.height\ /\ 2\ -\/\ instance.hl2rp.scaledHeight\ /\ 2)}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00163\ \ \ \ \ end}
+\DoxyCodeLine{00164\ end)}
+\DoxyCodeLine{00165\ }
+\DoxyCodeLine{00166\ function\ PFW\_Introduction:update()}
+\DoxyCodeLine{00167\ \ \ \ \ ISPanel.update(self)}
+\DoxyCodeLine{00168\ end}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ function\ PFW\_Introduction:new(x,\ y,\ width,\ height,\ playerObject)}
+\DoxyCodeLine{00171\ \ \ \ \ local\ o\ =\ \{\}}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00173\ \ \ \ \ o\ =\ ISPanel:\textcolor{keyword}{new}(x,\ y,\ width,\ height)}
+\DoxyCodeLine{00174\ \ \ \ \ setmetatable(o,\ self)}
+\DoxyCodeLine{00175\ \ \ \ \ self.\_\_index\ =\ self}
+\DoxyCodeLine{00176\ \ \ \ \ o.backgroundColor\ =\ \{r=0,\ g=0,\ b=0,\ a=1\}}
+\DoxyCodeLine{00177\ \ \ \ \ o.borderColor\ =\ \{r=0,\ g=0,\ b=0,\ a=1\}}
+\DoxyCodeLine{00178\ \ \ \ \ o.moveWithMouse\ =\ \textcolor{keyword}{false}}
+\DoxyCodeLine{00179\ \ \ \ \ o.playerObject\ =\ playerObject}
+\DoxyCodeLine{00180\ \ \ \ \ PFW\_Introduction.instance\ =\ o}
+\DoxyCodeLine{00181\ }
+\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keywordflow}{return}\ o}
+\DoxyCodeLine{00183\ end}
+\DoxyCodeLine{00184\ }
+\DoxyCodeLine{00185\ \textcolor{keywordflow}{return}\ PFW\_Introduction}
+
+\end{DoxyCode}

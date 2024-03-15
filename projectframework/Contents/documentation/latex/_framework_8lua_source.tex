@@ -1,0 +1,79 @@
+\doxysection{Framework.\+lua}
+\hypertarget{_framework_8lua_source}{}\label{_framework_8lua_source}\index{Framework.lua@{Framework.lua}}
+\mbox{\hyperlink{_framework_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00001}00001\ -\/-\/!\ \(\backslash\)brief\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ global\ table.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00002}\mbox{\hyperlink{class_project_h_l2_r_p}{00002}}\ -\/-\/!\ \(\backslash\)\textcolor{keyword}{class\ }\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00003}00003\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ =\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00005}00005\ -\/-\/!\ \(\backslash\)brief\ \mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}\ \textcolor{keywordflow}{for}\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00006}\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{00006}}\ -\/-\/!\ \(\backslash\)\textcolor{keyword}{class\ }ProjectHL2RP.Framework}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00007}00007\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00008}00008\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Framework.\_\_index\ =\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Framework}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00009}00009\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00010}00010\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00011}00011\ -\/-\/!\ \(\backslash\)brief\ Create\ a\ \textcolor{keyword}{new}\ instance\ of\ the\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ \mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00012}00012\ -\/-\/!\ \(\backslash\)\textcolor{keywordflow}{return}\ table\ The\ \textcolor{keyword}{new}\ instance\ of\ the\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ \mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00013}\mbox{\hyperlink{class_project_h_l2_r_p_af6c7fc99b917bab0ba8530748fc56e9d}{00013}}\ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Framework.\mbox{\hyperlink{class_project_h_l2_r_p_af6c7fc99b917bab0ba8530748fc56e9d}{New}}()}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00014}00014\ \ \ \ \ local\ \textcolor{keywordtype}{object}\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00015}00015\ \ \ \ \ \ \ \ \ version\ =\ \textcolor{stringliteral}{"{}1.0.0"{}}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00016}00016\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00017}00017\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00018}00018\ \ \ \ \ setmetatable(\textcolor{keywordtype}{object},\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Framework)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00020}00020\ \ \ \ \ return\ \textcolor{keywordtype}{object}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00021}00021\ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00023}00023\ -\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ module\ for\ the\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}\ \mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00024}00024\ -\/-\/!\ \(\backslash\)param\ table\ MODULE\_TABLE\ The\ table\ to\ use\ as\ the\ module.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00025}00025\ -\/-\/!\ \(\backslash\)param\ \textcolor{keywordtype}{string}\ moduleName\ The\ name\ of\ the\ module.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00026}00026\ -\/-\/!\ \(\backslash\)return\ table\ The\ new\ module.}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00027}\mbox{\hyperlink{class_project_h_l2_r_p_adee213959d337fef313fc8be0e0813a0}{00027}}\ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}:Something(MODULE\_TABLE,\ moduleName)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00028}00028\ \ \ \ \ if\ (not\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules[moduleName])\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00029}00029\ \ \ \ \ \ \ \ \ local\ \textcolor{keywordtype}{object}\ =\ \{\};}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00030}00030\ \ \ \ \ \ \ \ \ setmetatable(\textcolor{keywordtype}{object},\ MODULE\_TABLE)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00031}00031\ \ \ \ \ \ \ \ \ MODULE\_TABLE.\_\_index\ =\ MODULE\_TABLE}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00032}00032\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules[moduleName]\ =\ \textcolor{keywordtype}{object}}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00033}00033\ \ \ \ \ end;}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00034}00034\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00035}00035\ \ \ \ \ \textcolor{keywordflow}{return}\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules[moduleName]}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00036}00036\ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00038}00038\ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Framework:GetVersion()}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00039}00039\ \ \ \ \ return\ self.version}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00040}00040\ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00041}00041\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00042}00042\ if\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00043}00043\ \ \ \ \ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnGameStart()}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00044}00044\ \ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules)\ do}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00045}00045\ \ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnGameStart\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00046}00046\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnGameStart(v)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00047}00047\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00048}00048\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00049}00049\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00050}00050\ \ \ \ \ Events.OnGameStart.Add(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnGameStart)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00051}00051\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00052}00052\ \ \ \ \ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnDisconnect()}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00053}00053\ \ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules)\ do}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00054}00054\ \ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnDisconnect\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00055}00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnDisconnect(v)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00056}00056\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00057}00057\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00058}00058\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00059}00059\ \ \ \ \ Events.OnDisconnect.Add(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnDisconnect)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00060}00060\ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00062}00062\ if\ not\ isClient()\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00063}00063\ \ \ \ \ function\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnServerStarted()}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00064}00064\ \ \ \ \ \ \ \ \ for\ k,\ v\ in\ pairs(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.Modules)\ do}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00065}00065\ \ \ \ \ \ \ \ \ \ \ \ \ if\ v.OnServerStarted\ then}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00066}00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ v.OnServerStarted(v)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00067}00067\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00068}00068\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00069}00069\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00070}00070\ \ \ \ \ Events.OnServerStarted.Add(\mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.OnServerStarted)}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00071}00071\ end}
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00072}00072\ }
+\DoxyCodeLine{\Hypertarget{_framework_8lua_source_l00073}00073\ \mbox{\hyperlink{class_project_h_l2_r_p}{ProjectHL2RP}}.\mbox{\hyperlink{class_project_h_l2_r_p_1_1_framework}{Framework}}.New()}
+
+\end{DoxyCode}

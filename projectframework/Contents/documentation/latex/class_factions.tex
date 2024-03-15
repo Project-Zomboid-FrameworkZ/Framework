@@ -1,0 +1,139 @@
+\doxysection{Factions Class Reference}
+\hypertarget{class_factions}{}\label{class_factions}\index{Factions@{Factions}}
+
+
+\doxylink{class_factions}{Factions} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_f_a_c_t_i_o_n}{FACTION} object.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_factions_a32b222a0be79494aa6e3065b744f58a7}{New}} (name)
+\begin{DoxyCompactList}\small\item\em Create a new faction object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_factions_acc9ed3d59884610b8729ec76d33d354a}{Initialize}} (id, object)
+\begin{DoxyCompactList}\small\item\em Initialize a faction. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_factions_ae3a1fcde52391a63fdf971f1406f93d2}{Get\+Faction\+By\+ID}} (faction\+ID)
+\begin{DoxyCompactList}\small\item\em Get a faction by their ID. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_factions_a20716021f6494d969da13d1b88ce6af4}{Get\+Faction\+Name\+By\+ID}} (faction\+ID)
+\begin{DoxyCompactList}\small\item\em Get a faction\textquotesingle{}s name by their ID. Useful for getting a faction\textquotesingle{}s actual name if the initialized faction ID differs from the name field. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{class_factions}{Factions} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_f_a_c_t_i_o_n}{FACTION} object. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_factions_ae3a1fcde52391a63fdf971f1406f93d2}\label{class_factions_ae3a1fcde52391a63fdf971f1406f93d2} 
+\index{Factions@{Factions}!GetFactionByID@{GetFactionByID}}
+\index{GetFactionByID@{GetFactionByID}!Factions@{Factions}}
+\doxysubsubsection{\texorpdfstring{GetFactionByID()}{GetFactionByID()}}
+{\footnotesize\ttfamily Get\+Faction\+By\+ID (\begin{DoxyParamCaption}\item[{faction\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Get a faction by their ID. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em faction\+ID} & \href{var_types.html\#string}{\texttt{ string}} The faction\textquotesingle{}s ID \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The faction\textquotesingle{}s object. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_factions_8lua_source_l00057}{57}} of file \mbox{\hyperlink{_factions_8lua_source}{Factions.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00057\ :\mbox{\hyperlink{class_factions_ae3a1fcde52391a63fdf971f1406f93d2}{GetFactionByID}}(factionID)}
+
+\end{DoxyCode}
+\Hypertarget{class_factions_a20716021f6494d969da13d1b88ce6af4}\label{class_factions_a20716021f6494d969da13d1b88ce6af4} 
+\index{Factions@{Factions}!GetFactionNameByID@{GetFactionNameByID}}
+\index{GetFactionNameByID@{GetFactionNameByID}!Factions@{Factions}}
+\doxysubsubsection{\texorpdfstring{GetFactionNameByID()}{GetFactionNameByID()}}
+{\footnotesize\ttfamily Get\+Faction\+Name\+By\+ID (\begin{DoxyParamCaption}\item[{faction\+ID}]{ }\end{DoxyParamCaption})}
+
+
+
+Get a faction\textquotesingle{}s name by their ID. Useful for getting a faction\textquotesingle{}s actual name if the initialized faction ID differs from the name field. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em faction\+ID} & \href{var_types.html\#string}{\texttt{ string}} The faction\textquotesingle{}s ID. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The faction\textquotesingle{}s name. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_factions_8lua_source_l00066}{66}} of file \mbox{\hyperlink{_factions_8lua_source}{Factions.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00066\ :\mbox{\hyperlink{class_factions_a20716021f6494d969da13d1b88ce6af4}{GetFactionNameByID}}(factionID)}
+
+\end{DoxyCode}
+\Hypertarget{class_factions_acc9ed3d59884610b8729ec76d33d354a}\label{class_factions_acc9ed3d59884610b8729ec76d33d354a} 
+\index{Factions@{Factions}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!Factions@{Factions}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}\item[{id}]{,  }\item[{object}]{ }\end{DoxyParamCaption})}
+
+
+
+Initialize a faction. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em data} & \href{var_types.html\#table}{\texttt{ table}} The faction object\textquotesingle{}s data. \\
+\hline
+{\em name} & \href{var_types.html\#string}{\texttt{ string}} The faction\textquotesingle{}s name (i.\+e. ID). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The faction ID. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_factions_8lua_source_l00048}{48}} of file \mbox{\hyperlink{_factions_8lua_source}{Factions.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00048\ :\mbox{\hyperlink{class_factions_acc9ed3d59884610b8729ec76d33d354a}{Initialize}}(\textcolor{keywordtype}{id},\ \textcolor{keywordtype}{object})}
+
+\end{DoxyCode}
+\Hypertarget{class_factions_a32b222a0be79494aa6e3065b744f58a7}\label{class_factions_a32b222a0be79494aa6e3065b744f58a7} 
+\index{Factions@{Factions}!New@{New}}
+\index{New@{New}!Factions@{Factions}}
+\doxysubsubsection{\texorpdfstring{New()}{New()}}
+{\footnotesize\ttfamily New (\begin{DoxyParamCaption}\item[{name}]{ }\end{DoxyParamCaption})}
+
+
+
+Create a new faction object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em name} & \href{var_types.html\#string}{\texttt{ string}} Faction name. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The new faction object. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_factions_8lua_source_l00031}{31}} of file \mbox{\hyperlink{_factions_8lua_source}{Factions.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00031\ :\mbox{\hyperlink{class_factions_a32b222a0be79494aa6e3065b744f58a7}{New}}(name)}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_factions_8lua}{Factions.\+lua}}\end{DoxyCompactItemize}

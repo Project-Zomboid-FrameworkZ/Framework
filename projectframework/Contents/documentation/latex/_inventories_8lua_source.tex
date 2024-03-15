@@ -1,0 +1,105 @@
+\doxysection{Inventories.\+lua}
+\hypertarget{_inventories_8lua_source}{}\label{_inventories_8lua_source}\index{Inventories.lua@{Inventories.lua}}
+\mbox{\hyperlink{_inventories_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00001}00001\ -\/-\/!\ \(\backslash\)page\ globalVars\ Global\ Variables}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00002}00002\ -\/-\/!\ \(\backslash\)section\ \mbox{\hyperlink{class_inventories}{Inventories}}\ \mbox{\hyperlink{class_inventories}{Inventories}}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00003}00003\ -\/-\/!\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Inventories\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00004}00004\ -\/-\/!\ See\ \mbox{\hyperlink{class_inventories}{Inventories}}\ \textcolor{keywordflow}{for}\ the\ \textcolor{keyword}{module}\ on\ inventories.\(\backslash\)n\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00005}00005\ -\/-\/!\ ProjectFramework.Inventories.List\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00006}00006\ -\/-\/!\ A\ list\ of\ all\ instanced\ inventories\ in\ the\ game.\(\backslash\)n\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00007}00007\ -\/-\/!\ ProjectFramework.Inventories.Types\(\backslash\)n}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00008}00008\ -\/-\/!\ The\ types\ of\ inventories\ that\ can\ be\ created.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00010}00010\ ProjectFramework\ =\ ProjectFramework\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00012}00012\ -\/-\/!\ \(\backslash\)brief\ The\ Inventories\ module\ for\ ProjectFramework.\ Defines\ and\ interacts\ with\ INVENTORY\ object.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00013}\mbox{\hyperlink{class_inventories}{00013}}\ -\/-\/!\ \(\backslash\)class\ Inventories}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00014}00014\ ProjectFramework.Inventories\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00015}00015\ ProjectFramework.Inventories.\_\_index\ =\ ProjectFramework.Inventories}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00016}00016\ ProjectFramework.Inventories.List\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00017}00017\ ProjectFramework.Inventories.Types\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00018}00018\ \ \ \ \ Character\ =\ "{}Character"{},}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00019}00019\ \ \ \ \ Container\ =\ "{}Container"{},}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00020}00020\ \ \ \ \ Vehicle\ =\ "{}Vehicle"{}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00021}00021\ \}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00022}00022\ ProjectFramework.Inventories\ =\ ProjectFramework.Foundation:NewModule(ProjectFramework.Inventories,\ "{}Inventories"{})}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00023}00023\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00024}00024\ -\/-\/!\ \(\backslash\)brief\ Inventory\ class\ for\ ProjectFramework.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00025}\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y}{00025}}\ -\/-\/!\ \(\backslash\)class\ INVENTORY}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00026}00026\ local\ INVENTORY\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00027}00027\ INVENTORY.\_\_index\ =\ INVENTORY}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00029}00029\ -\/-\/!\ \(\backslash\)brief\ Initialize\ an\ inventory.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00030}00030\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ inventory's\ ID.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00031}\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a87b5e80080e1cf9c1d87023a79579f79}{00031}}\ function\ INVENTORY:Initialize()}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00032}00032\ \ \ \ \ return\ ProjectFramework.Inventories:Initialize(self.id,\ self)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00033}00033\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00035}00035\ -\/-\/!\ \(\backslash\)brief\ Add\ an\ item\ to\ the\ inventory.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00036}00036\ -\/-\/!\ \(\backslash\)details\ Note:\ This\ does\ not\ add\ a\ world\ item,\ it\ simply\ adds\ it\ to\ the\ inventory's\ object.\ Please\ use\ CHARACTER::GiveItem(itemID)\ to\ add\ an\ item\ to\ a\ character's\ inventory\ along\ with\ the\ world\ item.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00037}00037\ -\/-\/!\ \(\backslash\)param\ item\ \(\backslash\)string\ The\ item's\ ID.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00038}00038\ -\/-\/!\ \(\backslash\)see\ CHARACTER::GiveItem(itemID)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00039}\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a3c494afd21a59062cde3ba08f5b98f66}{00039}}\ function\ INVENTORY:AddItem(item)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00040}00040\ \ \ \ \ self.items[\#self.items\ +\ 1]\ =\ item}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00041}00041\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00043}00043\ -\/-\/!\ \(\backslash\)brief\ Add\ multiple\ items\ to\ the\ inventory.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00044}00044\ -\/-\/!\ \(\backslash\)details\ Note:\ This\ does\ not\ add\ a\ world\ item,\ it\ simply\ adds\ it\ to\ the\ inventory's\ object.\ Please\ use\ CHARACTER::GiveItems(itemID)\ to\ add\ an\ items\ to\ a\ character's\ inventory\ along\ with\ the\ world\ item.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00045}00045\ -\/-\/!\ \(\backslash\)param\ itemID\ \(\backslash\)string\ The\ item's\ ID.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00046}00046\ -\/-\/!\ \(\backslash\)param\ quantity\ \(\backslash\)integer\ The\ quantity\ of\ the\ item\ to\ add.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00047}00047\ -\/-\/!\ \(\backslash\)see\ CHARACTER::GiveItems(itemID)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00048}\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_ac4328f895320502e14b884c97ee29b2f}{00048}}\ function\ INVENTORY:AddItems(itemID,\ quantity)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00049}00049\ \ \ \ \ for\ i\ =\ 1,\ quantity\ do}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00050}00050\ \ \ \ \ \ \ \ \ self:AddItem(itemID)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00051}00051\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00052}00052\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00053}00053\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00054}00054\ -\/-\/!\ \(\backslash\)brief\ Get\ the\ inventory's\ name.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00055}00055\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)string\ The\ inventory's\ name.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00056}\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a682caeaf9d3a25116efd75d5f00fe3c3}{00056}}\ function\ INVENTORY:GetName()}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00057}00057\ \ \ \ \ return\ self.name\ or\ "{}Someone's\ Inventory"{}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00058}00058\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00059}00059\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00060}00060\ -\/-\/!\ \(\backslash\)brief\ Create\ a\ new\ inventory\ object.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00061}00061\ -\/-\/!\ \(\backslash\)param\ username\ \(\backslash\)string\ The\ owner's\ username.\ Can\ be\ nil\ for\ no\ owner.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00062}00062\ -\/-\/!\ \(\backslash\)param\ type\ \(\backslash\)string\ The\ type\ of\ inventory.\ Can\ be\ nil,\ but\ creates\ a\ character\ inventory\ type\ by\ default.\ Refer\ to\ ProjectFramework.Inventories.Types\ table\ for\ available\ types.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00063}00063\ -\/-\/!\ \(\backslash\)param\ id\ \(\backslash\)string\ The\ inventory's\ ID.\ Can\ be\ nil\ for\ an\ auto\ generated\ ID\ (recommended).}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00064}00064\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)table\ The\ new\ inventory\ object.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00065}\mbox{\hyperlink{class_inventories_a11f854f003fa9b4768d38af62b03e084}{00065}}\ function\ ProjectFramework.Inventories:New(username,\ type,\ id)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00066}00066\ \ \ \ \ if\ not\ id\ then}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00067}00067\ \ \ \ \ \ \ \ \ ProjectFramework.Inventories.List[\#ProjectFramework.Inventories.List\ +\ 1]\ =\ \{\}\ -\/-\/\ Reserve\ space\ to\ avoid\ inconsistencies.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00068}00068\ \ \ \ \ \ \ \ \ id\ =\ \#ProjectFramework.Inventories.List}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00069}00069\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00070}00070\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00071}00071\ \ \ \ \ local\ object\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00072}00072\ \ \ \ \ \ \ \ \ id\ =\ id,}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00073}00073\ \ \ \ \ \ \ \ \ owner\ =\ username\ or\ "{}"{},}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00074}00074\ \ \ \ \ \ \ \ \ type\ =\ type\ or\ ProjectFramework.Inventories.Types.Character,}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00075}00075\ \ \ \ \ \ \ \ \ name\ =\ "{}Someone's\ Inventory"{},}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00076}00076\ \ \ \ \ \ \ \ \ description\ =\ "{}No\ description\ available."{},}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00077}00077\ \ \ \ \ \ \ \ \ items\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00078}00078\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00079}00079\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00080}00080\ \ \ \ \ setmetatable(object,\ INVENTORY)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00081}00081\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00082}00082\ \ \ \ \ return\ object}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00083}00083\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00084}00084\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00085}00085\ -\/-\/!\ \(\backslash\)brief\ Initialize\ an\ inventory.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00086}00086\ -\/-\/!\ \(\backslash\)param\ id\ \(\backslash\)table\ The\ inventory's\ id.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00087}00087\ -\/-\/!\ \(\backslash\)param\ object\ \(\backslash\)table\ The\ inventory's\ object.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00088}00088\ -\/-\/!\ \(\backslash\)return\ \(\backslash\)integer\ The\ inventory's\ ID.}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00089}\mbox{\hyperlink{class_inventories_acc9ed3d59884610b8729ec76d33d354a}{00089}}\ function\ ProjectFramework.Inventories:Initialize(id,\ object)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00090}00090\ \ \ \ \ ProjectFramework.Inventories.List[id]\ =\ object}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00091}00091\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00092}00092\ \ \ \ \ return\ id}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00093}00093\ end}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00094}00094\ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00095}\mbox{\hyperlink{class_inventories_abe2d104c5cea5bae08d91f2b0d3b6e93}{00095}}\ function\ ProjectFramework.Inventories:GetInventoryByID(id)}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00096}00096\ \ \ \ \ local\ inventory\ =\ ProjectFramework.Inventories.List[id]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00097}00097\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00098}00098\ \ \ \ \ return\ inventory}
+\DoxyCodeLine{\Hypertarget{_inventories_8lua_source_l00099}00099\ end}
+
+\end{DoxyCode}

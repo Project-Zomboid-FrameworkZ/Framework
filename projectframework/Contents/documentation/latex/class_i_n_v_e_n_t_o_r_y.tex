@@ -1,0 +1,129 @@
+\doxysection{INVENTORY Class Reference}
+\hypertarget{class_i_n_v_e_n_t_o_r_y}{}\label{class_i_n_v_e_n_t_o_r_y}\index{INVENTORY@{INVENTORY}}
+
+
+Inventory class for \doxylink{class_project_framework}{Project\+Framework}.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a87b5e80080e1cf9c1d87023a79579f79}{Initialize}} ()
+\begin{DoxyCompactList}\small\item\em Initialize an inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a3c494afd21a59062cde3ba08f5b98f66}{Add\+Item}} (item)
+\begin{DoxyCompactList}\small\item\em Add an item to the inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_ac4328f895320502e14b884c97ee29b2f}{Add\+Items}} (item\+ID, quantity)
+\begin{DoxyCompactList}\small\item\em Add multiple items to the inventory. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a682caeaf9d3a25116efd75d5f00fe3c3}{Get\+Name}} ()
+\begin{DoxyCompactList}\small\item\em Get the inventory\textquotesingle{}s name. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Inventory class for \doxylink{class_project_framework}{Project\+Framework}. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_i_n_v_e_n_t_o_r_y_a3c494afd21a59062cde3ba08f5b98f66}\label{class_i_n_v_e_n_t_o_r_y_a3c494afd21a59062cde3ba08f5b98f66} 
+\index{INVENTORY@{INVENTORY}!AddItem@{AddItem}}
+\index{AddItem@{AddItem}!INVENTORY@{INVENTORY}}
+\doxysubsubsection{\texorpdfstring{AddItem()}{AddItem()}}
+{\footnotesize\ttfamily Add\+Item (\begin{DoxyParamCaption}\item[{item}]{ }\end{DoxyParamCaption})}
+
+
+
+Add an item to the inventory. 
+
+Note\+: This does not add a world item, it simply adds it to the inventory\textquotesingle{}s object. Please use \doxylink{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}{CHARACTER\+::\+Give\+Item(item\+ID)} to add an item to a character\textquotesingle{}s inventory along with the world item. 
+\begin{DoxyParams}{Parameters}
+{\em item} & \href{var_types.html\#string}{\texttt{ string}} The item\textquotesingle{}s ID. \\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+\doxylink{class_c_h_a_r_a_c_t_e_r_ae10e81270fc1730f2b109bb1a8a3a969}{CHARACTER\+::\+Give\+Item(item\+ID)} 
+\end{DoxySeeAlso}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00039}{39}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00039\ :\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a3c494afd21a59062cde3ba08f5b98f66}{AddItem}}(item)}
+
+\end{DoxyCode}
+\Hypertarget{class_i_n_v_e_n_t_o_r_y_ac4328f895320502e14b884c97ee29b2f}\label{class_i_n_v_e_n_t_o_r_y_ac4328f895320502e14b884c97ee29b2f} 
+\index{INVENTORY@{INVENTORY}!AddItems@{AddItems}}
+\index{AddItems@{AddItems}!INVENTORY@{INVENTORY}}
+\doxysubsubsection{\texorpdfstring{AddItems()}{AddItems()}}
+{\footnotesize\ttfamily Add\+Items (\begin{DoxyParamCaption}\item[{item\+ID}]{,  }\item[{quantity}]{ }\end{DoxyParamCaption})}
+
+
+
+Add multiple items to the inventory. 
+
+Note\+: This does not add a world item, it simply adds it to the inventory\textquotesingle{}s object. Please use CHARACTER\+::\+Give\+Items(item\+ID) to add an items to a character\textquotesingle{}s inventory along with the world item. 
+\begin{DoxyParams}{Parameters}
+{\em item\+ID} & \href{var_types.html\#string}{\texttt{ string}} The item\textquotesingle{}s ID. \\
+\hline
+{\em quantity} & \href{var_types.html\#integer}{\texttt{ integer}} The quantity of the item to add. \\
+\hline
+\end{DoxyParams}
+\begin{DoxySeeAlso}{See also}
+CHARACTER\+::\+Give\+Items(item\+ID) 
+\end{DoxySeeAlso}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00048}{48}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00048\ :\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_ac4328f895320502e14b884c97ee29b2f}{AddItems}}(itemID,\ quantity)}
+
+\end{DoxyCode}
+\Hypertarget{class_i_n_v_e_n_t_o_r_y_a682caeaf9d3a25116efd75d5f00fe3c3}\label{class_i_n_v_e_n_t_o_r_y_a682caeaf9d3a25116efd75d5f00fe3c3} 
+\index{INVENTORY@{INVENTORY}!GetName@{GetName}}
+\index{GetName@{GetName}!INVENTORY@{INVENTORY}}
+\doxysubsubsection{\texorpdfstring{GetName()}{GetName()}}
+{\footnotesize\ttfamily Get\+Name (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Get the inventory\textquotesingle{}s name. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The inventory\textquotesingle{}s name. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00056}{56}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00056\ :\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a682caeaf9d3a25116efd75d5f00fe3c3}{GetName}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_i_n_v_e_n_t_o_r_y_a87b5e80080e1cf9c1d87023a79579f79}\label{class_i_n_v_e_n_t_o_r_y_a87b5e80080e1cf9c1d87023a79579f79} 
+\index{INVENTORY@{INVENTORY}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!INVENTORY@{INVENTORY}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Initialize an inventory. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The inventory\textquotesingle{}s ID. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_inventories_8lua_source_l00031}{31}} of file \mbox{\hyperlink{_inventories_8lua_source}{Inventories.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00031\ :\mbox{\hyperlink{class_i_n_v_e_n_t_o_r_y_a87b5e80080e1cf9c1d87023a79579f79}{Initialize}}()}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_inventories_8lua}{Inventories.\+lua}}\end{DoxyCompactItemize}

@@ -1,0 +1,68 @@
+\doxysection{Create\+Character\+Appearance.\+lua}
+\hypertarget{_create_character_appearance_8lua_source}{}\label{_create_character_appearance_8lua_source}\index{CreateCharacterAppearance.lua@{CreateCharacterAppearance.lua}}
+\mbox{\hyperlink{_create_character_appearance_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00001}00001\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00003}00003\ require\ \textcolor{stringliteral}{"{}ISUI/ISPanel"{}}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00004}00004\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00005}00005\ PFW\_CreateCharacterAppearance\ =\ ISPanel:derive(\textcolor{stringliteral}{"{}PFW\_CreateCharacterAppearance"{}})}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00006}00006\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00007}00007\ function\ PFW\_CreateCharacterAppearance:initialise()}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00008}00008\ \ \ \ \ ISPanel.initialise(self)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00009}00009\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00010}00010\ \ \ \ \ self.uiHelper\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.UI}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00011}00011\ \ \ \ \ local\ title\ =\ "{}Appearance"{}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00012}00012\ \ \ \ \ local\ subtitle\ =\ "{}Customize\ your\ character's\ appearance."{}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00013}00013\ \ \ \ \ local\ factionWidth\ =\ 500}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00014}00014\ \ \ \ \ local\ factionHeight\ =\ 300}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00015}00015\ \ \ \ \ local\ dropdownWidth\ =\ self.width\ *\ 0.5}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00016}00016\ \ \ \ \ local\ middleX\ =\ self.width\ /\ 2}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00017}00017\ \ \ \ \ local\ yOffset\ =\ 0}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00018}00018\ \ \ \ \ local\ factionsList\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_factions}{Factions}}.List}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00019}00019\ \ \ \ \ self.initialFaction\ =\ nil}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00020}00020\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00021}00021\ \ \ \ \ ISPanel.initialise(self)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00022}00022\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00023}00023\ \ \ \ \ yOffset\ =\ self.uiHelper.GetHeight(UIFont.Title,\ title)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00024}00024\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00025}00025\ \ \ \ \ self.title\ =\ ISLabel:new(self.uiHelper.GetMiddle(self.width,\ UIFont.Title,\ title),\ yOffset,\ 25,\ title,\ 1,\ 1,\ 1,\ 1,\ UIFont.Title,\ true)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00026}00026\ \ \ \ \ self.title:initialise()}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00027}00027\ \ \ \ \ self:addChild(self.title)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00028}00028\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00029}00029\ \ \ \ \ yOffset\ =\ yOffset\ +\ self.uiHelper.GetHeight(UIFont.Large,\ subtitle)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00030}00030\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00031}00031\ \ \ \ \ self.subtitle\ =\ ISLabel:new(self.uiHelper.GetMiddle(self.width,\ UIFont.Large,\ subtitle),\ yOffset,\ 25,\ subtitle,\ 1,\ 1,\ 1,\ 1,\ UIFont.Large,\ true)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00032}00032\ \ \ \ \ self.subtitle:initialise()}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00033}00033\ \ \ \ \ self:addChild(self.subtitle)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00034}00034\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00035}00035\ \ \ \ \ yOffset\ =\ yOffset\ +\ 45}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00036}00036\ end}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00037}00037\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00039}00039\ function\ PFW\_CreateCharacterAppearance:render()}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00040}00040\ \ \ \ \ ISPanel.render(self)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00041}00041\ end}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00042}00042\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00043}00043\ function\ PFW\_CreateCharacterAppearance:update()}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00044}00044\ \ \ \ \ ISPanel.update(self)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00045}00045\ end}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00046}00046\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00047}00047\ function\ PFW\_CreateCharacterAppearance:new(x,\ y,\ width,\ height,\ playerObject)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00048}00048\ \ \ \ \ local\ o\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00049}00049\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00050}00050\ \ \ \ \ o\ =\ ISPanel:\textcolor{keyword}{new}(x,\ y,\ width,\ height)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00051}00051\ \ \ \ \ setmetatable(o,\ self)}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00052}00052\ \ \ \ \ self.\_\_index\ =\ self}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00053}00053\ \ \ \ \ o.backgroundColor\ =\ \{r=0,\ g=0,\ b=0,\ a=0\}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00054}00054\ \ \ \ \ o.borderColor\ =\ \{r=0,\ g=0,\ b=0,\ a=0\}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00055}00055\ \ \ \ \ o.moveWithMouse\ =\ \textcolor{keyword}{false}}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00056}00056\ \ \ \ \ o.playerObject\ =\ playerObject}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00057}00057\ \ \ \ \ PFW\_CreateCharacterAppearance.instance\ =\ o}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00058}00058\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00059}00059\ \ \ \ \ \textcolor{keywordflow}{return}\ o}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00060}00060\ end}
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00061}00061\ }
+\DoxyCodeLine{\Hypertarget{_create_character_appearance_8lua_source_l00062}00062\ \textcolor{keywordflow}{return}\ PFW\_CreateCharacterAppearance}
+
+\end{DoxyCode}

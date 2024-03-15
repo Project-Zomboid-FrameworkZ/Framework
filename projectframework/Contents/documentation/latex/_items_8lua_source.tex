@@ -1,0 +1,63 @@
+\doxysection{Items.\+lua}
+\hypertarget{_items_8lua_source}{}\label{_items_8lua_source}\index{Items.lua@{Items.lua}}
+\mbox{\hyperlink{_items_8lua}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00001}00001\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}\ or\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00002}00002\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00003}00003\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00004}00004\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.\_\_index\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00005}00005\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.List\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00006}00006\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00007}00007\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Foundation:NewModule(\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items,\ \textcolor{stringliteral}{"{}Items"{}})}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00008}00008\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00009}00009\ local\ ITEM\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00010}00010\ ITEM.\_\_index\ =\ ITEM}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00011}00011\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00012}00012\ function\ ITEM:Initialize()}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00013}00013\ \ \ \ \ return\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:Initialize(self,\ self.\textcolor{keywordtype}{id})}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00014}00014\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00015}00015\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00016}00016\ function\ ITEM:GetName()}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00017}00017\ \ \ \ \ return\ self.name\ or\ "{}Unnamed\ Item"{}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00018}00018\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00019}00019\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00020}00020\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:New(\textcolor{keywordtype}{id},\ username)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00021}00021\ \ \ \ \ local\ \textcolor{keywordtype}{object}\ =\ \{}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00022}00022\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{id}\ =\ \textcolor{keywordtype}{id}\ or\ \textcolor{stringliteral}{"{}Base.Plank"{}},}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00023}00023\ \ \ \ \ \ \ \ \ owner\ =\ username\ or\ \textcolor{stringliteral}{"{}"{}},}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00024}00024\ \ \ \ \ \ \ \ \ name\ =\ \textcolor{stringliteral}{"{}Unnamed\ Item"{}},}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00025}00025\ \ \ \ \ \ \ \ \ description\ =\ \textcolor{stringliteral}{"{}No\ description\ available."{}}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00026}00026\ \ \ \ \ \}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00027}00027\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00028}00028\ \ \ \ \ setmetatable(\textcolor{keywordtype}{object},\ ITEM)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00029}00029\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00030}00030\ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keywordtype}{object}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00031}00031\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00032}00032\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00033}00033\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:Initialize(data,\ name)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00034}00034\ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.List[name]\ =\ data}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00035}00035\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00036}00036\ \ \ \ \ \textcolor{keywordflow}{return}\ name}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00037}00037\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00038}00038\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00039}00039\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:AddInstance(\textcolor{keywordtype}{id},\ worldItem)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00040}00040\ \ \ \ \ \textcolor{keywordflow}{if}\ not\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances[id]\ then}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00041}00041\ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances[id]\ =\ \{\}}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00042}00042\ \ \ \ \ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00043}00043\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00044}00044\ \ \ \ \ table.insert(\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances[\textcolor{keywordtype}{id}],\ worldItem:getModData()[\textcolor{stringliteral}{"{}PFW\_ITM"{}}])}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00045}00045\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00046}00046\ \ \ \ \ return\ \#\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances[id]}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00047}00047\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00048}00048\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00049}00049\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:RemoveInstance(id,\ instanceID)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00050}00050\ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.Instances[id][instanceID]\ =\ nil}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00051}00051\ end}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00052}00052\ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00053}00053\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items:GetItemByID(itemID)}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00054}00054\ \ \ \ \ local\ item\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Items.List[itemID]\ or\ nil}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00055}00055\ \ \ \ \ }
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00056}00056\ \ \ \ \ return\ item}
+\DoxyCodeLine{\Hypertarget{_items_8lua_source_l00057}00057\ end}
+
+\end{DoxyCode}

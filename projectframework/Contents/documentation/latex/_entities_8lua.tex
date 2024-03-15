@@ -1,0 +1,129 @@
+\doxysection{Entities.\+lua File Reference}
+\hypertarget{_entities_8lua}{}\label{_entities_8lua}\index{Entities.lua@{Entities.lua}}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_entities}{Entities}} \mbox{\hyperlink{_entities_8lua_a9572da9b999605776e499f9ce1929479}{On\+Object\+Added}} (object)
+\begin{DoxyCompactList}\small\item\em Called when an object is added to the world. Adds the entity to the object\textquotesingle{}s mod data. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_entities}{Entities}} \mbox{\hyperlink{_entities_8lua_a40de6d9052ea449926c3f00bf8d6e33c}{On\+Object\+About\+To\+Be\+Removed}} (object)
+\item 
+\mbox{\hyperlink{class_entities}{Entities}} \mbox{\hyperlink{_entities_8lua_a65174e2f20875cb8b866ba33be59740f}{On\+Pre\+Fill\+World\+Object\+Context\+Menu}} (player, context, world\+Objects, test)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{_entities_8lua_a40de6d9052ea449926c3f00bf8d6e33c}\label{_entities_8lua_a40de6d9052ea449926c3f00bf8d6e33c} 
+\index{Entities.lua@{Entities.lua}!OnObjectAboutToBeRemoved@{OnObjectAboutToBeRemoved}}
+\index{OnObjectAboutToBeRemoved@{OnObjectAboutToBeRemoved}!Entities.lua@{Entities.lua}}
+\doxysubsubsection{\texorpdfstring{OnObjectAboutToBeRemoved}{OnObjectAboutToBeRemoved}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_entities}{Entities}} On\+Object\+About\+To\+Be\+Removed(object) (\begin{DoxyParamCaption}\item[{object}]{ }\end{DoxyParamCaption})}
+
+\texorpdfstring{$>$}{>} 
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00173}{173}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00174\ :IsEntity(\textcolor{keywordtype}{object})}
+\DoxyCodeLine{00175\ \ \ \ \ }
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keywordflow}{if}\ isEntity\ then}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ local\ entity\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Entities:GetEntityByID(entityID)}
+\DoxyCodeLine{00178\ }
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ entity\ and\ entity.OnRemove\ then}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ \ \ \ \ entity:OnRemove(getPlayer(),\ \textcolor{keywordtype}{object})}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00182\ \ \ \ \ end}
+\DoxyCodeLine{00183\ end}
+\DoxyCodeLine{00184\ Events.OnObjectAboutToBeRemoved.Add(\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Entities.OnObjectAboutToBeRemoved)}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.Entities.OnPreFillWorldObjectContextMenu(player,\ context,\ worldObjects,\ test)}
+\DoxyCodeLine{00187\ \ \ \ \ local\ playerObj\ =\ getSpecificPlayer(player)}
+\DoxyCodeLine{00188\ \ \ \ \ }
+\DoxyCodeLine{00189\ \ \ \ \ local\ interact\ =\ context:addOptionOnTop(\textcolor{stringliteral}{"{}Interact"{}})}
+\DoxyCodeLine{00190\ \ \ \ \ local\ interactContext\ =\ ISContextMenu:getNew(context)}
+\DoxyCodeLine{00191\ \ \ \ \ context:addSubMenu(interact,\ interactContext)}
+\DoxyCodeLine{00192\ }
+\DoxyCodeLine{00193\ \ \ \ \ for\ k,\ v\ in\ pairs(worldObjects)\ do}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ if\ v:getModData()["{}PFW\_ENT"{}]\ then}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entityID\ =\ v:getModData()["{}PFW\_ENT"{}].\textcolor{keywordtype}{id}}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entity\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_entities}{Entities}}:GetEntityByID(entityID)}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity\ then}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ canContext\ =\ false}
+\DoxyCodeLine{00200\ }
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity:ValidateEntityData(v)}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity.CanContext\ then}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ canContext\ =\ entity:CanContext(playerObj,\ v)}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00206\ }
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ canContext\ then}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity.OnContext\ then}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ context\ =\ entity:OnContext(playerObj,\ v,\ interactContext)}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ entity.OnUse\ then}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOptionOnTop("{}Use\ "{}\ ..\ entity.name,\ entity,\ entity.OnUse,\ playerObj,\ v)}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00214\ }
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOption("{}Examine\ "{}\ ..\ entity.name,\ entity,\ function(entity,\ playerObj)\ playerObj:Say(entity.description)\ end,\ playerObj)}
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \ \ \ \ else}
+\DoxyCodeLine{00217\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ interactContext:addOption("{}Malformed\ Entity"{})}
+\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00220\ \ \ \ \ end}
+\DoxyCodeLine{00221\ }
+\DoxyCodeLine{00222\ \ \ \ \ if\ interactContext:isEmpty()\ then}
+\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ interactContext:addOption("{}No\ Interactions\ Available"{})}
+\DoxyCodeLine{00224\ \ \ \ \ end}
+\DoxyCodeLine{00225\ end}
+\DoxyCodeLine{00226\ }
+\DoxyCodeLine{00227\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_entities}{Entities}}.OnGameStart()}
+\DoxyCodeLine{00228\ \ \ \ \ Events.\mbox{\hyperlink{_entities_8lua_a65174e2f20875cb8b866ba33be59740f}{OnPreFillWorldObjectContextMenu}}.Add(\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_entities}{Entities}}.\mbox{\hyperlink{_entities_8lua_a65174e2f20875cb8b866ba33be59740f}{OnPreFillWorldObjectContextMenu}})}
+\DoxyCodeLine{00229\ end}
+\DoxyCodeLine{00230\ }
+\DoxyCodeLine{00231\ function\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_entities}{Entities}}:\mbox{\hyperlink{2000___framework_8lua_aa12f6ad47bece8491f2887ab12399742}{LoadGridsquare}}(square)}
+\DoxyCodeLine{00232\ \ \ \ \ for\ i\ =\ 0,\ square:getObjects():size()\ -\/\ 1\ do}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ local\ \textcolor{keywordtype}{object}\ =\ square:getObjects():get(i)}
+\DoxyCodeLine{00234\ }
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ if\ \textcolor{keywordtype}{object}\ and\ \textcolor{keywordtype}{object}:getModData()["{}PFW\_ENT"{}]\ then}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entityID\ =\ \textcolor{keywordtype}{object}:getModData()["{}PFW\_ENT"{}].\textcolor{keywordtype}{id}}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \ \ \ \ local\ entity\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_entities}{Entities}}:GetEntityByID(entityID)}
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \ \ \ \ if\ entity\ and\ not\ entity.isInitialized\ then}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity:OnInitialize(\textcolor{keywordtype}{object})}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ entity.isInitialized\ =\ true}
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00244\ \ \ \ \ end}
+\DoxyCodeLine{00245\ end}
+
+\end{DoxyCode}
+\Hypertarget{_entities_8lua_a9572da9b999605776e499f9ce1929479}\label{_entities_8lua_a9572da9b999605776e499f9ce1929479} 
+\index{Entities.lua@{Entities.lua}!OnObjectAdded@{OnObjectAdded}}
+\index{OnObjectAdded@{OnObjectAdded}!Entities.lua@{Entities.lua}}
+\doxysubsubsection{\texorpdfstring{OnObjectAdded}{OnObjectAdded}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_entities}{Entities}} On\+Object\+Added(object) (\begin{DoxyParamCaption}\item[{object}]{ }\end{DoxyParamCaption})}
+
+
+
+Called when an object is added to the world. Adds the entity to the object\textquotesingle{}s mod data. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em object} & \href{var_types.html\#table}{\texttt{ table}} The object that was added to the world.\\
+\hline
+\end{DoxyParams}
+\texorpdfstring{$>$}{>} 
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00149}{149}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+
+\Hypertarget{_entities_8lua_a65174e2f20875cb8b866ba33be59740f}\label{_entities_8lua_a65174e2f20875cb8b866ba33be59740f} 
+\index{Entities.lua@{Entities.lua}!OnPreFillWorldObjectContextMenu@{OnPreFillWorldObjectContextMenu}}
+\index{OnPreFillWorldObjectContextMenu@{OnPreFillWorldObjectContextMenu}!Entities.lua@{Entities.lua}}
+\doxysubsubsection{\texorpdfstring{OnPreFillWorldObjectContextMenu}{OnPreFillWorldObjectContextMenu}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_entities}{Entities}} On\+Pre\+Fill\+World\+Object\+Context\+Menu(player, context, world\+Objects, test) (\begin{DoxyParamCaption}\item[{player}]{,  }\item[{context}]{,  }\item[{world\+Objects}]{,  }\item[{test}]{ }\end{DoxyParamCaption})}
+
+\texorpdfstring{$>$}{>} 
+
+Definition at line \mbox{\hyperlink{_entities_8lua_source_l00186}{186}} of file \mbox{\hyperlink{_entities_8lua_source}{Entities.\+lua}}.
+

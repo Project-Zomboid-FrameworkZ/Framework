@@ -1,0 +1,155 @@
+\doxysection{Characters Class Reference}
+\hypertarget{class_characters}{}\label{class_characters}\index{Characters@{Characters}}
+
+
+\doxylink{class_characters}{Characters} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_c_h_a_r_a_c_t_e_r}{CHARACTER} object.  
+
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_characters_ab5e4062f88132b0b555bc4215b0e8280}{New}} (username)
+\begin{DoxyCompactList}\small\item\em Create a new character object. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_characters_ae0b3031cc27350e7533ea4768987b207}{Initialize}} (username, character)
+\begin{DoxyCompactList}\small\item\em Initialize a character. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_characters_a3ea137d2a0040581f2272eb14a7ce664}{Get\+Character\+By\+ID}} (username)
+\begin{DoxyCompactList}\small\item\em Get a character by their ID (i.\+e. username). \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_characters_a5f56aed72834753ae77316fd5cbdf12c}{On\+Game\+Start}} ()
+\begin{DoxyCompactList}\small\item\em Initializes a player\textquotesingle{}s character after joining. Called by On\+Game\+Start event hook. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{class_characters_a88c9f79b0fee55a35bfb0487ea1dd17b}{On\+Disconnect}} ()
+\begin{DoxyCompactList}\small\item\em Destroys a character and removes them from the character list after disconnecting. Called by On\+Disconnect event hook. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{class_characters}{Characters} module for \doxylink{class_project_framework}{Project\+Framework}. Defines and interacts with \doxylink{class_c_h_a_r_a_c_t_e_r}{CHARACTER} object. 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{class_characters_a3ea137d2a0040581f2272eb14a7ce664}\label{class_characters_a3ea137d2a0040581f2272eb14a7ce664} 
+\index{Characters@{Characters}!GetCharacterByID@{GetCharacterByID}}
+\index{GetCharacterByID@{GetCharacterByID}!Characters@{Characters}}
+\doxysubsubsection{\texorpdfstring{GetCharacterByID()}{GetCharacterByID()}}
+{\footnotesize\ttfamily Get\+Character\+By\+ID (\begin{DoxyParamCaption}\item[{username}]{ }\end{DoxyParamCaption})}
+
+
+
+Get a character by their ID (i.\+e. username). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em username} & \href{var_types.html\#string}{\texttt{ string}} The player\textquotesingle{}s username to get their character object with. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The character object from the list of characters. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00355}{355}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00355\ :\mbox{\hyperlink{class_characters_a3ea137d2a0040581f2272eb14a7ce664}{GetCharacterByID}}(username)}
+
+\end{DoxyCode}
+\Hypertarget{class_characters_ae0b3031cc27350e7533ea4768987b207}\label{class_characters_ae0b3031cc27350e7533ea4768987b207} 
+\index{Characters@{Characters}!Initialize@{Initialize}}
+\index{Initialize@{Initialize}!Characters@{Characters}}
+\doxysubsubsection{\texorpdfstring{Initialize()}{Initialize()}}
+{\footnotesize\ttfamily Initialize (\begin{DoxyParamCaption}\item[{username}]{,  }\item[{character}]{ }\end{DoxyParamCaption})}
+
+
+
+Initialize a character. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em username} & \href{var_types.html\#string}{\texttt{ string}} The player\textquotesingle{}s username. \\
+\hline
+{\em character} & \href{var_types.html\#table}{\texttt{ table}} The character\textquotesingle{}s object data. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The username added to the list of characters. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00346}{346}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00346\ :\mbox{\hyperlink{class_characters_ae0b3031cc27350e7533ea4768987b207}{Initialize}}(username,\ character)}
+
+\end{DoxyCode}
+\Hypertarget{class_characters_ab5e4062f88132b0b555bc4215b0e8280}\label{class_characters_ab5e4062f88132b0b555bc4215b0e8280} 
+\index{Characters@{Characters}!New@{New}}
+\index{New@{New}!Characters@{Characters}}
+\doxysubsubsection{\texorpdfstring{New()}{New()}}
+{\footnotesize\ttfamily New (\begin{DoxyParamCaption}\item[{username}]{ }\end{DoxyParamCaption})}
+
+
+
+Create a new character object. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em username} & \href{var_types.html\#string}{\texttt{ string}} The player\textquotesingle{}s username as their ID. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#table}{\texttt{ table}} The new character object. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00332}{332}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00332\ :\mbox{\hyperlink{class_characters_ab5e4062f88132b0b555bc4215b0e8280}{New}}(username)}
+
+\end{DoxyCode}
+\Hypertarget{class_characters_a88c9f79b0fee55a35bfb0487ea1dd17b}\label{class_characters_a88c9f79b0fee55a35bfb0487ea1dd17b} 
+\index{Characters@{Characters}!OnDisconnect@{OnDisconnect}}
+\index{OnDisconnect@{OnDisconnect}!Characters@{Characters}}
+\doxysubsubsection{\texorpdfstring{OnDisconnect()}{OnDisconnect()}}
+{\footnotesize\ttfamily On\+Disconnect (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Destroys a character and removes them from the character list after disconnecting. Called by On\+Disconnect event hook. 
+
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00396}{396}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00396\ :\mbox{\hyperlink{class_characters_a88c9f79b0fee55a35bfb0487ea1dd17b}{OnDisconnect}}()}
+
+\end{DoxyCode}
+\Hypertarget{class_characters_a5f56aed72834753ae77316fd5cbdf12c}\label{class_characters_a5f56aed72834753ae77316fd5cbdf12c} 
+\index{Characters@{Characters}!OnGameStart@{OnGameStart}}
+\index{OnGameStart@{OnGameStart}!Characters@{Characters}}
+\doxysubsubsection{\texorpdfstring{OnGameStart()}{OnGameStart()}}
+{\footnotesize\ttfamily On\+Game\+Start (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Initializes a player\textquotesingle{}s character after joining. Called by On\+Game\+Start event hook. 
+
+\begin{DoxyReturn}{Returns}
+\href{var_types.html\#string}{\texttt{ string}} The username of the new character\textquotesingle{}s player. 
+\end{DoxyReturn}
+
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00365}{365}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00365\ :\mbox{\hyperlink{class_characters_a5f56aed72834753ae77316fd5cbdf12c}{OnGameStart}}()}
+
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{_characters_8lua}{Characters.\+lua}}\end{DoxyCompactItemize}

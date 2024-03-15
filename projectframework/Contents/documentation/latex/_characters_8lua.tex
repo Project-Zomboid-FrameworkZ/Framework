@@ -1,0 +1,63 @@
+\doxysection{Characters.\+lua File Reference}
+\hypertarget{_characters_8lua}{}\label{_characters_8lua}\index{Characters.lua@{Characters.lua}}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{class_characters}{Characters}} \mbox{\hyperlink{_characters_8lua_af58fb55adaab698e560fc29bc468eebd}{On\+Client\+Command}} (module, command, player, args)
+\begin{DoxyCompactList}\small\item\em Initialize a character called by On\+Server\+Started event hook. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{_characters_8lua_af58fb55adaab698e560fc29bc468eebd}\label{_characters_8lua_af58fb55adaab698e560fc29bc468eebd} 
+\index{Characters.lua@{Characters.lua}!OnClientCommand@{OnClientCommand}}
+\index{OnClientCommand@{OnClientCommand}!Characters.lua@{Characters.lua}}
+\doxysubsubsection{\texorpdfstring{OnClientCommand}{OnClientCommand}}
+{\footnotesize\ttfamily \mbox{\hyperlink{class_characters}{Characters}} On\+Client\+Command(module, command, player, args) (\begin{DoxyParamCaption}\item[{module}]{,  }\item[{command}]{,  }\item[{player}]{,  }\item[{args}]{ }\end{DoxyParamCaption})}
+
+
+
+Initialize a character called by On\+Server\+Started event hook. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em module} & \href{var_types.html\#string}{\texttt{ string}} \\
+\hline
+{\em command} & \href{var_types.html\#string}{\texttt{ string}} \\
+\hline
+{\em player} & \href{var_types.html\#table}{\texttt{ table}} Player object. \\
+\hline
+{\em args} & \href{var_types.html\#string}{\texttt{ string}}\\
+\hline
+\end{DoxyParams}
+\texorpdfstring{$>$}{>} 
+
+Definition at line \mbox{\hyperlink{_characters_8lua_source_l00419}{419}} of file \mbox{\hyperlink{_characters_8lua_source}{Characters.\+lua}}.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00423\ :New(username)}
+\DoxyCodeLine{00424\ }
+\DoxyCodeLine{00425\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character.playerObj\ =\ player}
+\DoxyCodeLine{00426\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character:Initialize()}
+\DoxyCodeLine{00427\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ command\ ==\ "{}destroy"{}\ then}
+\DoxyCodeLine{00428\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ username\ =\ args[1]}
+\DoxyCodeLine{00429\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ character\ =\ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_characters}{Characters}}:GetCharacterByID(username)}
+\DoxyCodeLine{00430\ }
+\DoxyCodeLine{00431\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ if\ character\ then}
+\DoxyCodeLine{00432\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ character:Destroy()}
+\DoxyCodeLine{00433\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00434\ }
+\DoxyCodeLine{00435\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_characters}{Characters}}.List[username]\ =\ nil}
+\DoxyCodeLine{00436\ \ \ \ \ \ \ \ \ \ \ \ \ elseif\ command\ ==\ "{}update"{}\ then}
+\DoxyCodeLine{00437\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ username\ =\ args[1]}
+\DoxyCodeLine{00438\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ field\ =\ args[2]}
+\DoxyCodeLine{00439\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ local\ newData\ =\ args[3]}
+\DoxyCodeLine{00440\ }
+\DoxyCodeLine{00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_characters}{Characters}}.List[username][field]\ =\ newData}
+\DoxyCodeLine{00442\ \ \ \ \ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00443\ \ \ \ \ \ \ \ \ end}
+\DoxyCodeLine{00444\ \ \ \ \ end}
+\DoxyCodeLine{00445\ \ \ \ \ Events.\mbox{\hyperlink{_characters_8lua_af58fb55adaab698e560fc29bc468eebd}{OnClientCommand}}.Add(\mbox{\hyperlink{class_project_framework}{ProjectFramework}}.\mbox{\hyperlink{class_characters}{Characters}}.\mbox{\hyperlink{_characters_8lua_af58fb55adaab698e560fc29bc468eebd}{OnClientCommand}})}
+\DoxyCodeLine{00446\ end}
+
+\end{DoxyCode}
