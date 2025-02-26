@@ -117,7 +117,19 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
                 end
             else
                 if v.get then
-                    layout:setValue(tostring(v.get(itemInstance)), 1, 1, 1, 1)
+                    local values = v.get(itemInstance)
+
+                    if type(values) == "table" then
+                        local displayString = ""
+
+                        for _, v2 in pairs(values) do
+                            displayString = displayString .. tostring(v2) .. "\n"
+                        end
+
+                        layout:setValue(displayString, 1, 1, 1, 1)
+                    else
+                        layout:setValue(tostring(v.get(itemInstance)), 1, 1, 1, 1)
+                    end
                 else
                     layout:setValue(v, 1, 1, 1, 1)
                 end

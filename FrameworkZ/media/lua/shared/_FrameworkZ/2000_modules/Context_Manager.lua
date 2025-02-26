@@ -30,12 +30,20 @@ function MenuManager:addAggregatedOption(unqiueID, option, target)
 end
 
 function MenuManager:buildMenu()
+    local function buildSubMenu(subMenuBuilder)
+        for _, subMenu in ipairs(subMenuBuilder.subMenus) do
+            buildSubMenu(subMenu)
+        end
+
+        subMenuBuilder:buildAggregatedOptions()
+    end
+
     -- Build aggregated options for the main context menu
     self.contextMenuBuilder:buildAggregatedOptions()
 
     -- Build aggregated options for submenus
     for _, subMenuBuilder in ipairs(self.subMenuBuilders) do
-        subMenuBuilder:buildAggregatedOptions()
+        buildSubMenu(subMenuBuilder)
     end
 end
 
@@ -155,7 +163,7 @@ function ContextMenuBuilder:addSubMenu(name, addOnTop, options)
     -- Create a new context for the submenu
     local subMenu = ISContextMenu:getNew(self.context)
     local subMenuBuilder = ContextMenuBuilder.new(self.menuManager, subMenu) -- Pass menuManager properly
-    subMenuBuilder.name = name
+    subMenuBuilder["name"] = name
 
     -- Add predefined options to the submenu
     if options then

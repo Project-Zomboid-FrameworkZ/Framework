@@ -67,7 +67,7 @@ function INVENTORY:GetItems()
     return self.items
 end
 
-function INVENTORY:GetItemByID(uniqueID)
+function INVENTORY:GetItemByUniqueID(uniqueID)
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
 
     for _key, item in pairs(self:GetItems()) do
@@ -144,7 +144,7 @@ function FrameworkZ.Inventories:GetInventoryByID(id)
     return inventory
 end
 
-function FrameworkZ.Inventories:GetItemByID(inventoryID, uniqueID)
+function FrameworkZ.Inventories:GetItemByUniqueID(inventoryID, uniqueID)
     if not inventoryID then return false, "No inventory ID provided." end
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
 
@@ -152,7 +152,7 @@ function FrameworkZ.Inventories:GetItemByID(inventoryID, uniqueID)
 
     if not inventoryOrSuccess then return inventoryOrSuccess, inventoryMessage end
 
-    local itemOrSuccess, itemMessage = inventoryOrSuccess:GetItemByID(uniqueID)
+    local itemOrSuccess, itemMessage = inventoryOrSuccess:GetItemByUniqueID(uniqueID)
 
     return itemOrSuccess, itemMessage
 end
@@ -207,7 +207,7 @@ function FrameworkZ.Inventories:Rebuild(isoPlayer, inventory, items)
         if type(item) ~= "table" then return end -- Ensure item is a table
 
         -- Fetch the item definition
-        local itemDefinition = FrameworkZ.Items:GetItemByID(item.uniqueID)
+        local itemDefinition = FrameworkZ.Items:GetItemByUniqueID(item.uniqueID)
         if not itemDefinition then return end -- Exit if no definition is found
 
         -- Rebuild fields and inherit methods

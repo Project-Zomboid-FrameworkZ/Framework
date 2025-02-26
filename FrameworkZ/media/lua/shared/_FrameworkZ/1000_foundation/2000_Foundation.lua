@@ -57,6 +57,8 @@
 --! Any is a placeholder that represents any type of value. It is used to indicate that a variable can hold any type of value.
 --! \section mixed mixed
 --! Mixed is a placeholder that represents a combination of different types of values. It is used to indicate that a variable can hold a variety of different types of values.
+--! \section multiple multiple
+--! Multiple is a placeholder that represents a list of values. It is used to indicate that a function can accept multiple arguments.
 --! \section class class
 --! Class is a placeholder that represents a class of objects by a table set to a metatable.
 --! \section object object
@@ -109,6 +111,9 @@ function FrameworkZ.Foundation:NewModule(moduleObject, moduleName)
 end
 
 function FrameworkZ.Foundation:GetModule(moduleName)
+    if not moduleName or moduleName == "" then return false, "No module name supplied." end
+    if not FrameworkZ.Modules[moduleName] then return false, "Module not found." end
+
     return FrameworkZ.Modules[moduleName]
 end
 
@@ -116,11 +121,11 @@ end
 --! \param moduleName \string The name of the module.
 --! \return \table The meta object stored on the module or \nil if nothing was found.
 function FrameworkZ.Foundation:GetModuleMetaObject(moduleName)
-    if FrameworkZ.Modules[moduleName] and FrameworkZ.Modules[moduleName].Meta then
-        return FrameworkZ.Modules[moduleName].Meta
-    end
+    local module, message = self:GetModule(moduleName)
+    if not module then return false, message end
+    if not module.Meta then return false, "Module does not have a meta object." end
 
-    return nil
+    return module.Meta
 end
 
 function FrameworkZ.Foundation:RegisterFramework()
@@ -317,16 +322,18 @@ function FrameworkZ.Foundation:RegisterHandler(hookName, handler, object, functi
     if object and functionName then
         table.insert(self.RegisteredHooks[category][hookName], {
             handler = function(...)
-                object[functionName](object, ...)
+                object[functionName](...)
             end,
             object = object,
             functionName = functionName
         })
     else
-        table.insert(self.RegisteredHooks[category][hookName], handler)
+        table.insert(self.RegisteredHooks[category][hookName], {
+            handler = handler,
+            object = object
+        })
     end
 end
-
 
 --! \brief Unregister a handler from a hook.
 --! \param hookName \string The name of the hook.
@@ -342,37 +349,47 @@ function FrameworkZ.Foundation:UnregisterHandler(hookName, handler, object, func
             if object and functionName then
                 if hooks[i].object == object and hooks[i].functionName == functionName then
                     table.remove(hooks, i)
-                    break
                 end
             else
                 if hooks[i] == handler then
                     table.remove(hooks, i)
-                    break
                 end
             end
         end
     end
 end
 
---! \brief Execute hooks.
+--! \brief Execute a given hook by its hook name for its given category.
+--! \note When a function is defined and registered as a hook, sometimes it's as an object. However in the definition it could be as some.func() or some:func() (notice the period and colon between the examples). If the function is defined as some:func() then the object is passed as the first argument. If the function is defined as some.func() then the object is not passed as the first argument, in which case we would also need to define some.func_PassOverHookableObject function which must return \boolean true. This tells the hook system to not supply the object as the first argument if the function is apart of an object in the first place. Generic function hooks do not store an object and so do not have to worry about defining that additional property on its own function.
 --! \param hookName \string The name of the hook.
 --! \param category \string The category of the hook (framework, module, plugin, generic).
---! \param ... \vararg Additional arguments to pass to the hook functions.
+--! \param ... \multiple Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteHook(hookName, category, ...)
     category = category or HOOK_CATEGORY_GENERIC
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
+    local args = {...}
+
+    local hooks = FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName]
+    if hooks then
+        for _, hook in ipairs(hooks) do
+            local func = hook.handler
+            local object = hook.object
+            local functionName = hook.functionName
+
+            if func then
+                if object and functionName then
+                    local shouldPassOverHookableObject = rawget(object, functionName .. "_PassOverHookableObject")
+
+                    if shouldPassOverHookableObject then
+                        func(unpack(args))
+                    else
+                        if args[1] ~= object then
+                            func(object, unpack(args))
+                        else
+                            func(unpack(args))
+                        end
+                    end
                 else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
+                    func(unpack(args))
                 end
             end
         end
@@ -383,7 +400,7 @@ end
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteAllHooks(hookName, ...)
-    for category, _ in pairs(FrameworkZ.Foundation.RegisteredHooks) do
+    for category, hooks in pairs(FrameworkZ.Foundation.RegisteredHooks) do
         FrameworkZ.Foundation.ExecuteHook(hookName, category, ...)
     end
 end
@@ -392,120 +409,35 @@ end
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteFrameworkHooks(hookName, ...)
-    local category = HOOK_CATEGORY_FRAMEWORK
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
-                else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
-                end
-            end
-        end
-    end
+    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_FRAMEWORK, ...)
 end
 
 --! \brief Execute module hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteModuleHooks(hookName, ...)
-    local category = HOOK_CATEGORY_MODULE
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
-                else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
-                end
-            end
-        end
-    end
+    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_MODULE, ...)
 end
 
 --! \brief Execute the gamemode hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteGamemodeHooks(hookName, ...)
-    local category = HOOK_CATEGORY_GAMEMODE
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
-                else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
-                end
-            end
-        end
-    end
+    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_GAMEMODE, ...)
 end
 
 --! \brief Execute plugin hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecutePluginHooks(hookName, ...)
-    local category = HOOK_CATEGORY_PLUGIN
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
-                else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
-                end
-            end
-        end
-    end
+    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_PLUGIN, ...)
 end
 
 --! \brief Execute generic hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation.ExecuteGenericHooks(hookName, ...)
-    local category = HOOK_CATEGORY_GENERIC
-    if FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName] then
-        for _, func in ipairs(FrameworkZ.Foundation.RegisteredHooks[category][hookName]) do
-            if type(func) == "table" and func.handler then
-                if select("#", ...) == 0 then
-                    func.handler()
-                else
-                    func.handler(...)
-                end
-            else
-                if select("#", ...) == 0 then
-                    func()
-                else
-                    func(...)
-                end
-            end
-        end
-    end
+    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_GENERIC, ...)
 end
 
 --[[

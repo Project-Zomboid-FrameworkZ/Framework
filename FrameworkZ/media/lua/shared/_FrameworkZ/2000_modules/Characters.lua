@@ -11,6 +11,10 @@
 --! FrameworkZ.Characters.List\n
 --! A list of all instanced characters in the game.
 
+local getTextManager = getTextManager
+local isClient = isClient
+local sendClientCommand = sendClientCommand
+
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Characters module for FrameworkZ. Defines and interacts with CHARACTER object.
@@ -407,29 +411,20 @@ end
 --! \return \boolean Whether or not the item was successfully given.
 function CHARACTER:GiveItem(uniqueID)
     local inventory = self:GetInventory()
+    if not inventory then return false, "Failed to find inventory." end
+    local instance, message = FrameworkZ.Items:CreateItem(uniqueID, self.isoPlayer)
+    if not instance then return false, "Failed to create item: " .. message end
 
-    if inventory then
-        local success, message, itemInstance = FrameworkZ.Items:CreateItem(uniqueID, self.isoPlayer)
-        
-        if not success then return false, "Failed to create item." end
-        
-        inventory:AddItem(itemInstance)
+    inventory:AddItem(instance)
 
-        if isClient() then
-            --worldItem:transmitModData() -- Only transmit when item is on ground?
-        end
-
-        return true, message, itemInstance
-    end
-
-    return false, "Failed to find inventory."
+    return instance, message
 end
 
 --! \brief Take an item from a character's inventory.
---! \param itemID \string The ID of the item to take.
---! \return \boolean Whether or not the item was successfully taken.
+--! \param uniqueID \string The unique ID of the item to take.
+--! \return \boolean \string Whether or not the item was successfully taken and the success or failure message.
 function CHARACTER:TakeItem(uniqueID)
-    local success, message = FrameworkZ.Items:RemoveItemInstanceByID(self.isoPlayer:getUsername(), uniqueID)
+    local success, message = FrameworkZ.Items:RemoveItemInstanceByUniqueID(self.isoPlayer:getUsername(), uniqueID)
 
     if success then
         return true, "Successfully took " .. uniqueID .. "."
@@ -439,23 +434,16 @@ function CHARACTER:TakeItem(uniqueID)
 end
 
 --! \brief Take an item from a character's inventory by its instance ID. Useful for taking a specific item from a stack.
---! \param itemID \string The ID of the item to take.
 --! \param instanceID \integer The instance ID of the item to take.
---! \return \boolean Whether or not the item was successfully taken.
-function CHARACTER:TakeItemByInstanceID(itemID, instanceID)
-    local item = FrameworkZ.Items:GetItemByID(itemID)
+--! \return \boolean \string Whether or not the item was successfully taken and the success or failure message.
+function CHARACTER:TakeItemByInstanceID(instanceID)
+    local success, message = FrameworkZ.Items:RemoveInstance(instanceID, self.isoPlayer:getUsername())
 
-    if item then
-        local inventory = self.isoPlayer:getInventory()
-        local worldItem = inventory:getFirstTypeRecurse(item.id) -- Search whole inventory for matching item instance ID or make an inventory module for more efficiency?
-
-        FrameworkZ.Items:RemoveInstance(item.id, instanceID)
-        inventory:DoRemoveItem(worldItem)
-
-        return true
+    if success then
+        return true, "Successfully took item with instance ID " .. instanceID .. "."
     end
 
-    return false
+    return false, "Failed to find item with instance ID " .. instanceID .. ": " .. message
 end
 
 --! \brief Checks if a character is a citizen.

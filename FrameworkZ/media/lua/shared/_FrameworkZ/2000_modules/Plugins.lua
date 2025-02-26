@@ -28,6 +28,17 @@ function FrameworkZ.Plugins:CreatePlugin(name)
     return plugin
 end
 
+-- TODO add to FrameworkZ.Utilities library?
+local function mergeTables(t1, t2)
+    for k, v in pairs(t2) do
+        if type(v) == "table" and type(t1[k]) == "table" then
+            mergeTables(t1[k], v)
+        else
+            t1[k] = v
+        end
+    end
+end
+
 --! \brief Register a plugin.
 --! \param pluginName \string The name of the plugin.
 --! \param pluginTable \table The table containing the plugin's functions and data.
@@ -36,12 +47,12 @@ function FrameworkZ.Plugins:RegisterPlugin(plugin)
     if not self.RegisteredPlugins[plugin.Meta.Name] then
         self.RegisteredPlugins[plugin.Meta.Name] = plugin
     else
-        for k, v in pairs(plugin) do
-            self.RegisteredPlugins[plugin.Meta.Name].plugin[k] = v
-        end
+        mergeTables(self.RegisteredPlugins[plugin.Meta.Name], plugin)
+        FrameworkZ.Foundation:UnregisterPluginHandler(plugin) -- TODO add MergePluginHandlers instead for optimization? Also skip re-registery
     end
 
     FrameworkZ.Foundation:RegisterPluginHandler(plugin)
+    FrameworkZ.Plugins:LoadPlugin(plugin.Meta.Name)
 end
 
 function FrameworkZ.Plugins:GetPlugin(pluginName)
@@ -58,7 +69,7 @@ function FrameworkZ.Plugins:LoadPlugin(pluginName)
         end
 
         self.LoadedPlugins[pluginName] = plugin
-        self:RegisterPluginEventHandlers(plugin)
+        --self:RegisterPluginEventHandlers(plugin)
     end
 end
 
@@ -174,6 +185,7 @@ function FrameworkZ.Plugins:ExecuteCommand(commandName, ...)
     end
 end
 
+--[[
 function FrameworkZ.Plugins.EveryOneMinute()
     FrameworkZ.Plugins:ExecutePluginHook("EveryOneMinute")
 end
@@ -221,3 +233,4 @@ function FrameworkZ.Plugins.OnRequestTrade(player)
 end
 Events.RequestTrade.Add(FrameworkZ.Plugins.OnRequestTrade)
 FrameworkZ.Plugins:AddEventHandler("OnRequestTrade")
+--]]
