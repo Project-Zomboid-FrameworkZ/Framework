@@ -65,7 +65,9 @@
 --! Object is a placeholder that represents an instance of a class.
 
 local Events = Events
+local getPlayer = getPlayer
 local isClient = isClient
+local unpack = unpack
 
 --! \brief FrameworkZ global table.
 --! \class FrameworkZ
@@ -182,11 +184,11 @@ end
 --! \brief Add a new hook handler to the list for all categories.
 --! \param hookName \string The name of the hook handler to add.
 function FrameworkZ.Foundation:AddAllHookHandlers(hookName)
-    FrameworkZ.Foundation:AddHookHandler(hookName, HOOK_CATEGORY_FRAMEWORK)
-    FrameworkZ.Foundation:AddHookHandler(hookName, HOOK_CATEGORY_MODULE)
-    FrameworkZ.Foundation:AddHookHandler(hookName, HOOK_CATEGORY_GAMEMODE)
-    FrameworkZ.Foundation:AddHookHandler(hookName, HOOK_CATEGORY_PLUGIN)
-    FrameworkZ.Foundation:AddHookHandler(hookName, HOOK_CATEGORY_GENERIC)
+    self:AddHookHandler(hookName, HOOK_CATEGORY_FRAMEWORK)
+    self:AddHookHandler(hookName, HOOK_CATEGORY_MODULE)
+    self:AddHookHandler(hookName, HOOK_CATEGORY_GAMEMODE)
+    self:AddHookHandler(hookName, HOOK_CATEGORY_PLUGIN)
+    self:AddHookHandler(hookName, HOOK_CATEGORY_GENERIC)
 end
 
 --! \brief Remove a hook handler from the list.
@@ -364,11 +366,11 @@ end
 --! \param hookName \string The name of the hook.
 --! \param category \string The category of the hook (framework, module, plugin, generic).
 --! \param ... \multiple Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteHook(hookName, category, ...)
+function FrameworkZ.Foundation:ExecuteHook(hookName, category, ...)
     category = category or HOOK_CATEGORY_GENERIC
     local args = {...}
 
-    local hooks = FrameworkZ.Foundation.RegisteredHooks[category] and FrameworkZ.Foundation.RegisteredHooks[category][hookName]
+    local hooks = self.RegisteredHooks[category] and self.RegisteredHooks[category][hookName]
     if hooks then
         for _, hook in ipairs(hooks) do
             local func = hook.handler
@@ -399,45 +401,45 @@ end
 --! \brief Execute all of the hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteAllHooks(hookName, ...)
-    for category, hooks in pairs(FrameworkZ.Foundation.RegisteredHooks) do
-        FrameworkZ.Foundation.ExecuteHook(hookName, category, ...)
+function FrameworkZ.Foundation:ExecuteAllHooks(hookName, ...)
+    for category, hooks in pairs(self.RegisteredHooks) do
+        self:ExecuteHook(hookName, category, ...)
     end
 end
 
 --! \brief Execute the framework hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteFrameworkHooks(hookName, ...)
-    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_FRAMEWORK, ...)
+function FrameworkZ.Foundation:ExecuteFrameworkHooks(hookName, ...)
+    self:ExecuteHook(hookName, HOOK_CATEGORY_FRAMEWORK, ...)
 end
 
 --! \brief Execute module hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteModuleHooks(hookName, ...)
-    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_MODULE, ...)
+function FrameworkZ.Foundation:ExecuteModuleHooks(hookName, ...)
+    self:ExecuteHook(hookName, HOOK_CATEGORY_MODULE, ...)
 end
 
 --! \brief Execute the gamemode hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteGamemodeHooks(hookName, ...)
-    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_GAMEMODE, ...)
+function FrameworkZ.Foundation:ExecuteGamemodeHooks(hookName, ...)
+    self:ExecuteHook(hookName, HOOK_CATEGORY_GAMEMODE, ...)
 end
 
 --! \brief Execute plugin hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecutePluginHooks(hookName, ...)
-    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_PLUGIN, ...)
+function FrameworkZ.Foundation:ExecutePluginHooks(hookName, ...)
+    self:ExecuteHook(hookName, HOOK_CATEGORY_PLUGIN, ...)
 end
 
 --! \brief Execute generic hooks.
 --! \param hookName \string The name of the hook.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
-function FrameworkZ.Foundation.ExecuteGenericHooks(hookName, ...)
-    FrameworkZ.Foundation.ExecuteHook(hookName, HOOK_CATEGORY_GENERIC, ...)
+function FrameworkZ.Foundation:ExecuteGenericHooks(hookName, ...)
+    self:ExecuteHook(hookName, HOOK_CATEGORY_GENERIC, ...)
 end
 
 --[[
@@ -445,47 +447,53 @@ end
 	HOOKS ADDITIONS
 --]]
 
-
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
-    FrameworkZ.Foundation.ExecuteFrameworkHooks("PreInitializeClient", getPlayer())
+    self:ExecuteFrameworkHooks("PreInitializeClient", getPlayer())
 end
 
 function FrameworkZ.Foundation:PreInitializeClient()
-    FrameworkZ.Foundation.ExecuteModuleHooks("PreInitializeClient", getPlayer())
-    FrameworkZ.Foundation.ExecuteGamemodeHooks("PreInitializeClient", getPlayer())
-    FrameworkZ.Foundation.ExecutePluginHooks("PreInitializeClient", getPlayer())
+    if isClient() then
+        local sidebar = ISEquippedItem.instance
+        FrameworkZ.Foundation.fzTabMenu = FrameworkZ.fzTabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
+        FrameworkZ.Foundation.fzTabMenu:initialise()
+        FrameworkZ.Foundation.fzTabMenu:addToUIManager()
+    end
 
-    FrameworkZ.Foundation.ExecuteFrameworkHooks("InitializeClient", getPlayer())
+    self:ExecuteModuleHooks("PreInitializeClient", getPlayer())
+    self:ExecuteGamemodeHooks("PreInitializeClient", getPlayer())
+    self:ExecutePluginHooks("PreInitializeClient", getPlayer())
+
+    self:ExecuteFrameworkHooks("InitializeClient", getPlayer())
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 
 function FrameworkZ.Foundation:InitializeClient()
     FrameworkZ.Timers:Simple(FrameworkZ.Config.InitializationDuration, function()
-        FrameworkZ.Foundation.ExecuteModuleHooks("InitializeClient", getPlayer())
-        FrameworkZ.Foundation.ExecuteGamemodeHooks("InitializeClient", getPlayer())
-        FrameworkZ.Foundation.ExecutePluginHooks("InitializeClient", getPlayer())
+        self:ExecuteModuleHooks("InitializeClient", getPlayer())
+        self:ExecuteGamemodeHooks("InitializeClient", getPlayer())
+        self:ExecutePluginHooks("InitializeClient", getPlayer())
 
-        FrameworkZ.Foundation.ExecuteFrameworkHooks("PostInitializeClient", getPlayer())
+        self:ExecuteFrameworkHooks("PostInitializeClient", getPlayer())
     end)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("InitializeClient")
 
 function FrameworkZ.Foundation:PostInitializeClient()
-    FrameworkZ.Foundation.ExecuteModuleHooks("PostInitializeClient", getPlayer())
-    FrameworkZ.Foundation.ExecuteGamemodeHooks("PostInitializeClient", getPlayer())
-    FrameworkZ.Foundation.ExecutePluginHooks("PostInitializeClient", getPlayer())
+    self:ExecuteModuleHooks("PostInitializeClient", getPlayer())
+    self:ExecuteGamemodeHooks("PostInitializeClient", getPlayer())
+    self:ExecutePluginHooks("PostInitializeClient", getPlayer())
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 
 function FrameworkZ.Foundation:OnMainMenuEnter()
-    FrameworkZ.Foundation.ExecuteFrameworkHooks("OnOpenEscapeMenu", getPlayer())
+    self:ExecuteFrameworkHooks("OnOpenEscapeMenu", getPlayer())
 end
 
 function FrameworkZ.Foundation:OnOpenEscapeMenu()
-    FrameworkZ.Foundation.ExecuteModuleHooks("OnOpenEscapeMenu", getPlayer())
-    FrameworkZ.Foundation.ExecuteGamemodeHooks("OnOpenEscapeMenu", getPlayer())
-    FrameworkZ.Foundation.ExecutePluginHooks("OnOpenEscapeMenu", getPlayer())
+    self:ExecuteModuleHooks("OnOpenEscapeMenu", getPlayer())
+    self:ExecuteGamemodeHooks("OnOpenEscapeMenu", getPlayer())
+    self:ExecutePluginHooks("OnOpenEscapeMenu", getPlayer())
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnOpenEscapeMenu")
 

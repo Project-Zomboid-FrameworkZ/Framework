@@ -13,6 +13,7 @@ FrameworkZ = FrameworkZ or {}
 --! \brief Players module for FrameworkZ. Defines and interacts with PLAYER object.
 --! \class FrameworkZ.Players
 FrameworkZ.Players = {}
+FrameworkZ.Players.__index = FrameworkZ.Players
 
 --! \brief List of all instanced players in the game.
 FrameworkZ.Players.List = {}

@@ -422,10 +422,6 @@ function FrameworkZ.Items:OnDropItemCallback(parameters)
     end
 end
 
-function FrameworkZ.Items:GenerateUnequipSubMenus()
-
-end
-
 function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, items)
     context:clear()
 

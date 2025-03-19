@@ -1,74 +1,94 @@
-local Events = Events
 
 FrameworkZ = FrameworkZ or {}
-
-function FrameworkZ.OnClientCommand(module, command, isoPlayer, args)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, args)
-end
-Events.OnClientCommand.Add(FrameworkZ.OnClientCommand)
-FrameworkZ.Foundation:AddAllHookHandlers("OnClientCommand")
-
-function FrameworkZ.OnConnected()
-    FrameworkZ.Foundation.ExecuteAllHooks("OnConnected")
-end
-Events.OnConnected.Add(FrameworkZ.OnConnected)
-FrameworkZ.Foundation:AddAllHookHandlers("OnConnected")
-
-function FrameworkZ.OnFillInventoryObjectContextMenu(player, context, items)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnFillInventoryObjectContextMenu", player, context, items)
-end
-Events.OnFillInventoryObjectContextMenu.Add(FrameworkZ.OnFillInventoryObjectContextMenu)
-FrameworkZ.Foundation:AddAllHookHandlers("OnFillInventoryObjectContextMenu")
-
-function FrameworkZ.OnInitGlobalModData()
-    FrameworkZ.Foundation.ExecuteAllHooks("OnInitGlobalModData")
-end
-Events.OnInitGlobalModData.Add(FrameworkZ.OnInitGlobalModData)
-FrameworkZ.Foundation:AddAllHookHandlers("OnInitGlobalModData")
-
-function FrameworkZ.OnMainMenuEnter()
-    FrameworkZ.Foundation.ExecuteAllHooks("OnMainMenuEnter")
-end
-Events.OnMainMenuEnter.Add(FrameworkZ.OnMainMenuEnter)
-
-function FrameworkZ.OnPlayerDeath(player)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnPlayerDeath")
-end
-Events.OnPlayerDeath.Add(FrameworkZ.OnPlayerDeath)
-FrameworkZ.Foundation:AddAllHookHandlers("OnPlayerDeath")
-
-function FrameworkZ.OnGameStart()
-    FrameworkZ.Foundation.ExecuteAllHooks("OnGameStart")
-end
-Events.OnGameStart.Add(FrameworkZ.OnGameStart)
-FrameworkZ.Foundation:AddAllHookHandlers("OnGameStart")
+local Events = Events
+local fzFoundation = FrameworkZ.Foundation
 
 function FrameworkZ.LoadGridsquare(square)
-    FrameworkZ.Foundation.ExecuteAllHooks("LoadGridsquare")
+    fzFoundation:ExecuteAllHooks("LoadGridsquare", square)
 end
-Events.LoadGridsquare.Add(FrameworkZ.Foundation.LoadGridsquare)
-FrameworkZ.Foundation:AddAllHookHandlers("LoadGridsquare")
+Events.LoadGridsquare.Add(FrameworkZ.LoadGridsquare)
+fzFoundation:AddAllHookHandlers("LoadGridsquare")
+
+function FrameworkZ.OnClientCommand(module, command, isoPlayer, args)
+    fzFoundation:ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, args)
+end
+Events.OnClientCommand.Add(FrameworkZ.OnClientCommand)
+fzFoundation:AddAllHookHandlers("OnClientCommand")
+
+function FrameworkZ.OnConnected()
+    fzFoundation:ExecuteAllHooks("OnConnected")
+end
+Events.OnConnected.Add(FrameworkZ.OnConnected)
+fzFoundation:AddAllHookHandlers("OnConnected")
+
+function FrameworkZ.OnCreatePlayer()
+    fzFoundation:ExecuteAllHooks("OnCreatePlayer")
+end
+Events.OnCreatePlayer.Add(FrameworkZ.OnCreatePlayer)
+fzFoundation:AddAllHookHandlers("OnCreatePlayer")
 
 function FrameworkZ.OnDisconnect()
-    FrameworkZ.Foundation.ExecuteAllHooks("OnDisconnect")
+    fzFoundation:ExecuteAllHooks("OnDisconnect")
 end
 Events.OnDisconnect.Add(FrameworkZ.OnDisconnect)
-FrameworkZ.Foundation:AddAllHookHandlers("OnDisconnect")
+fzFoundation:AddAllHookHandlers("OnDisconnect")
+
+function FrameworkZ.OnFillInventoryObjectContextMenu(player, context, items)
+    fzFoundation:ExecuteAllHooks("OnFillInventoryObjectContextMenu", player, context, items)
+end
+Events.OnFillInventoryObjectContextMenu.Add(FrameworkZ.OnFillInventoryObjectContextMenu)
+fzFoundation:AddAllHookHandlers("OnFillInventoryObjectContextMenu")
 
 function FrameworkZ.OnFillWorldObjectContextMenu(player, context, worldObjects, test)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnFillWorldObjectContextMenu", player, context, worldObjects, test)
+    fzFoundation:ExecuteAllHooks("OnFillWorldObjectContextMenu", player, context, worldObjects, test)
 end
 Events.OnFillWorldObjectContextMenu.Add(FrameworkZ.OnFillWorldObjectContextMenu)
-FrameworkZ.Foundation:AddAllHookHandlers("OnFillWorldObjectContextMenu")
+fzFoundation:AddAllHookHandlers("OnFillWorldObjectContextMenu")
+
+function FrameworkZ.OnGameStart()
+    fzFoundation:ExecuteAllHooks("OnGameStart")
+end
+Events.OnGameStart.Add(FrameworkZ.OnGameStart)
+fzFoundation:AddAllHookHandlers("OnGameStart")
+
+function FrameworkZ.OnInitGlobalModData()
+    fzFoundation:ExecuteAllHooks("OnInitGlobalModData")
+end
+Events.OnInitGlobalModData.Add(FrameworkZ.OnInitGlobalModData)
+fzFoundation:AddAllHookHandlers("OnInitGlobalModData")
+
+function FrameworkZ.OnKeyStartPressed(key)
+    fzFoundation:ExecuteAllHooks("OnKeyStartPressed", key)
+end
+Events.OnKeyStartPressed.Add(FrameworkZ.OnKeyStartPressed)
+fzFoundation:AddAllHookHandlers("OnKeyStartPressed")
+
+function FrameworkZ.OnMainMenuEnter()
+    fzFoundation:ExecuteAllHooks("OnMainMenuEnter")
+end
+Events.OnMainMenuEnter.Add(FrameworkZ.OnMainMenuEnter)
+fzFoundation:AddAllHookHandlers("OnMainMenuEnter")
+
+function FrameworkZ.OnObjectLeftMouseButtonDown(object, x, y)
+    fzFoundation:ExecuteAllHooks("OnObjectLeftMouseButtonDown", object, x, y)
+end
+Events.OnObjectLeftMouseButtonDown.Add(FrameworkZ.OnObjectLeftMouseButtonDown)
+fzFoundation:AddAllHookHandlers("OnObjectLeftMouseButtonDown")
+
+function FrameworkZ.OnPlayerDeath(player)
+    fzFoundation:ExecuteAllHooks("OnPlayerDeath", player)
+end
+Events.OnPlayerDeath.Add(FrameworkZ.OnPlayerDeath)
+fzFoundation:AddAllHookHandlers("OnPlayerDeath")
 
 function FrameworkZ.OnPreFillInventoryObjectContextMenu(playerID, context, items)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnPreFillInventoryObjectContextMenu", playerID, context, items)
+    fzFoundation:ExecuteAllHooks("OnPreFillInventoryObjectContextMenu", playerID, context, items)
 end
 Events.OnPreFillInventoryObjectContextMenu.Add(FrameworkZ.OnPreFillInventoryObjectContextMenu)
-FrameworkZ.Foundation:AddAllHookHandlers("OnPreFillInventoryObjectContextMenu")
+fzFoundation:AddAllHookHandlers("OnPreFillInventoryObjectContextMenu")
 
 function FrameworkZ.OnReceiveGlobalModData(key, data)
-    FrameworkZ.Foundation.ExecuteAllHooks("OnReceiveGlobalModData", key, data)
+    fzFoundation:ExecuteAllHooks("OnReceiveGlobalModData", key, data)
 end
 Events.OnReceiveGlobalModData.Add(FrameworkZ.OnReceiveGlobalModData)
-FrameworkZ.Foundation:AddAllHookHandlers("OnReceiveGlobalModData")
+fzFoundation:AddAllHookHandlers("OnReceiveGlobalModData")
