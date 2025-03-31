@@ -409,6 +409,9 @@ FrameworkZ.Characters.SlotList = {
 
 FrameworkZ.Characters.List = {}
 
+--! \brief Unique IDs list for characters.
+FrameworkZ.Characters.UIDs = {}
+
 --! \brief Deprecated. To be removed.
 FrameworkZ.Characters.EquipmentSlots = {
     EQUIPMENT_SLOT_HEAD,
@@ -461,6 +464,7 @@ function CHARACTER:Initialize()
             physique = self.physique or "Average",
             weight = self.weight or "125",
             inventory = self.inventory or {},
+            recognizes = self.recognizes or {},
             upgrades = {}
         }
 
@@ -496,6 +500,10 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
 
 function CHARACTER:OnPostLoad(firstLoad)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", self, firstLoad)
+
+    if firstLoad then
+        FrameworkZ.Characters:SetupUID(self.isoPlayer:getUsername())
+    end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
 
@@ -662,6 +670,11 @@ function CHARACTER:ValidateCharacterData()
         characterModData.upgrades = {}
     end
 
+    if not characterModData.recognizes then
+        initializedNewData = true
+        characterModData.recognizes = {}
+    end
+
     if isClient() then
         self.isoPlayer:transmitModData()
     end
@@ -676,6 +689,7 @@ function CHARACTER:ValidateCharacterData()
     self.hairColor = characterModData.hairColor
     self.physique = characterModData.physique
     self.upgrades = characterModData.upgrades
+    self.recognizes = characterModData.recognizes
 
     return initializedNewData
 end
@@ -692,16 +706,8 @@ function CHARACTER:SetAge(age)
     end
 end
 
---! \brief Set the description of the character.
---! \param description \string The description of the character's appearance.
-function CHARACTER:SetDescription(description)
-    self.description = description
-    self.isoPlayer:getModData()["FZ_CHAR"].description = description
-    self.isoPlayer:transmitModData()
-    
-    if isClient() then
-        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "description", description})
-    end
+function CHARACTER:GetFaction()
+    return self.faction
 end
 
 --! \brief Set the faction of the character.
@@ -716,7 +722,7 @@ function CHARACTER:SetFaction(faction)
     end
 end
 
-function CHARACTER:GetName(name)
+function CHARACTER:GetName()
     return self.name
 end
 
@@ -729,6 +735,22 @@ function CHARACTER:SetName(name)
     
     if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "name", name})
+    end
+end
+
+function CHARACTER:GetDescription()
+    return self.description
+end
+
+--! \brief Set the description of the character.
+--! \param description \string The description of the character's appearance.
+function CHARACTER:SetDescription(description)
+    self.description = description
+    self.isoPlayer:getModData()["FZ_CHAR"].description = description
+    self.isoPlayer:transmitModData()
+
+    if isClient() then
+        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "description", description})
     end
 end
 
@@ -817,7 +839,17 @@ function CHARACTER:IsCombine()
     elseif self.faction == FACTION_ADMINISTRATOR then
         return true
     end
-    
+
+    return false
+end
+
+function CHARACTER:RecognizesCharacter(character)
+    if not character then return false, "Character not supplied in parameters." end
+
+    if self.recognizes[character.username] then
+        return true
+    end
+
     return false
 end
 
@@ -914,6 +946,7 @@ function FrameworkZ.Characters:PostLoad(isoPlayer, characterData)
     character.skinColor = characterData.INFO_SKIN_COLOR
     character.physique = characterData.INFO_PHYSIQUE
     character.weight = characterData.INFO_WEIGHT
+    character.recognizes = {}
 
     local newInventory = FrameworkZ.Inventories:New(username)
     local success, message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(isoPlayer, newInventory, characterData.INVENTORY_LOGICAL or nil)
@@ -1060,7 +1093,51 @@ if isClient() then
     end
 end
 
-if not isClient() then
+function FrameworkZ.Characters:OnInitGlobalModData()
+    self.UIDs = ModData.getOrCreate("FZ_CHAR_UIDS")
+end
+
+function FrameworkZ.Characters:SetupUID(username)
+    if not username then return false end
+
+    FrameworkZ.Foundation:SendGet({"FrameworkZ", "Characters", "UIDs"}, FrameworkZ.Characters.OnGenerateUID, "FrameworkZ.Characters.OnGenerateUID", false, username)
+end
+
+function FrameworkZ.Characters.OnGenerateUID(isoPlayer, key, value, returnValues, arguments)
+    if not key or not value or not (arguments and arguments[1]) then return false end
+    local username = arguments[1]
+    local player = FrameworkZ.Players:GetPlayerByID(username)
+    if not player then return false end
+    local character = player:GetCharacter()
+    if not character then return false end
+
+    FrameworkZ.Characters.UIDs[username] = value[username] or {}
+
+    local uid
+
+    if returnValues and returnValues["OnGenerateUID_Callback"] then
+        uid = returnValues["OnGenerateUID_Callback"]
+    else
+        uid = username .. "_" .. FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
+
+        while FrameworkZ.Characters.UIDs[username][uid] do
+            uid = username .. "_" ..  FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
+        end
+    end
+
+    FrameworkZ.Characters.UIDs[username][uid] = true
+    player:GetStoredData().characters[character.id].META_UID = uid
+    ModData.add("FZ_CHAR_UIDS", FrameworkZ.Characters.UIDs)
+
+    if isClient() then
+        FrameworkZ.Notifications:AddToQueue("Your character's UID has been set to: " .. uid, FrameworkZ.Notifications.Types.Info)
+    end
+
+    return uid
+end
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.OnGenerateUID", "OnGenerateUID_Callback", FrameworkZ.Characters.OnGenerateUID)
+
+if isServer() then
 
     --! \brief Initialize a character called by OnServerStarted event hook.
     --! \param module \string

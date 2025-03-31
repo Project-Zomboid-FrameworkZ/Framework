@@ -5,8 +5,8 @@ FrameworkZ.Utilities.__index = FrameworkZ.Utilities
 FrameworkZ.Utilities = FrameworkZ.Foundation:NewModule(FrameworkZ.Utilities, "Utilities")
 
 --! \brief Copies a table.
---! \param \table originalTable The table to copy.
---! \param \table tableCopies (Internal) The table of copies used internally by the function.
+--! \param originalTable \table The table to copy.
+--! \param tableCopies \table (Internal) The table of copies used internally by the function.
 --! \return \table The copied table.
 function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies)
     tableCopies = tableCopies or {}
@@ -92,4 +92,59 @@ end
 
 function FrameworkZ.Utilities:OrderedPairs(t)
     return self.OrderedNext, t, nil
+end
+
+--! \brief Word wraps text to a specified length.
+--! \param text \string The text to word wrap.
+--! \param maxLength \int The maximum length of a line (default: 28).
+--! \param eolDelimiter \string (Optional) The end of line delimiter. Returns a \table of lines if not supplied.
+--! \return \mixed The word wrapped text as a \string or a \table of lines of text if no eolDelimiter was supplied as an argument.
+function FrameworkZ.Utilities:WordWrapText(text, maxLength, eolDelimiter)
+    local maxLineLength = maxLength or 28
+    local lines = {}
+    local line = ""
+    local lineLength = 0
+    local words = {}
+
+    for word in string.gmatch(text, "%S+") do
+        table.insert(words, word)
+    end
+
+    for i = 1, #words do
+        local word = words[i]
+        local wordLength = string.len(word)
+
+        if lineLength + wordLength <= maxLineLength then
+            line = line .. " " .. word
+            lineLength = lineLength + wordLength
+        else
+            table.insert(lines, line)
+            line = word
+            lineLength = wordLength
+        end
+    end
+
+    table.insert(lines, line)
+
+    if eolDelimiter then
+        local delimitedText = ""
+
+        for i = 1, #lines do
+            delimitedText = delimitedText .. lines[i] .. (i ~= #lines and eolDelimiter or "")
+        end
+
+        return delimitedText
+    end
+
+    return lines
+end
+
+function FrameworkZ.Utilities:GetRandomNumber(min, max, keepLeadingZeros)
+    if min > max then
+        min, max = max, min
+    end
+
+    local maxDigits = math.max(#tostring(min), #tostring(max))
+
+    return keepLeadingZeros and string.format("%0" .. maxDigits .. "d", ZombRandBetween(min, max)) or ZombRandBetween(min, max)
 end

@@ -7,6 +7,23 @@ FrameworkZ = FrameworkZ or {}
 FrameworkZ.UserInterfaces = {}
 FrameworkZ.UserInterfaces.__index = FrameworkZ.UserInterfaces
 FrameworkZ.UserInterfaces.List = {}
+FrameworkZ.UserInterfaces.ButtonTheme = {
+    massiveButtonFontSize = UIFont.Massive,
+    hugeButtonFontSize = UIFont.Title,
+    largeButtonFontSize = UIFont.Large,
+    mediumButtonFontSize = UIFont.Medium,
+    smallButtonFontSize = UIFont.Small,
+    buttonBackground = false,
+    buttonBackgroundColor = {r=0.1, g=0.1, b=0.1, a=1},
+    buttonBorder = false,
+    buttonBorderColor = {r=1, g=1, b=1, a=1},
+    buttonTextColor = {r=1, g=1, b=1, a=1},
+    buttonHoverBackground = false,
+    buttonHoverBackgroundColor = {r=0.1, g=0.1, b=0.1, a=1},
+    buttonHoverBorder = false,
+    buttonHoverBorderColor = {r=1, g=1, b=1, a=1},
+    buttonHoverTextColor = {r=1, g=0.84, b=0, a=1},
+}
 FrameworkZ.UserInterfaces = FrameworkZ.Foundation:NewModule(FrameworkZ.UserInterfaces, "UserInterfaces")
 
 local UI = {}
@@ -202,4 +219,62 @@ function FrameworkZ.UserInterfaces:Initialize(uniqueID, userInterface)
     self.List[uniqueID] = userInterface
 
     return uniqueID
+end
+
+function FrameworkZ.UserInterfaces:AddButtonEffects(button)
+    local theme = self.ButtonTheme
+
+    if not theme.buttonBackground then
+        button:setDisplayBackground(false)
+    else
+        button.backgroundColor = theme.buttonBackgroundColor
+    end
+
+    button.oldOnMouseMove = button.onMouseMove
+    button.onMouseMove = function(x, y)
+        button.oldOnMouseMove(x, y)
+
+        if button.mouseOver then
+            button.textColor = theme.buttonHoverTextColor
+
+            if theme.buttonHoverBackground then
+                button.backgroundColor = theme.buttonHoverBackgroundColor
+            end
+
+            if theme.buttonHoverBorder then
+                button.borderColor = theme.buttonHoverBorderColor
+            end
+        end
+    end
+
+    button.oldOnMouseMoveOutside = button.onMouseMoveOutside
+    button.onMouseMoveOutside = function(x, y)
+        button.oldOnMouseMoveOutside(x, y)
+
+        if not button.mouseOver then
+            button.textColor = theme.buttonTextColor
+        end
+
+        if theme.buttonBackground then
+            button.backgroundColor = theme.buttonBackgroundColor
+        end
+
+        if theme.buttonBorder then
+            button.borderColor = theme.buttonBorderColor
+        end
+    end
+end
+
+function FrameworkZ.UserInterfaces:CreateHugeButton(parent, x, y, text, target, onClick)
+    local theme = self.ButtonTheme
+    local width = getTextManager():MeasureStringX(theme.hugeButtonFontSize, text)
+    local height = getTextManager():MeasureStringY(theme.hugeButtonFontSize, text)
+
+    local button = ISButton:new(x, y, width, height, text, target, onClick)
+    button.font = theme.hugeButtonFontSize
+    self:AddButtonEffects(button)
+    button:initialise()
+    parent:addChild(button)
+
+    return button
 end

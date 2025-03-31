@@ -2,6 +2,8 @@ require "ISUI/ISPanel"
 
 PFW_MainMenu = ISPanel:derive("PFW_MainMenu")
 
+
+local mainMenuMusicVolume = 1.0
 local currentMainMenuSong = nil
 local nextLightning = 5
 
@@ -40,6 +42,16 @@ function PFW_MainMenu:initialise()
     local middleY = self.height / 2 + FrameworkZ.UI.GetHeight(UIFont.Title, title) + FrameworkZ.UI.GetHeight(UIFont.Large, subtitle)
 
 	ISPanel.initialise(self)
+
+    if FrameworkZ.Timers:Exists("FadeOutMainMenuMusic") then
+        FrameworkZ.Timers:Remove("FadeOutMainMenuMusic")
+    end
+
+    if currentMainMenuSong and self.emitter:isPlaying(currentMainMenuSong) then
+        self.emitter:stopSound(currentMainMenuSong)
+    end
+
+    mainMenuMusicVolume = 1.0
     currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.MainMenuMusic, nil)
 
     local stepWidth, stepHeight = 500, 600
@@ -79,6 +91,15 @@ function PFW_MainMenu:initialise()
     self.disconnectButton.font = UIFont.Large
     self:addChild(self.disconnectButton)
 
+    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, PFW_MainMenu.onClose)
+    self.closeButton.font = UIFont.Large
+
+    if not FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
+        self.closeButton:setVisible(false)
+    end
+
+    self:addChild(self.closeButton)
+
     --[[
     self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, PFW_MainMenu.onClose)
     self.closeButton.font = UIFont.Large
@@ -86,7 +107,6 @@ function PFW_MainMenu:initialise()
     --]]
 end
 
-local mainMenuMusicVolume = 1.0
 function PFW_MainMenu:fadeOutMainMenuMusic()
     if self.emitter:isPlaying(currentMainMenuSong) then
         mainMenuMusicVolume = mainMenuMusicVolume - 0.002
@@ -116,6 +136,10 @@ function PFW_MainMenu:onEnterMainMenu()
     self.createCharacterButton:setVisible(true)
     self.loadCharacterButton:setVisible(true)
     self.disconnectButton:setVisible(true)
+
+    if FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
+        self.closeButton:setVisible(true)
+    end
 end
 
 function PFW_MainMenu:onExitMainMenu()
@@ -126,6 +150,10 @@ function PFW_MainMenu:onExitMainMenu()
         self.createCharacterButton:setVisible(false)
         self.loadCharacterButton:setVisible(false)
         self.disconnectButton:setVisible(false)
+
+        if FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
+            self.closeButton:setVisible(false)
+        end
 
         return true
     else
@@ -384,18 +412,29 @@ end
 function PFW_MainMenu:onLoadCharacter()
     local character = FrameworkZ.Players:GetCharacterByID(self.playerObject:getUsername(), self.loadCharacterMenu.currentIndex)
 
-    if not character then
-        FrameworkZ.Notifications:AddToQueue("No character selected.", FrameworkZ.Notifications.Types.Warning, nil, self)
-        return
+    local callback = function(isoPlayer, key, value, returnValues, arguments)
+        if not returnValues["OnLoadCharacter_Callback"] then
+            FrameworkZ.Notifications:AddToQueue("Failed to load character.", FrameworkZ.Notifications.Types.Danger, nil, self)
+            return
+        end
+
+        if not character then
+            FrameworkZ.Notifications:AddToQueue("No character selected.", FrameworkZ.Notifications.Types.Warning, nil, self)
+            return
+        end
+
+        local success = FrameworkZ.Players:LoadCharacter(self.playerObject:getUsername(), character, self.loadCharacterMenu.selectedCharacter.survivor) -- TODO Network character loading?
+
+        if success then
+            FrameworkZ.Notifications:AddToQueue("Successfully loaded character " .. character.INFO_NAME .. " #" .. character.META_ID .. ".")
+            self:onClose()
+        else
+            FrameworkZ.Notifications:AddToQueue("Failed to load character.", FrameworkZ.Notifications.Types.Danger, nil, self)
+        end
     end
 
-    local success = FrameworkZ.Players:LoadCharacter(self.playerObject:getUsername(), character, self.loadCharacterMenu.selectedCharacter.survivor)
-
-    if success then
-        FrameworkZ.Notifications:AddToQueue("Successfully loaded character " .. character.INFO_NAME .. " #" .. character.META_ID .. ".")
-        self:onClose()
-    else
-        FrameworkZ.Notifications:AddToQueue("Failed to load character.", FrameworkZ.Notifications.Types.Danger, nil, self)
+    if character then
+        FrameworkZ.Foundation:SendFire(self.playerObject, callback, "FrameworkZ.Players.OnLoadCharacter", false, self.playerObject:getUsername(), character.META_ID)
     end
 end
 
@@ -407,8 +446,6 @@ end
 
 function PFW_MainMenu:prerender()
     ISPanel.prerender(self)
-
-    local opacity = 1
 
     -- HL2RP LIGHTNING STUFF
     --[[
@@ -440,7 +477,7 @@ function PFW_MainMenu:prerender()
     end
     --]]
 
-    self:drawTextureScaled(getTexture(FrameworkZ.Config.MainMenuImage), 0, 0, self.width, self.height, opacity, 1, 1, 1)
+    self:drawTextureScaled(getTexture(FrameworkZ.Config.MainMenuImage), 0, 0, self.width, self.height, self.backgroundImageOpacity, 1, 1, 1)
 end
 
 function PFW_MainMenu:update()
@@ -457,8 +494,9 @@ function PFW_MainMenu:new(x, y, width, height, playerObject)
 	o = ISPanel:new(x, y, width, height)
 	setmetatable(o, self)
 	self.__index = self
+    self.backgroundImageOpacity = 1
 	o.backgroundColor = {r=0, g=0, b=0, a=1}
-	o.borderColor = {r=0, g=0, b=0, a=1}
+	o.borderColor = {r=0, g=0, b=0, a=0}
 	o.moveWithMouse = false
 	o.playerObject = playerObject
 	PFW_MainMenu.instance = o

@@ -198,6 +198,10 @@ function PLAYER:GetCharacter()
     return self.loadedCharacter
 end
 
+function PLAYER:GetIsoPlayer()
+    return self.isoPlayer
+end
+
 --! \brief Gets the stored player mod data table. Used internally. Do not use this unless you know what you are doing. Updating data on the mod data will cause inconsistencies between the mod data and the FrameworkZ player object.
 --! \return \table The stored player mod data table.
 function PLAYER:GetStoredData()
@@ -273,6 +277,18 @@ function FrameworkZ.Players:GetPlayerByID(username)
 
     if player then
         return player
+    end
+
+    return false
+end
+
+function FrameworkZ.Players:GetLoadedCharacterByID(username)
+    if not username then return false end
+
+    local player = self:GetPlayerByID(username)
+
+    if player then
+        return player:GetCharacter() or false
     end
 
     return false
@@ -558,6 +574,11 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
 
     return true
 end
+
+function FrameworkZ.Players.OnLoadCharacter()
+    return true
+end
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnLoadCharacter", "OnLoadCharacter_Callback", FrameworkZ.Players.OnLoadCharacter)
 
 function FrameworkZ.Players:LoadCharacterByID(username, characterID)
 

@@ -9,8 +9,8 @@ end
 Events.LoadGridsquare.Add(FrameworkZ.LoadGridsquare)
 fzFoundation:AddAllHookHandlers("LoadGridsquare")
 
-function FrameworkZ.OnClientCommand(module, command, isoPlayer, args)
-    fzFoundation:ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, args)
+function FrameworkZ.OnClientCommand(module, command, isoPlayer, arguments)
+    fzFoundation:ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, arguments)
 end
 Events.OnClientCommand.Add(FrameworkZ.OnClientCommand)
 fzFoundation:AddAllHookHandlers("OnClientCommand")
@@ -92,3 +92,15 @@ function FrameworkZ.OnReceiveGlobalModData(key, data)
 end
 Events.OnReceiveGlobalModData.Add(FrameworkZ.OnReceiveGlobalModData)
 fzFoundation:AddAllHookHandlers("OnReceiveGlobalModData")
+
+function FrameworkZ.OnServerCommand(module, command, arguments)
+    fzFoundation:ExecuteAllHooks("OnServerCommand", module, command, arguments)
+end
+Events.OnServerCommand.Add(FrameworkZ.OnServerCommand)
+fzFoundation:AddAllHookHandlers("OnServerCommand")
+
+function FrameworkZ.OnServerStarted()
+    fzFoundation:ExecuteAllHooks("OnServerStarted")
+end
+Events.OnServerStarted.Add(FrameworkZ.OnServerStarted)
+fzFoundation:AddAllHookHandlers("OnServerStarted")
