@@ -198,6 +198,18 @@ function PLAYER:GetCharacter()
     return self.loadedCharacter
 end
 
+function PLAYER:GetCharacterByID(characterID)
+    if not characterID then return false end
+
+    local character = self.characters[characterID]
+
+    if character then
+        return character
+    end
+
+    return false
+end
+
 function PLAYER:GetIsoPlayer()
     return self.isoPlayer
 end
@@ -264,8 +276,18 @@ function FrameworkZ.Players:New(isoPlayer)
 	return object
 end
 
+function FrameworkZ.Players:StartPlayerTick(isoPlayer)
+    if not isClient() then return end
+
+    FrameworkZ.Timers:Create("FZ_CHAR_TICK", FrameworkZ.Config.PlayerTickInterval, 0, function()
+        FrameworkZ.Foundation:ExecuteAllHooks("PlayerTick", isoPlayer)
+    end)
+end
+
 function FrameworkZ.Players:Initialize(username, player)
     self.List[username] = player
+
+    FrameworkZ.Players:StartPlayerTick(player.isoPlayer)
 
     return username
 end
@@ -336,13 +358,20 @@ function FrameworkZ.Players:ResetCharacterSaveInterval()
     end
 end
 
-function FrameworkZ.Players:CreateCharacter(username, data)
+function FrameworkZ.Players.CreateCharacter(data, username, characterData)
+    return FrameworkZ.Players:OnCreateCharacter(username, characterData)
+end
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.CreateCharacter", FrameworkZ.Players.CreateCharacter)
+
+function FrameworkZ.Players:OnCreateCharacter(username, data)
     if not username or not data then return false end
 
     local player = self:GetPlayerByID(username)
 
     if player and player.characters then
-        FrameworkZ.Players:ResetCharacterSaveInterval()
+        if isClient() then
+            FrameworkZ.Players:ResetCharacterSaveInterval()
+        end
 
         data.META_ID = #player.characters + 1
         data.META_FIRST_LOAD = true
@@ -503,82 +532,90 @@ end
         8. Post load
         9. Return true
 --]]
-function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescriptor)
+function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescriptor, loadCharacterStartTime)
     local player = FrameworkZ.Players:GetPlayerByID(username)
-
     if not player or not characterData then return false end
-
     local isoPlayer = player.isoPlayer
 
-    if characterData.META_FIRST_LOAD == true then
-        isoPlayer:setX(FrameworkZ.Config.SpawnX)
-        isoPlayer:setY(FrameworkZ.Config.SpawnY)
-        isoPlayer:setZ(FrameworkZ.Config.SpawnZ)
-        isoPlayer:setLx(FrameworkZ.Config.SpawnX)
-        isoPlayer:setLy(FrameworkZ.Config.SpawnY)
-        isoPlayer:setLz(FrameworkZ.Config.SpawnZ)
-    else
-        isoPlayer:setX(characterData.POSITION_X)
-        isoPlayer:setY(characterData.POSITION_Y)
-        isoPlayer:setZ(characterData.POSITION_Z)
-        isoPlayer:setLx(characterData.POSITION_X)
-        isoPlayer:setLy(characterData.POSITION_Y)
-        isoPlayer:setLz(characterData.POSITION_Z)
-        isoPlayer:setDirectionAngle(characterData.DIRECTION_ANGLE)
-    end
+    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Characters.PostLoad", function(data, _success, _character)
+        local character = FrameworkZ.Characters.PostLoad({isoPlayer = isoPlayer}, characterData)
 
-    isoPlayer:clearWornItems()
-    isoPlayer:getInventory():clear()
+        if not character then
+            FrameworkZ.Notifications:AddToQueue("Failed to load character: Not found.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+            return
+        end
 
-    for k, v in pairs(characterData) do
-        if string.match(k, "EQUIPMENT_SLOT_") then
-            if v and v.id then
-                local item = isoPlayer:getInventory():AddItem(v.id)
-                isoPlayer:setWornItem(item:getBodyLocation(), item)
+        character:OnPostLoad(characterData.META_FIRST_LOAD)
+
+        if characterData.META_FIRST_LOAD == true then
+            isoPlayer:setX(FrameworkZ.Config.SpawnX)
+            isoPlayer:setY(FrameworkZ.Config.SpawnY)
+            isoPlayer:setZ(FrameworkZ.Config.SpawnZ)
+            isoPlayer:setLx(FrameworkZ.Config.SpawnX)
+            isoPlayer:setLy(FrameworkZ.Config.SpawnY)
+            isoPlayer:setLz(FrameworkZ.Config.SpawnZ)
+        else
+            isoPlayer:setX(characterData.POSITION_X)
+            isoPlayer:setY(characterData.POSITION_Y)
+            isoPlayer:setZ(characterData.POSITION_Z)
+            isoPlayer:setLx(characterData.POSITION_X)
+            isoPlayer:setLy(characterData.POSITION_Y)
+            isoPlayer:setLz(characterData.POSITION_Z)
+            isoPlayer:setDirectionAngle(characterData.DIRECTION_ANGLE)
+        end
+
+        isoPlayer:clearWornItems()
+        isoPlayer:getInventory():clear()
+
+        for k, v in pairs(characterData) do
+            if string.match(k, "EQUIPMENT_SLOT_") then
+                if v and v.id then
+                    local item = isoPlayer:getInventory():AddItem(v.id)
+                    isoPlayer:setWornItem(item:getBodyLocation(), item)
+                end
             end
         end
-    end
 
-    local isFemale = survivorDescriptor:isFemale()
-    isoPlayer:setFemale(isFemale)
-    isoPlayer:getDescriptor():setFemale(isFemale)
-    isoPlayer:getHumanVisual():clear()
-    isoPlayer:getHumanVisual():copyFrom(survivorDescriptor:getHumanVisual())
-    isoPlayer:resetModel()
+        local isFemale = survivorDescriptor:isFemale()
+        isoPlayer:setFemale(isFemale)
+        isoPlayer:getDescriptor():setFemale(isFemale)
+        isoPlayer:getHumanVisual():clear()
+        isoPlayer:getHumanVisual():copyFrom(survivorDescriptor:getHumanVisual())
+        isoPlayer:resetModel()
 
-    isoPlayer:setGodMod(false)
-    isoPlayer:setInvincible(false)
+        isoPlayer:setGodMod(false)
+        isoPlayer:setInvincible(false)
 
-    -- Apply damage/wounds/moodles
+        -- Apply damage/wounds/moodles
 
-    isoPlayer:setInvisible(false)
-    isoPlayer:setGhostMode(false)
-    isoPlayer:setNoClip(false)
+        isoPlayer:setInvisible(false)
+        isoPlayer:setGhostMode(false)
+        isoPlayer:setNoClip(false)
 
-    if VoiceManager:playerGetMute(username) then
-        VoiceManager:playerSetMute(username)
-    end
+        if VoiceManager:playerGetMute(username) then
+            VoiceManager:playerSetMute(username)
+        end
 
-    local postLoadSuccessful, character = FrameworkZ.Characters:PostLoad(isoPlayer, characterData)
 
-    if not postLoadSuccessful or not character then return false end
+        if not self:SaveCharacter(username, characterData) then
+            FrameworkZ.Notifications:AddToQueue("Failed to load character: Not saved.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+            return
+        end
 
-    player.loadedCharacter = character
-    character:OnPostLoad(characterData.META_FIRST_LOAD)
+        if characterData.META_FIRST_LOAD then
+            characterData.META_FIRST_LOAD = false
+        end
 
-    if characterData.META_FIRST_LOAD then
-        characterData.META_FIRST_LOAD = false
-    end
-
-    if not self:SaveCharacter(username, characterData) then return false end
-
-    return true
+        FrameworkZ.Notifications:AddToQueue("Loaded character in " .. tostring(string.format(" %.2f", (getTimestampMs() - loadCharacterStartTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success)
+        FrameworkZ.Notifications:AddToQueue("Please wait a few seconds for the map to load.", FrameworkZ.Notifications.Types.Warning)
+        PFW_MainMenu.instance:onClose()
+    end, characterData)
 end
 
-function FrameworkZ.Players.OnLoadCharacter()
+function FrameworkZ.Players.OnLoadCharacter(data, characterID)
     return true
 end
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnLoadCharacter", "OnLoadCharacter_Callback", FrameworkZ.Players.OnLoadCharacter)
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnLoadCharacter", FrameworkZ.Players.OnLoadCharacter)
 
 function FrameworkZ.Players:LoadCharacterByID(username, characterID)
 

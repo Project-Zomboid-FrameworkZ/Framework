@@ -3,6 +3,12 @@ FrameworkZ = FrameworkZ or {}
 local Events = Events
 local fzFoundation = FrameworkZ.Foundation
 
+function FrameworkZ.EveryDays()
+    fzFoundation:ExecuteAllHooks("EveryDays")
+end
+Events.EveryDays.Add(FrameworkZ.EveryDays)
+fzFoundation:AddAllHookHandlers("EveryDays")
+
 function FrameworkZ.LoadGridsquare(square)
     fzFoundation:ExecuteAllHooks("LoadGridsquare", square)
 end

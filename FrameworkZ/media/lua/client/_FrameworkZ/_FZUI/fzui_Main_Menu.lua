@@ -333,13 +333,15 @@ function PFW_MainMenu:onFinalizeCharacter(menu)
         EQUIPMENT_SLOT_SHOES = {id = shoes}
     }
 
-    local success, characterID = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), characterData)
+    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.CreateCharacter", function(data, _success, _characterID)
+        local success, characterID = FrameworkZ.Players.CreateCharacter({isoPlayer = self.playerObject}, self.playerObject:getUsername(), characterData)
 
-    if success then
-        FrameworkZ.Notifications:AddToQueue("Successfully created character " .. name .. " #" .. characterID .. ".", nil, nil, self)
-    else
-        FrameworkZ.Notifications:AddToQueue("Failed to create character.", nil, nil, self)
-    end
+        if success then
+            FrameworkZ.Notifications:AddToQueue("Successfully created character " .. name .. " #" .. characterID .. ".", nil, nil, self)
+        else
+            FrameworkZ.Notifications:AddToQueue("Failed to create character.", nil, nil, self)
+        end
+    end, self.playerObject:getUsername(), characterData)
 
     return true
 end
@@ -410,31 +412,14 @@ function PFW_MainMenu:onEnterMainMenuFromLoadCharacterMenu()
 end
 
 function PFW_MainMenu:onLoadCharacter()
-    local character = FrameworkZ.Players:GetCharacterByID(self.playerObject:getUsername(), self.loadCharacterMenu.currentIndex)
-
-    local callback = function(isoPlayer, key, value, returnValues, arguments)
-        if not returnValues["OnLoadCharacter_Callback"] then
-            FrameworkZ.Notifications:AddToQueue("Failed to load character.", FrameworkZ.Notifications.Types.Danger, nil, self)
-            return
-        end
-
-        if not character then
-            FrameworkZ.Notifications:AddToQueue("No character selected.", FrameworkZ.Notifications.Types.Warning, nil, self)
-            return
-        end
-
-        local success = FrameworkZ.Players:LoadCharacter(self.playerObject:getUsername(), character, self.loadCharacterMenu.selectedCharacter.survivor) -- TODO Network character loading?
-
-        if success then
-            FrameworkZ.Notifications:AddToQueue("Successfully loaded character " .. character.INFO_NAME .. " #" .. character.META_ID .. ".")
-            self:onClose()
-        else
-            FrameworkZ.Notifications:AddToQueue("Failed to load character.", FrameworkZ.Notifications.Types.Danger, nil, self)
-        end
-    end
+    local loadCharacterStartTime = getTimestampMs()
+    local characterID = self.loadCharacterMenu.currentIndex
+    local character = FrameworkZ.Players:GetCharacterByID(self.playerObject:getUsername(), characterID)
 
     if character then
-        FrameworkZ.Foundation:SendFire(self.playerObject, callback, "FrameworkZ.Players.OnLoadCharacter", false, self.playerObject:getUsername(), character.META_ID)
+        FrameworkZ.Players:LoadCharacter(self.playerObject:getUsername(), character, self.loadCharacterMenu.selectedCharacter.survivor, loadCharacterStartTime)
+    else
+        FrameworkZ.Notifications:AddToQueue("No character selected.", FrameworkZ.Notifications.Types.Warning, nil, self)
     end
 end
 

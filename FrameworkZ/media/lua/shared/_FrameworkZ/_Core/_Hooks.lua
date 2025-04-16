@@ -84,5 +84,6 @@ if not isClient() then
     Events.OnClientCommand.Add(FrameworkZ.Hooks.OnClientCommand)
 end
 
+FrameworkZ.Foundation:AddAllHookHandlers("PlayerTick")
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Hooks)
 FrameworkZ.Foundation:RegisterFramework()

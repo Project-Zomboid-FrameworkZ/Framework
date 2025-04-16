@@ -155,6 +155,7 @@ FrameworkZ.Foundation.PendingConfirmations = {}
 FrameworkZ.Foundation.Subscribers = {}
 FrameworkZ.Foundation.SubscribersMeta = {}
 
+--! \brief Generate a time-based unique request ID for network requests.
 local function generateRequestID()
     return tostring(os.time()) .. "-" .. tostring(ZombRand(100000, 999999))
 end
@@ -167,8 +168,11 @@ function FrameworkZ.Foundation:PathToString(path)
     return table.concat(path, ".")
 end
 
+--! \brief Add a new channel to the network system. Channels are used to subscribe to; changes in values, or fire events.
+--! \param key \string or \table The key to use for the channel. Use a table to create nested channels. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
 function FrameworkZ.Foundation:AddChannel(key)
     local stringKey = self:PathToString(key)
+
     self.Subscribers[stringKey] = {}
     self.SubscribersMeta[stringKey] = {
         originalKey = key,
@@ -177,27 +181,43 @@ function FrameworkZ.Foundation:AddChannel(key)
     }
 end
 
+--! \brief Remove a channel from the network system. This will remove all subscribers and meta data for the channel.
+--! \param key \string or \table The key to use for the channel. Use a table to create nested channels. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
 function FrameworkZ.Foundation:RemoveChannel(key)
     local stringKey = self:PathToString(key)
+
     self.Subscribers[stringKey] = nil
     self.SubscribersMeta[stringKey] = nil
 end
 
+--! \brief Get the channel for a key. This will return the channel data for the key.
+--! \param key \string or \table The key to use for the channel. Use a table to create nested channels. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \return \table The channel data for the key.
 function FrameworkZ.Foundation:GetChannel(key)
     local stringKey = self:PathToString(key)
+
     return self.Subscribers[stringKey]
 end
 
+--! \brief Get the meta data for a channel. This will return the meta data for the key.
+--! \param key \string or \table The key to use for the channel. Use a table to create nested channels. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \return \table The meta data for the key.
 function FrameworkZ.Foundation:GetChannelMeta(key)
     local stringKey = self:PathToString(key)
+
     return self.SubscribersMeta[stringKey]
 end
 
+--! \brief Check if a channel exists for a key. This will return true if the channel exists, false otherwise.
+--! \param key \string or \table The key to use for the channel. Use a table to create nested channels. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \return \boolean True if the channel exists, false otherwise.
 function FrameworkZ.Foundation:HasChannel(key)
     local stringKey = self:PathToString(key)
+
     return self.Subscribers[stringKey] ~= nil
 end
 
+--! \brief Log all channels and their subscribers to the console. This is useful for debugging and understanding the network system.
 function FrameworkZ.Foundation:LogChannels()
     print("=== FrameworkZ.Networks Channels ===")
 
@@ -214,18 +234,34 @@ function FrameworkZ.Foundation:LogChannels()
     end
 end
 
---! \brief Subscribes to a key to listen for changes.
---! \param key \mixed The key to subscribe to.
---! \param id \string The ID of the function callback being added.
---! \param callback \function The callback to call when the key changes.
-function FrameworkZ.Foundation:Subscribe(key, id, callback)
+--! \brief Subscribes to a key to listen for changes with the first three arguments supplied, or can be used for sending/receiving fire events with the first two arguments supplied.
+--! \param key \string The key to subscribe to. Use a \table to subscribe to nested values. \note Example key argument as a table: {"key", "subkey"} == _G["key"]["subkey"] or _G.key.subkey on lookup when subscribing.
+--! \param id \mixed The \string ID of the function callback being added for key changes, or a \function callback for the client-server/server-client fire events.
+--! \param callback \function (Optional) The callback to call when the key changes.
+--! \return \function The callback that was added to the channel. Useful if an inline callback was supplied for the idOrCallback parameter when setting up a fire event.
+function FrameworkZ.Foundation:Subscribe(key, idOrCallback, maybeCallback)
+    local id, callback
+
+    if type(idOrCallback) == "function" then
+        id = "__default"
+        callback = idOrCallback
+    else
+        id = idOrCallback
+        callback = maybeCallback
+    end
+
     if not self:HasChannel(key) then
         self:AddChannel(key)
     end
 
     self:GetChannel(key)[id] = callback
+
+    return callback
 end
 
+--! \brief Unsubscribes from a key. This will remove the callback from the channel.
+--! \param key \string The key to unsubscribe from. Use a \table to unsubscribe from nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \param id \sting The ID of the function callback being removed. Default for fire events: "__default"
 function FrameworkZ.Foundation:Unsubscribe(key, id)
     local subscribers = self:GetSubscribers(key)
     if not subscribers then return false end
@@ -233,21 +269,41 @@ function FrameworkZ.Foundation:Unsubscribe(key, id)
     subscribers[id] = nil
 end
 
+--! \brief Get the subscribers for a key. This will return the subscribers for the key.
+--! \param key \string The key to get the subscribers for. Use a \table to get the subscribers for nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \return \table The subscribers for the key.
 function FrameworkZ.Foundation:GetSubscribers(key)
     return self:GetChannel(key)
 end
 
+--! \brief Check if a subscription exists for a key. This will return true if the subscription exists, false otherwise.
+--! \param key \string The key to check for. Use a \table to check for nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \param id \string The ID of the function callback being checked.
 function FrameworkZ.Foundation:HasSubscription(key, id)
     local channel = self:GetChannel(key)
+
     return channel and channel[id] ~= nil
 end
 
-function FrameworkZ.Foundation:Fire(key, value)
+--! \brief Fires a callback for a key. This will call the callback for the key with the value supplied.
+--! \param key \string The key to fire the callback for. Use a \table to fire the callback for nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
+--! \param data \table The standard data to pass to the callback. Generally contains diagnostic information.
+--! \param arguments \table The values to pass to the callback. This can be any type of values stored in the table.
+function FrameworkZ.Foundation:Fire(key, data, arguments)
+    if not self:HasChannel(key) then
+        print("[FZ] Warning: Received fire event for unknown ID: ", key)
+    end
+
+    local returnValues = {}
     local callbacks = self:GetSubscribers(key)
 
     if callbacks then
-        for _, callback in pairs(callbacks) do
-            callback(key, value)
+        local results
+
+        for id, callback in pairs(callbacks) do
+            results = {callback(data, unpack(arguments))}
+
+            returnValues[id] = results
         end
 
         local meta = self:GetChannelMeta(key)
@@ -256,10 +312,12 @@ function FrameworkZ.Foundation:Fire(key, value)
             meta.lastFiredAt = os.time()
         end
     end
+
+    return returnValues
 end
 
 --! \brief Subscribes and fires callback immediately if the value is already set. Useful for UIs.
---! \param key \string or \table The key to watch. Use a table to watch nested values. \note Example key argument as a table: {"key", "subkey"} == _G["key"]["subkey"] or _G.key.subkey on lookup when watching.
+--! \param key \string or \table The key to watch. Use a table to watch nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
 --! \param id \string The ID of the function callback being added.
 --! \param callback \function The callback to call when the key changes.
 function FrameworkZ.Foundation:Watch(key, id, callback)
@@ -327,24 +385,43 @@ function FrameworkZ.Foundation:SendSet(key, value, callback, callbackID, broadca
     return requestID
 end
 
-function FrameworkZ.Foundation:SendFire(isoPlayer, callback, callbackID, broadcast, ...)
+function FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, callback, ...)
+    local playerID = isoPlayer and isoPlayer:getOnlineID() or nil
     local requestID = generateRequestID()
 
     if callback then
-        self.PendingConfirmations[requestID] = {callback = callback}
+        self.PendingConfirmations[requestID] = {
+            playerID = playerID,
+            callback = callback,
+            subID = subscriptionID,
+            sentAt = os.time()
+        }
     end
 
     if isClient() then
-        sendClientCommand(isoPlayer, NETWORKS_MODULE_ID, "FireCallback", {
-            broadcast = broadcast,
-            callbackID = callbackID,
+        local payload = {
             requestID = requestID,
-            args = {...}
-        })
+            subID = subscriptionID,
+            args = {...},
+            clientSentAt = os.time()
+        }
+
+        sendClientCommand(isoPlayer, NETWORKS_MODULE_ID, "SendFire", payload)
+    elseif isServer() then
+        local payload = {
+            playerID = playerID,
+            requestID = requestID,
+            subID = subscriptionID,
+            args = {...},
+            serverSentAt = os.time()
+        }
+
+        sendServerCommand(isoPlayer, NETWORKS_MODULE_ID, "SendFire", payload)
     end
 
     return requestID
 end
+
 
 function FrameworkZ.Foundation:GetNestedValue(root, path)
     local current = root
@@ -370,6 +447,7 @@ function FrameworkZ.Foundation:SetNestedValue(root, path, value)
 end
 
 if isServer() then
+
     --! \brief Handles incoming commands from the client on the server.
     function FrameworkZ.Foundation:OnClientCommand(module, command, isoPlayer, arguments)
         if module ~= NETWORKS_MODULE_ID then return end
@@ -388,7 +466,7 @@ if isServer() then
 
                         if returnValue then
                             if not returnValues[id] then returnValues[id] = {} end
-                            table.insert(returnValues[id], returnValue)
+                            returnValues[id] = returnValue
                         end
                     end
                 end
@@ -465,45 +543,46 @@ if isServer() then
                     })
                 end
             end
-        elseif command == "FireCallback" then
-            local returnValues = {}
-            local callbackID = arguments.callbackID
+        elseif command == "SendFire" then
+            local subID = arguments.subID
+            local meta = self:GetChannelMeta(subID) or {}
+            local data = {
+                isoPlayer = isoPlayer,
+                clientSentAt = arguments.clientSentAt,
+                subID = subID,
+                subCreatedAt = meta.createdAt,
+                subLastFiredAt = meta.lastFiredAt
+            }
 
-            if callbackID then
-                local callbacks = self:GetSubscribers(callbackID)
+            local returnValues = self:Fire(subID, data, arguments.args)
 
-                if callbacks then
-                    for id, callback in pairs(callbacks) do
-                        local returnValue = callback(isoPlayer, nil, nil, nil, arguments.args)
+            sendServerCommand(isoPlayer, NETWORKS_MODULE_ID, "ConfirmFire", {
+                requestID = arguments.requestID,
+                subID = subID,
+                meta = meta,
+                returnValues = returnValues
+            })
+        elseif command == "ConfirmFire" then
+            local confirmation = self.PendingConfirmations[arguments.requestID]
 
-                        if returnValue then
-                            if not returnValues[id] then returnValues[id] = {} end
-                            table.insert(returnValues[id], returnValue)
-                        end
-                    end
+            if confirmation then
+                local meta = arguments.meta or {}
+                local callback = confirmation.callback
+                local returnValues = arguments.returnValues or {}
+
+                for _, returnArgs in pairs(returnValues) do
+                    local data = {
+                        subscriptionID = confirmation.subID,
+                        isoPlayer = isoPlayer,
+                        sentAt = confirmation.sentAt,
+                        createdAt = meta.createdAt,
+                        lastFiredAt = meta.lastFiredAt,
+                    }
+
+                    callback(data, unpack(returnArgs))
                 end
-            end
 
-            if not arguments.broadcast then
-                sendServerCommand(isoPlayer, NETWORKS_MODULE_ID, "ConfirmFire", {
-                    broadcast = false,
-                    requestID = arguments.requestID,
-                    callbackID = callbackID,
-                    returnValues = returnValues,
-                    args = arguments.args
-                })
-            else
-                local onlineUsers = getOnlinePlayers()
-
-                for i = 0, onlineUsers:size() - 1 do
-                    sendServerCommand(onlineUsers:get(i), NETWORKS_MODULE_ID, "ConfirmFire", {
-                        broadcast = true,
-                        requestID = arguments.requestID,
-                        callbackID = callbackID,
-                        returnValues = returnValues,
-                        args = arguments.args
-                    })
-                end
+                self.PendingConfirmations[arguments.requestID] = nil
             end
         end
     end
@@ -565,30 +644,47 @@ if isClient() then
                     end
                 end
             end
+        elseif command == "SendFire" then
+            local subID = arguments.subID
+            local isoPlayer = getSpecificPlayer(arguments.playerID)
+            local meta = self:GetChannelMeta(subID) or {}
+            local data = {
+                isoPlayer = isoPlayer,
+                serverSentAt = arguments.serverSentAt,
+                subID = subID,
+                subCreatedAt = meta.createdAt,
+                subLastFiredAt = meta.lastFiredAt
+            }
+
+            local returnValues = self:Fire(subID, data, arguments.args)
+
+            sendClientCommand(isoPlayer, NETWORKS_MODULE_ID, "ConfirmFire", {
+                requestID = arguments.requestID,
+                subID = subID,
+                meta = meta,
+                returnValues = returnValues
+            })
         elseif command == "ConfirmFire" then
-            local isoPlayer = getPlayer()
-            local requestID = arguments.requestID
-            local confirmation = self.PendingConfirmations[requestID]
+            local confirmation = self.PendingConfirmations[arguments.requestID]
 
             if confirmation then
+                local meta = arguments.meta or {}
                 local callback = confirmation.callback
+                local returnValues = arguments.returnValues or {}
 
-                if callback then
-                    callback(isoPlayer, arguments.key, arguments.value, arguments.returnValues, arguments.args)
+                for _, returnArgs in pairs(returnValues) do
+                    local data = {
+                        subscriptionID = confirmation.subID,
+                        isoPlayer = getSpecificPlayer(confirmation.playerID),
+                        sentAt = confirmation.sentAt,
+                        createdAt = meta.createdAt,
+                        lastFiredAt = meta.lastFiredAt,
+                    }
+
+                    callback(data, unpack(returnArgs))
                 end
 
-                self.PendingConfirmations[requestID] = nil
-            end
-
-            if arguments.broadcast then
-                local key = arguments.key
-                local callbacks = self:GetSubscribers(key)
-
-                if callbacks then
-                    for _, callback in pairs(callbacks) do
-                        callback(isoPlayer, key, arguments.value, arguments.returnValues, arguments.args)
-                    end
-                end
+                self.PendingConfirmations[arguments.requestID] = nil
             end
         elseif command == "FailedSet" then
             local requestID = arguments.requestID
@@ -600,6 +696,21 @@ if isClient() then
             end
         end
     end
+end
+
+function FrameworkZ.Foundation:CleanupConfirmations(timeout)
+    local now = os.time()
+
+    for id, entry in pairs(self.PendingConfirmations) do
+        if now - entry.sentAt > timeout then
+            self.PendingConfirmations[id] = nil
+            print(("[FZ] Cleaned up stale confirmation: %s"):format(tostring(id)))
+        end
+    end
+end
+
+function FrameworkZ.Foundation:EveryDays()
+    self:CleanupConfirmations(60 * 5) -- 5 minutes
 end
 
 --[[
@@ -903,39 +1014,55 @@ end
 	HOOKS ADDITIONS
 --]]
 
---! \brief Called when the game starts. Executes the OnGameStart function for all modules.
-function FrameworkZ.Foundation:OnGameStart()
-    self:ExecuteFrameworkHooks("PreInitializeClient", getPlayer())
+if isServer() then
+    FrameworkZ.Foundation:Subscribe("FrameworkZ.Foundation.GetServerTime", function(data)
+        return getTimestampMs()
+    end)
 end
 
-function FrameworkZ.Foundation:PreInitializeClient()
+local startTime
+
+--! \brief Called when the game starts. Executes the OnGameStart function for all modules.
+function FrameworkZ.Foundation:OnGameStart()
+    local isoPlayer = getPlayer()
+    startTime = getTimestampMs()
+
+    self:ExecuteFrameworkHooks("PreInitializeClient", isoPlayer)
+end
+
+function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
     if isClient() then
+        FrameworkZ.Players:StartPlayerTick(isoPlayer)
+        
         local sidebar = ISEquippedItem.instance
         FrameworkZ.Foundation.fzuiTabMenu = FrameworkZ.fzuiTabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
         FrameworkZ.Foundation.fzuiTabMenu:initialise()
         FrameworkZ.Foundation.fzuiTabMenu:addToUIManager()
     end
 
-    self:ExecuteModuleHooks("PreInitializeClient", getPlayer())
-    self:ExecuteGamemodeHooks("PreInitializeClient", getPlayer())
-    self:ExecutePluginHooks("PreInitializeClient", getPlayer())
+    self:ExecuteModuleHooks("PreInitializeClient", isoPlayer)
+    self:ExecuteGamemodeHooks("PreInitializeClient",isoPlayer)
+    self:ExecutePluginHooks("PreInitializeClient", isoPlayer)
 
-    self:ExecuteFrameworkHooks("InitializeClient", getPlayer())
+    self:ExecuteFrameworkHooks("InitializeClient", isoPlayer)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 
 function FrameworkZ.Foundation:InitializeClient(isoPlayer)
     if isClient() then
         FrameworkZ.Timers:Simple(FrameworkZ.Config.InitializationDuration, function()
-            FrameworkZ.Foundation:SendFire(isoPlayer, FrameworkZ.Foundation.OnInitializeClient, "FrameworkZ.Foundation.OnInitializeClient", false)
+            --FrameworkZ.Foundation:SendFire(isoPlayer, FrameworkZ.Foundation.OnInitializeClient, "FrameworkZ.Foundation.OnInitializeClient", false)
+
+            FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializeClient", FrameworkZ.Foundation.OnInitializeClient)
         end)
     end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("InitializeClient")
 
-function FrameworkZ.Foundation.OnInitializeClient(isoPlayer, key, value, returnValues, arguments)
-    if not isoPlayer then return false end
+function FrameworkZ.Foundation.OnInitializeClient(data)
+    if not data.isoPlayer then return false end
 
+    local isoPlayer = data.isoPlayer
     local player = FrameworkZ.Players:New(isoPlayer)
 
     if player then
@@ -948,12 +1075,16 @@ function FrameworkZ.Foundation.OnInitializeClient(isoPlayer, key, value, returnV
 
     FrameworkZ.Foundation:ExecuteFrameworkHooks("PostInitializeClient", isoPlayer)
 end
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Foundation.OnInitializeClient", "OnInitializeClient_Callback", FrameworkZ.Foundation.OnInitializeClient)
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Foundation.OnInitializeClient", FrameworkZ.Foundation.OnInitializeClient)
 
 function FrameworkZ.Foundation:PostInitializeClient(isoPlayer)
     self:ExecuteModuleHooks("PostInitializeClient", isoPlayer)
     self:ExecuteGamemodeHooks("PostInitializeClient", isoPlayer)
     self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
+
+    if isClient() then
+        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
+    end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 

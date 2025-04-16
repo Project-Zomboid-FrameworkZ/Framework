@@ -2,8 +2,8 @@ FrameworkZ = FrameworkZ or {}
 
 -- FrameworkZ Configuration Values
 FrameworkZ.Config = {
-    SkipIntro = true,
-    Version = "6.7.3",
+    SkipIntro = false,
+    Version = "7.7.3",
     VersionType = "alpha",
 
     IntroFrameworkImage = "media/textures/fz.png",
@@ -24,7 +24,8 @@ FrameworkZ.Config = {
     CharacterMinWeight = 80, -- Pounds
     CharacterMaxWeight = 300, -- Pounds
 
-    CharacterSaveInterval = 600,
+    PlayerTickInterval = 0.5, -- In seconds, increasing this may improve performance at the cost of responsiveness. Default: 0.5 seconds.
+    TicksUntilCharacterSave = 1200, -- In ticks, by the Player Tick Interval. Default: 1200 (10 minutes).
     ShouldNotifyOnCharacterSave = true,
 
     LimboX = 18539,
@@ -38,7 +39,7 @@ FrameworkZ.Config = {
     DefaultMaxCharacters = 1,
 
     -- Initialization Duration
-    InitializationDuration = 5,
+    InitializationDuration = 1,
 
     -- Lockpicking
     LockpickChance = 0.5,

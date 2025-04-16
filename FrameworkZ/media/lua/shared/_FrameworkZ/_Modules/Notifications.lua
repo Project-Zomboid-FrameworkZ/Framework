@@ -144,12 +144,20 @@ function FrameworkZ.Notifications:AddToQueue(message, notificationType, duration
     return notification
 end
 
+--[[
 function FrameworkZ.Notifications:OnGameStart()
-    FrameworkZ.Timers:Create("NotificationTick", 1, 0, function()
+    FrameworkZ.Timers:Create("NotificationTick", 0.5, 0, function()
         if not self.isProcessing then
             self.isProcessing = self:ProcessQueue(false)
         end
     end)
+end
+--]]
+
+function FrameworkZ.Notifications:PlayerTick(isoPlayer)
+    if not self.isProcessing then
+        self.isProcessing = self:ProcessQueue(false)
+    end
 end
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Notifications)

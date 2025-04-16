@@ -1,7 +1,53 @@
-require "ISUI/ISToolTipInv"
-
 FrameworkZ = FrameworkZ or {}
-FrameworkZ.Overrides = {}
+FrameworkZ.Overrides = FrameworkZ.Foundation:GetModule("Overrides")
+
+require "ISUI/ISToolTipInv"
+require "OptionScreens/ConnectToServer"
+require "OptionScreens/MainScreen"
+
+function FrameworkZ.Overrides.onChatWindowInit()
+    ISChat.instance:setVisible(false)
+end
+Events.OnChatWindowInit.Add(FrameworkZ.Overrides.onChatWindowInit)
+
+ConnectToServer.OnConnected = function(self)
+    if not SystemDisabler.getAllowDebugConnections() and getDebug() and not isAdmin() and not isCoopHost() and not SystemDisabler.getOverrideServerConnectDebugCheck() then
+        forceDisconnect()
+        return
+    end
+    connectionManagerLog("connect-state-finish", "lua-connected");
+    self.connecting = false
+    self:setVisible(false)
+    if not checkSavePlayerExists() then
+        if not getWorld():getMap() then
+            getWorld():setMap("Muldraugh, KY")
+        end
+
+        if MainScreen.instance.createWorld then
+            createWorld(getWorld():getWorld())
+        end
+
+        GameWindow.doRenderEvent(false)
+        forceChangeState(LoadingQueueState.new())
+    else
+        GameWindow.doRenderEvent(false)
+        forceChangeState(LoadingQueueState.new())
+    end
+end
+
+FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu = MainScreen.onMenuItemMouseDownMainMenu
+MainScreen.onMenuItemMouseDownMainMenu = function(item, x, y)
+    if item.internal == "EXIT" then
+        FrameworkZ.Players:Destroy(getPlayer():getUsername())
+    end
+
+    if item.internal == "QUIT_TO_DESKTOP" then
+        FrameworkZ.Players:Destroy(getPlayer():getUsername())
+    end
+
+    FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+end
+
 FrameworkZ.Overrides.ISToolTipInv_render = ISToolTipInv.render
 
 function FrameworkZ.Overrides.WordWrapText(text)
@@ -269,3 +315,5 @@ ISToolTipInv.render = function(self)
         self.item:DoTooltip(self.tooltip);
     end
 end
+
+FrameworkZ.Foundation:RegisterModule(FrameworkZ.Overrides)

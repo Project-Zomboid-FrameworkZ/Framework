@@ -488,25 +488,6 @@ function CHARACTER:Initialize()
     return FrameworkZ.Characters:Initialize(self.username, self)
 end
 
-function CHARACTER:OnPreLoad()
-    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", self)
-end
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPreLoad")
-
-function CHARACTER:OnLoad()
-    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", self)
-end
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
-
-function CHARACTER:OnPostLoad(firstLoad)
-    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", self, firstLoad)
-
-    if firstLoad then
-        FrameworkZ.Characters:SetupUID(self.isoPlayer:getUsername())
-    end
-end
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
-
 --! \brief Save the character's data from the character object.
 --! \param shouldTransmit \boolean (Optional) Whether or not to transmit the character's data to the server.
 --! \return \boolean Whether or not the character was successfully saved.
@@ -694,6 +675,14 @@ function CHARACTER:ValidateCharacterData()
     return initializedNewData
 end
 
+function CHARACTER:GetFaction()
+    return self.faction
+end
+
+function CHARACTER:GetIsoPlayer()
+    return self.isoPlayer
+end
+
 --! \brief Set the age of the character.
 --! \param age \integer The age of the character.
 function CHARACTER:SetAge(age)
@@ -704,10 +693,6 @@ function CHARACTER:SetAge(age)
     if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "age", age})
     end
-end
-
-function CHARACTER:GetFaction()
-    return self.faction
 end
 
 --! \brief Set the faction of the character.
@@ -752,6 +737,14 @@ function CHARACTER:SetDescription(description)
     if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "description", description})
     end
+end
+
+function CHARACTER:GetID()
+    return self.id
+end
+
+function CHARACTER:GetUID()
+    return self.uid
 end
 
 --! \brief Get the character's inventory object.
@@ -923,18 +916,41 @@ function FrameworkZ.Characters:Save(username)
     return false
 end
 
+function CHARACTER:OnPreLoad()
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", self)
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPreLoad")
+
+function CHARACTER:OnLoad()
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", self)
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
+
+function CHARACTER:OnPostLoad(firstLoad)
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", self, firstLoad)
+
+    if firstLoad then
+        FrameworkZ.Characters:SetupUID(self:GetIsoPlayer(), self.id)
+    end
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
+
+function FrameworkZ.Characters.PostLoad(data, characterData)
+    return FrameworkZ.Characters:OnPostLoad(data.isoPlayer, characterData)
+end
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.PostLoad", FrameworkZ.Characters.PostLoad)
+
 --! \brief Initializes a player's character after loading.
 --! \return \boolean Whether or not the post load was successful.
-function FrameworkZ.Characters:PostLoad(isoPlayer, characterData)
+function FrameworkZ.Characters:OnPostLoad(isoPlayer, characterData)
     local username = isoPlayer:getUsername()
-
+    local player = FrameworkZ.Players:GetPlayerByID(username)
     local character = FrameworkZ.Characters:New(username, characterData.META_ID)
 
-    if not character then return false end
+    if not player or not character then return false end
 
     character:OnPreLoad()
 
-    FrameworkZ.Characters:CreateCharacterTick(isoPlayer, 1)
     character.isoPlayer = isoPlayer
     character.name = characterData.INFO_NAME
     character.description = characterData.INFO_DESCRIPTION
@@ -949,7 +965,7 @@ function FrameworkZ.Characters:PostLoad(isoPlayer, characterData)
     character.recognizes = {}
 
     local newInventory = FrameworkZ.Inventories:New(username)
-    local success, message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(isoPlayer, newInventory, characterData.INVENTORY_LOGICAL or nil)
+    local _success, _message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(isoPlayer, newInventory, characterData.INVENTORY_LOGICAL or nil)
     character.inventory = rebuiltInventory or nil
 
     if character.inventory then
@@ -958,22 +974,67 @@ function FrameworkZ.Characters:PostLoad(isoPlayer, characterData)
     end
 
     character:Initialize()
-
-    FrameworkZ.Timers:Create("FZ_CharacterSaveInterval", FrameworkZ.Config.CharacterSaveInterval, 0, function()
-        local success, message = FrameworkZ.Players:Save(username)
-
-        if success then
-            if FrameworkZ.Config.ShouldNotifyOnCharacterSave then
-                FrameworkZ.Notifications:AddToQueue("Successfully saved current character.", FrameworkZ.Notifications.Types.Success)
-            end
-        else
-            FrameworkZ.Notifications:AddToQueue(message, FrameworkZ.Notifications.Types.Danger)
-        end
-    end)
-
     character:OnLoad()
 
-    return true, character
+    player.loadedCharacter = character
+
+    return character
+end
+
+if isServer() then
+    function FrameworkZ.Characters.GenerateUID(data, characterID)
+        local username = data.isoPlayer:getUsername()
+        local player = FrameworkZ.Players:GetPlayerByID(username)
+        local character = player and player:GetCharacter()
+        local characterData = player and player:GetCharacterByID(characterID)
+
+        if player and character and characterData and character.id == characterData.META_ID then
+            FrameworkZ.Characters.UIDs[username] = FrameworkZ.Characters.UIDs[username] or {}
+
+            local uid = username .. "_" .. FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
+
+            while FrameworkZ.Characters.UIDs[username][uid] do
+                uid = username .. "_" ..  FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
+            end
+
+            character.uid = uid
+            player:GetStoredData().characters[character.id].META_UID = uid
+
+            FrameworkZ.Characters.UIDs[username][uid] = true
+            ModData.add("FZ_CHAR_UIDS", FrameworkZ.Characters.UIDs)
+
+            return characterData.META_ID, uid
+        end
+
+        return false
+    end
+    FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.GenerateUID", FrameworkZ.Characters.GenerateUID)
+end
+
+function FrameworkZ.Characters:OnInitGlobalModData()
+    self.UIDs = ModData.getOrCreate("FZ_CHAR_UIDS")
+end
+
+function FrameworkZ.Characters:SetupUID(isoPlayer, characterID)
+    if not isoPlayer then return false end
+    local username = isoPlayer:getUsername()
+
+    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Characters.GenerateUID", function(data, checkedCharacterID, uid)
+        local player = FrameworkZ.Players:GetPlayerByID(username)
+        local character = player and player:GetCharacter()
+
+        if player and character and character.id == checkedCharacterID then
+            FrameworkZ.Characters.UIDs[username] = FrameworkZ.Characters.UIDs[username] or {}
+
+            character.uid = uid
+            player:GetStoredData().characters[character.id].META_UID = uid
+            FrameworkZ.Characters.UIDs[username][uid] = true
+
+            FrameworkZ.Notifications:AddToQueue("Character UID has been set to: " .. uid, FrameworkZ.Notifications.Types.Info)
+        else
+            FrameworkZ.Notifications:AddToQueue("Failed to setup character UID. Player switched character or potential issues(!).", FrameworkZ.Notifications.Types.Warning)
+        end
+    end, characterID)
 end
 
 if isClient() then
@@ -1028,114 +1089,86 @@ if isClient() then
         end
     end
 
-    function FrameworkZ.Characters:CreateCharacterTick(player, tickTime)
-        FrameworkZ.Timers:Create("CharacterTick", tickTime, 0, function()
-            local x = getMouseX()
-            local y = getMouseY()
+    local currentSaveTick = 0
 
-            if x ~= previousMouseX or y ~= previousMouseY then
-                Events.OnPreUIDraw.Remove(FrameworkZ.Characters.OnPreUIDraw)
-                
-                showingTooltip = false
-                tooltipPlayer = nil
-                previousMouseX = x
-                previousMouseY = y
-            elseif showingTooltip == false then
-                showingTooltip = true
+    function FrameworkZ.Characters:PlayerTick(isoPlayer)
+        local x = getMouseX()
+        local y = getMouseY()
 
-                if player then
-                    local playerIndex = player:getPlayerNum()
-                    local worldX = screenToIsoX(playerIndex, x, y, 0)
-                    local worldY = screenToIsoY(playerIndex, x, y, 0)
-                    local worldZ = player:getZ()
-                    local square = getSquare(worldX, worldY, worldZ)
+        if x ~= previousMouseX or y ~= previousMouseY then
+            Events.OnPreUIDraw.Remove(FrameworkZ.Characters.OnPreUIDraw)
 
-                    if square then
-                        local playerOnSquare = square:getPlayer()
+            showingTooltip = false
+            tooltipPlayer = nil
+            previousMouseX = x
+            previousMouseY = y
+        elseif showingTooltip == false then
+            showingTooltip = true
 
-                        if playerOnSquare then
-                            local playerOnSquareIndex = playerOnSquare:getPlayerNum()
-                            tooltipX = isoToScreenX(playerOnSquareIndex, worldX, worldY, worldZ)
-                            tooltipY = isoToScreenY(playerOnSquareIndex, worldX, worldY, worldZ)
+            if isoPlayer then
+                local playerIndex = isoPlayer:getPlayerNum()
+                local worldX = screenToIsoX(playerIndex, x, y, 0)
+                local worldY = screenToIsoY(playerIndex, x, y, 0)
+                local worldZ = isoPlayer:getZ()
+                local square = getSquare(worldX, worldY, worldZ)
 
-                            tooltipPlayer = playerOnSquare
-                            local character = FrameworkZ.Characters:GetCharacterByID(playerOnSquare:getUsername())
-                            tooltip.name = character and character.name or "Invalid Character"
-                            tooltip.description = FrameworkZ.Characters:GetDescriptionLines(character and character.description or "Invalid Description")
+                if square then
+                    local playerOnSquare = square:getPlayer()
+
+                    if playerOnSquare then
+                        local playerOnSquareIndex = playerOnSquare:getPlayerNum()
+                        tooltipX = isoToScreenX(playerOnSquareIndex, worldX, worldY, worldZ)
+                        tooltipY = isoToScreenY(playerOnSquareIndex, worldX, worldY, worldZ)
+
+                        tooltipPlayer = playerOnSquare
+                        local character = FrameworkZ.Characters:GetCharacterByID(playerOnSquare:getUsername())
+                        tooltip.name = character and character.name or "Invalid Character"
+                        tooltip.description = FrameworkZ.Characters:GetDescriptionLines(character and character.description or "Invalid Description")
 
 
-                            if tooltip then
-                                Events.OnPreUIDraw.Add(FrameworkZ.Characters.OnPreUIDraw)
-                            end
-                        end
-                    end
-                end
-            elseif showingTooltip == true then
-                if player then
-                    local playerIndex = player:getPlayerNum()
-                    local worldX = screenToIsoX(playerIndex, x, y, 0)
-                    local worldY = screenToIsoY(playerIndex, x, y, 0)
-                    local worldZ = player:getZ()
-                    local square = getSquare(worldX, worldY, worldZ)
-
-                    if square then
-                        local playerOnSquare = square:getPlayer()
-
-                        if playerOnSquare ~= tooltipPlayer then
-                            Events.OnPreUIDraw.Remove(FrameworkZ.Characters.OnPreUIDraw)
-                            showingTooltip = false
-                            tooltipPlayer = nil
+                        if tooltip then
+                            Events.OnPreUIDraw.Add(FrameworkZ.Characters.OnPreUIDraw)
                         end
                     end
                 end
             end
-        end)
-    end
-end
+        elseif showingTooltip == true then
+            if isoPlayer then
+                local playerIndex = isoPlayer:getPlayerNum()
+                local worldX = screenToIsoX(playerIndex, x, y, 0)
+                local worldY = screenToIsoY(playerIndex, x, y, 0)
+                local worldZ = isoPlayer:getZ()
+                local square = getSquare(worldX, worldY, worldZ)
 
-function FrameworkZ.Characters:OnInitGlobalModData()
-    self.UIDs = ModData.getOrCreate("FZ_CHAR_UIDS")
-end
+                if square then
+                    local playerOnSquare = square:getPlayer()
 
-function FrameworkZ.Characters:SetupUID(username)
-    if not username then return false end
-
-    FrameworkZ.Foundation:SendGet({"FrameworkZ", "Characters", "UIDs"}, FrameworkZ.Characters.OnGenerateUID, "FrameworkZ.Characters.OnGenerateUID", false, username)
-end
-
-function FrameworkZ.Characters.OnGenerateUID(isoPlayer, key, value, returnValues, arguments)
-    if not key or not value or not (arguments and arguments[1]) then return false end
-    local username = arguments[1]
-    local player = FrameworkZ.Players:GetPlayerByID(username)
-    if not player then return false end
-    local character = player:GetCharacter()
-    if not character then return false end
-
-    FrameworkZ.Characters.UIDs[username] = value[username] or {}
-
-    local uid
-
-    if returnValues and returnValues["OnGenerateUID_Callback"] then
-        uid = returnValues["OnGenerateUID_Callback"]
-    else
-        uid = username .. "_" .. FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
-
-        while FrameworkZ.Characters.UIDs[username][uid] do
-            uid = username .. "_" ..  FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
+                    if playerOnSquare ~= tooltipPlayer then
+                        Events.OnPreUIDraw.Remove(FrameworkZ.Characters.OnPreUIDraw)
+                        showingTooltip = false
+                        tooltipPlayer = nil
+                    end
+                end
+            end
         end
+
+        if currentSaveTick >= FrameworkZ.Config.TicksUntilCharacterSave then
+            local success, message = FrameworkZ.Players:Save(isoPlayer:getUsername())
+
+            if success then
+                if FrameworkZ.Config.ShouldNotifyOnCharacterSave then
+                    FrameworkZ.Notifications:AddToQueue("Saved player and character data.", FrameworkZ.Notifications.Types.Success)
+                end
+            else
+                FrameworkZ.Notifications:AddToQueue(message, FrameworkZ.Notifications.Types.Danger)
+            end
+
+            currentSaveTick = 0
+        end
+
+        currentSaveTick = currentSaveTick + 1
     end
-
-    FrameworkZ.Characters.UIDs[username][uid] = true
-    player:GetStoredData().characters[character.id].META_UID = uid
-    ModData.add("FZ_CHAR_UIDS", FrameworkZ.Characters.UIDs)
-
-    if isClient() then
-        FrameworkZ.Notifications:AddToQueue("Your character's UID has been set to: " .. uid, FrameworkZ.Notifications.Types.Info)
-    end
-
-    return uid
 end
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.OnGenerateUID", "OnGenerateUID_Callback", FrameworkZ.Characters.OnGenerateUID)
 
 if isServer() then
 

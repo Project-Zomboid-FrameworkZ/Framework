@@ -42,9 +42,9 @@ function FrameworkZ.fzuiTabPanel:initialise()
     self.textCloseButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, PANEL_HEIGHT - textHeight - PANEL_MARGIN_Y, "Close", self, FrameworkZ.fzuiTabPanel.onMenuSelect)
     self.textCloseButton.internal = "CLOSE"
 
-    FrameworkZ.Timers:Create("TabPanelSlideOut", 0, 0, function()
+    FrameworkZ.Timers:Create("TabPanelSlideOut", 0.01, 0, function()
         if self:getX() < 0 then
-            self:setX(self:getX() + self:getWidth() * 0.05)
+            self:setX(self:getX() + self:getWidth() * 0.1)
         else
             self:setX(0)
             FrameworkZ.Timers:Remove("TabPanelSlideOut")
@@ -73,9 +73,9 @@ function FrameworkZ.fzuiTabPanel:onClose()
         FrameworkZ.fzuiTabSession.instance:onClose()
     end
 
-    FrameworkZ.Timers:Create("TabPanelSlideIn", 0, 0, function()
+    FrameworkZ.Timers:Create("TabPanelSlideIn", 0.1, 0, function()
         if self:getX() > -PANEL_WIDTH then
-            self:setX(self:getX() - self:getWidth() * 0.05)
+            self:setX(self:getX() - self:getWidth() * 0.1)
         else
             FrameworkZ.Timers:Remove("TabPanelSlideIn")
 

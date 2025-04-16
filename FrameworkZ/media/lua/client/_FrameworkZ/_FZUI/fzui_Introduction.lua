@@ -10,7 +10,8 @@ function PFW_Introduction:initialise()
 
 	ISPanel.initialise(self)
 
-    self.initializing = ISLabel:new((self.width - getTextManager():MeasureStringX(UIFont.Large, "Initializing")) / 2, (self.height - getTextManager():MeasureStringY(UIFont.Large, "Initializing")) / 2, 25, "Initializing", 1, 1, 1, 1, UIFont.Large, true)
+    self.initializing = ISLabel:new(self.width / 2, (self.height - getTextManager():MeasureStringY(UIFont.Large, "Initializing")) / 2, 25, "Initializing", 1, 1, 1, 1, UIFont.Large, true)
+	self.initializing.center = true
 	self:addChild(self.initializing)
 
 	self.currentTick = 1
@@ -33,60 +34,62 @@ function PFW_Introduction:initialise()
 				end
 			else
 				FrameworkZ.Timers:Remove("FZ_INIT_TICK")
+				self.initializing:setName("--- Initialized ---")
 
-				if not FrameworkZ.Config.SkipIntro then
-					self:removeChild(self.initializing)
-					emitter:playSoundImpl(FrameworkZ.Config.IntroMusic, nil)
+				FrameworkZ.Timers:Simple(2, function()
+					if not FrameworkZ.Config.SkipIntro then
+						self:removeChild(self.initializing)
+						emitter:playSoundImpl(FrameworkZ.Config.IntroMusic, nil)
 
-					emitter:playSoundImpl("button1", nil)
-					self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
+						emitter:playSoundImpl("button1", nil)
+						self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
 
-					FrameworkZ.Timers:Simple(0.1, function()
-						self.backgroundColor = {r=0, g=0, b=0, a=1}
+						FrameworkZ.Timers:Simple(0.1, function()
+							self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-						self.cfw = ISImage:new(self.width / 2 - self.cfwTexture:getWidth() / 2, self.height / 2 - self.cfwTexture:getHeight() / 2, self.cfwTexture:getWidth(), self.cfwTexture:getHeight(), self.cfwTexture)
-						self.cfw.backgroundColor = {r=1, g=1, b=1, a=1}
-						self.cfw.scaledWidth = self.cfwTexture:getWidth()
-						self.cfw.scaledHeight = self.cfwTexture:getHeight()
-						self.cfw.shrinking = true
-						self.cfw:initialise()
-						self:addChild(self.cfw)
+							self.cfw = ISImage:new(self.width / 2 - self.cfwTexture:getWidth() / 2, self.height / 2 - self.cfwTexture:getHeight() / 2, self.cfwTexture:getWidth(), self.cfwTexture:getHeight(), self.cfwTexture)
+							self.cfw.backgroundColor = {r=1, g=1, b=1, a=1}
+							self.cfw.scaledWidth = self.cfwTexture:getWidth()
+							self.cfw.scaledHeight = self.cfwTexture:getHeight()
+							self.cfw.shrinking = true
+							self.cfw:initialise()
+							self:addChild(self.cfw)
 
-						FrameworkZ.Timers:Simple(7, function()
-							self:removeChild(self.cfw)
-							self.cfw = nil
+							FrameworkZ.Timers:Simple(7, function()
+								self:removeChild(self.cfw)
+								self.cfw = nil
 
-							emitter:playSoundImpl("lightswitch2", nil)
-							self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
+								emitter:playSoundImpl("lightswitch2", nil)
+								self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
 
-							FrameworkZ.Timers:Simple(0.1, function()
-								self.backgroundColor = {r=0, g=0, b=0, a=1}
+								FrameworkZ.Timers:Simple(0.1, function()
+									self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-								self.hl2rp = ISImage:new(self.width / 2 - self.hl2rpTexture:getWidth() / 2, self.height / 2 - self.hl2rpTexture:getHeight() / 2, self.hl2rpTexture:getWidth(), self.hl2rpTexture:getHeight(), self.hl2rpTexture)
-								self.hl2rp.backgroundColor = {r=1, g=1, b=1, a=1}
-								self.hl2rp.scaledWidth = self.hl2rpTexture:getWidth()
-								self.hl2rp.scaledHeight = self.hl2rpTexture:getHeight()
-								self.hl2rp.shrinking = true
-								self.hl2rp:initialise()
-								self:addChild(self.hl2rp)
+									self.hl2rp = ISImage:new(self.width / 2 - self.hl2rpTexture:getWidth() / 2, self.height / 2 - self.hl2rpTexture:getHeight() / 2, self.hl2rpTexture:getWidth(), self.hl2rpTexture:getHeight(), self.hl2rpTexture)
+									self.hl2rp.backgroundColor = {r=1, g=1, b=1, a=1}
+									self.hl2rp.scaledWidth = self.hl2rpTexture:getWidth()
+									self.hl2rp.scaledHeight = self.hl2rpTexture:getHeight()
+									self.hl2rp.shrinking = true
+									self.hl2rp:initialise()
+									self:addChild(self.hl2rp)
 
-								FrameworkZ.Timers:Simple(7, function()
-									self:removeChild(self.hl2rp)
-									self.hl2rp = nil
+									FrameworkZ.Timers:Simple(7, function()
+										self:removeChild(self.hl2rp)
+										self.hl2rp = nil
 
-									emitter:playSoundImpl("lightswitch2", nil)
-									self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
+										emitter:playSoundImpl("lightswitch2", nil)
+										self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
 
-									FrameworkZ.Timers:Remove("IntroTick")
+										FrameworkZ.Timers:Remove("IntroTick")
 
-									FrameworkZ.Timers:Simple(0.1, function()
-										self.backgroundColor = {r=0, g=0, b=0, a=1}
+										FrameworkZ.Timers:Simple(0.1, function()
+											self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-										local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
-										characterSelect:initialise()
-										characterSelect:addToUIManager()
+											local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+											characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
+											characterSelect:initialise()
+											characterSelect:addToUIManager()
 
-										FrameworkZ.Timers:Simple(1, function()
 											self:setVisible(false)
 											self:removeFromUIManager()
 										end)
@@ -94,18 +97,17 @@ function PFW_Introduction:initialise()
 								end)
 							end)
 						end)
-					end)
-				else
-					FrameworkZ.Timers:Remove("IntroTick")
-					local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
-					characterSelect:initialise()
-					characterSelect:addToUIManager()
+					else
+						FrameworkZ.Timers:Remove("IntroTick")
+						local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+						characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
+						characterSelect:initialise()
+						characterSelect:addToUIManager()
 
-					FrameworkZ.Timers:Simple(1, function()
 						self:setVisible(false)
 						self:removeFromUIManager()
-					end)
-				end
+					end
+				end)
 			end
 		end)
 	end)
