@@ -89,8 +89,8 @@ function PFW_CreateCharacterInfo:initialise()
 
     self.ageSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onAgeChanged)
     self.ageSlider.currentValue = 25
-    self.ageSlider.minValue = FrameworkZ.Config.CharacterMinAge
-    self.ageSlider.maxValue = FrameworkZ.Config.CharacterMaxAge
+    self.ageSlider.minValue = FrameworkZ.Config.Options.CharacterMinAge
+    self.ageSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxAge
     self.ageSlider.stepValue = 1
     self:addChild(self.ageSlider)
 
@@ -109,8 +109,8 @@ function PFW_CreateCharacterInfo:initialise()
 
     self.heightSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onHeightChanged)
     self.heightSlider.currentValue = 70
-    self.heightSlider.minValue = FrameworkZ.Config.CharacterMinHeight
-    self.heightSlider.maxValue = FrameworkZ.Config.CharacterMaxHeight
+    self.heightSlider.minValue = FrameworkZ.Config.Options.CharacterMinHeight
+    self.heightSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxHeight
     self.heightSlider.stepValue = 1
     self:addChild(self.heightSlider)
 
@@ -149,8 +149,8 @@ function PFW_CreateCharacterInfo:initialise()
 
     self.weightSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onWeightChanged)
     self.weightSlider.currentValue = 150
-    self.weightSlider.minValue = FrameworkZ.Config.CharacterMinWeight
-    self.weightSlider.maxValue = FrameworkZ.Config.CharacterMaxWeight
+    self.weightSlider.minValue = FrameworkZ.Config.Options.CharacterMinWeight
+    self.weightSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxWeight
     self.weightSlider.stepValue = 5
     self:addChild(self.weightSlider)
 

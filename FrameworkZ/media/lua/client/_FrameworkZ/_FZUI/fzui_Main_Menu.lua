@@ -33,8 +33,8 @@ function PFW_MainMenu:initialise()
 
     self.uiHelper = FrameworkZ.UI
     self.emitter = self.playerObject:getEmitter()
-	local title = FrameworkZ.Config.GamemodeTitle .. " " .. FrameworkZ.Config.Version .. "-" .. FrameworkZ.Config.VersionType
-    local subtitle = FrameworkZ.Config.GamemodeDescription
+	local title = FrameworkZ.Config.Options.GamemodeTitle .. " " .. FrameworkZ.Config.Options.Version .. "-" .. FrameworkZ.Config.Options.VersionType
+    local subtitle = FrameworkZ.Config.Options.GamemodeDescription
     local createCharacterLabel = "Create Character"
     local loadCharacterLabel = "Load Character"
     local disconnectLabel = "Disconnect"
@@ -52,7 +52,7 @@ function PFW_MainMenu:initialise()
     end
 
     mainMenuMusicVolume = 1.0
-    currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.MainMenuMusic, nil)
+    currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.Options.MainMenuMusic, nil)
 
     local stepWidth, stepHeight = 500, 600
     local stepX, stepY = self.width / 2 - stepWidth / 2, self.height / 2 - stepHeight / 2
@@ -333,6 +333,35 @@ function PFW_MainMenu:onFinalizeCharacter(menu)
         EQUIPMENT_SLOT_SHOES = {id = shoes}
     }
 
+    --[[local characterID, message = FrameworkZ.Players:GetNextCharacterID(self.playerObject:getUsername())
+
+    if not characterID then
+        FrameworkZ.Notifications:AddToQueue("Failed to create character: " .. message, FrameworkZ.Notifications.Types.Warning, nil, self)
+
+        return false
+    end--]]
+
+    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, success, messageOrCharacterID)
+        if success then
+            local success2, messageOrCharacterID2 = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), characterData, messageOrCharacterID)
+
+            if success2 then
+                FrameworkZ.Notifications:AddToQueue("Successfully created character #" .. messageOrCharacterID2 .. ": " .. characterData.INFO_NAME, FrameworkZ.Notifications.Types.Success, nil, self)
+            else
+                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. messageOrCharacterID2, FrameworkZ.Notifications.Types.Warning, nil, self)
+            end
+        else
+            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. messageOrCharacterID, FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
+    end, self.playerObject:getUsername(), characterData)
+
+
+
+
+    --FrameworkZ.Foundation:SetData(self.playerObject, "CreateCharacter", "Players.Characters", {self.playerObject:getUsername(), characterID}, characterData)
+
+    --[[
     FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.CreateCharacter", function(data, _success, _characterID)
         local success, characterID = FrameworkZ.Players.CreateCharacter({isoPlayer = self.playerObject}, self.playerObject:getUsername(), characterData)
 
@@ -342,6 +371,7 @@ function PFW_MainMenu:onFinalizeCharacter(menu)
             FrameworkZ.Notifications:AddToQueue("Failed to create character.", nil, nil, self)
         end
     end, self.playerObject:getUsername(), characterData)
+    --]]
 
     return true
 end
@@ -353,7 +383,7 @@ function PFW_MainMenu:onEnterLoadCharacterMenu()
         FrameworkZ.Notifications:AddToQueue("Failed to load characters.", FrameworkZ.Notifications.Types.Danger, nil, self)
 
         return false
-    elseif #player.characters <= 0 then
+    elseif #player:GetCharacters() <= 0 then
         FrameworkZ.Notifications:AddToQueue("No characters found.", FrameworkZ.Notifications.Types.Warning, nil, self)
 
         return false
@@ -462,14 +492,14 @@ function PFW_MainMenu:prerender()
     end
     --]]
 
-    self:drawTextureScaled(getTexture(FrameworkZ.Config.MainMenuImage), 0, 0, self.width, self.height, self.backgroundImageOpacity, 1, 1, 1)
+    self:drawTextureScaled(getTexture(FrameworkZ.Config.Options.MainMenuImage), 0, 0, self.width, self.height, self.backgroundImageOpacity, 1, 1, 1)
 end
 
 function PFW_MainMenu:update()
     ISPanel.update(self)
 
     if not self.emitter:isPlaying(currentMainMenuSong) then
-        currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.MainMenuMusic, nil)
+        currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.Options.MainMenuMusic, nil)
     end
 end
 

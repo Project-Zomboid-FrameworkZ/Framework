@@ -3,9 +3,9 @@ local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
 
-FrameworkZ.fzuiTabSession = ISPanel:derive("fzuiTabSession")
+FrameworkZ.UI.TabSession = ISPanel:derive("fzuiTabSession")
 
-function FrameworkZ.fzuiTabSession:initialise()
+function FrameworkZ.UI.TabSession:initialise()
     local TITLE_TEXT = "Session Characters"
     local FONT_TITLE = UIFont.Title
     local TITLE_WIDTH = getTextManager():MeasureStringX(FONT_TITLE, TITLE_TEXT)
@@ -22,7 +22,7 @@ function FrameworkZ.fzuiTabSession:initialise()
     self.titleLabel:initialise()
     self:addChild(self.titleLabel)
 
-    self.closeButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_WIDTH - PANEL_MARGIN_X, PANEL_MARGIN_Y, "X", self, FrameworkZ.fzuiTabPanel.onMenuSelect)
+    self.closeButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_WIDTH - PANEL_MARGIN_X, PANEL_MARGIN_Y, "X", self, FrameworkZ.UI.TabPanel.onMenuSelect)
     self.closeButton:setX(PANEL_WIDTH - self.closeButton:getWidth() - PANEL_MARGIN_X)
     self.closeButton.internal = "CLOSE"
 
@@ -57,13 +57,13 @@ function FrameworkZ.fzuiTabSession:initialise()
     self.playerListPanel:setScrollChildren(true)
     self:addChild(self.playerListPanel)
 
-    self.refreshButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, 0, 0, "Refresh", self, FrameworkZ.fzuiTabPanel.onMenuSelect)
+    self.refreshButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, 0, 0, "Refresh", self, FrameworkZ.UI.TabPanel.onMenuSelect)
     self.refreshButton:setX(PANEL_WIDTH - self.refreshButton:getWidth() - PANEL_MARGIN_X)
     self.refreshButton:setY(PANEL_HEIGHT - self.refreshButton:getHeight() - PANEL_MARGIN_Y)
     self.refreshButton.internal = "REFRESH"
 end
 
-function FrameworkZ.fzuiTabSession:updatePlayerList()
+function FrameworkZ.UI.TabSession:updatePlayerList()
     self.charactersByFaction = {}
     local players = getOnlinePlayers()
 
@@ -86,7 +86,7 @@ function FrameworkZ.fzuiTabSession:updatePlayerList()
     self:populatePlayerList()
 end
 
-function FrameworkZ.fzuiTabSession:getCharacterInfo(character)
+function FrameworkZ.UI.TabSession:getCharacterInfo(character)
     if self.character:RecognizesCharacter(character) or self.character == character then
         return character:GetName(), character:GetDescription()
     else
@@ -94,7 +94,7 @@ function FrameworkZ.fzuiTabSession:getCharacterInfo(character)
     end
 end
 
-function FrameworkZ.fzuiTabSession:populatePlayerList()
+function FrameworkZ.UI.TabSession:populatePlayerList()
     local FONT_BUTTON = UIFont.Title
     local FONT_FACTION = UIFont.Title
     local FONT_NAME = UIFont.Large
@@ -118,7 +118,7 @@ function FrameworkZ.fzuiTabSession:populatePlayerList()
             local truncatedDescription = #player.description > 52 and string.sub(player.description, 1, 52) .. "..." or player.description
             local characterButtonWidthHeight = nameHeight + descriptionHeight
 
-            local characterButton = ISButton:new(xMargin, yOffset, characterButtonWidthHeight, characterButtonWidthHeight, "?", self, FrameworkZ.fzuiTabSession.onClickButton)
+            local characterButton = ISButton:new(xMargin, yOffset, characterButtonWidthHeight, characterButtonWidthHeight, "?", self, FrameworkZ.UI.TabSession.onClickButton)
             characterButton.internal = "INFO" --player.username
             characterButton.font = FONT_BUTTON
             characterButton.tooltip = FrameworkZ.Utilities:WordWrapText("Description: " .. player.description, 32, "\n") .. "\nSteam ID: " .. getSteamIDFromUsername(player.username) .. "\nPing: " .. getPlayerFromUsername(player.username):getPing()
@@ -142,31 +142,31 @@ function FrameworkZ.fzuiTabSession:populatePlayerList()
     end
 end
 
-function FrameworkZ.fzuiTabSession:onClickButton(button, x, y)
+function FrameworkZ.UI.TabSession:onClickButton(button, x, y)
     if button.internal == "INFO" then
         print("Opening Character Info")
     elseif button.internal == "REFRESH" then
-        FrameworkZ.fzuiTabSession.instance:updatePlayerList()
+        FrameworkZ.UI.TabSession.instance:updatePlayerList()
     end
 end
 
-function FrameworkZ.fzuiTabSession:onClose(button, x, y)
+function FrameworkZ.UI.TabSession:onClose(button, x, y)
     self:setVisible(false)
     self:removeFromUIManager()
-    FrameworkZ.fzuiTabSession.instance = nil
+    FrameworkZ.UI.TabSession.instance = nil
 end
 
-function FrameworkZ.fzuiTabSession:render()
+function FrameworkZ.UI.TabSession:render()
     ISPanel.render(self)
 end
 
-function FrameworkZ.fzuiTabSession:prerender()
+function FrameworkZ.UI.TabSession:prerender()
     ISPanel.prerender(self)
 end
 
-function FrameworkZ.fzuiTabSession:new(isoPlayer)
-    if not FrameworkZ.fzuiTabPanel.instance then return end
-    local instance = FrameworkZ.fzuiTabPanel.instance
+function FrameworkZ.UI.TabSession:new(isoPlayer)
+    if not FrameworkZ.UI.TabPanel.instance then return end
+    local instance = FrameworkZ.UI.TabPanel.instance
 
     local o = ISPanel:new(instance:getX() + instance:getWidth(), instance:getY(), PANEL_WIDTH, PANEL_HEIGHT)
     setmetatable(o, self)
@@ -176,9 +176,9 @@ function FrameworkZ.fzuiTabSession:new(isoPlayer)
     o.isoPlayer = isoPlayer
     o.character = FrameworkZ.Players:GetLoadedCharacterByID(isoPlayer:getUsername())
 
-    FrameworkZ.fzuiTabSession.instance = o
+    FrameworkZ.UI.TabSession.instance = o
 
     return o
 end
 
-return FrameworkZ.fzuiTabSession
+return FrameworkZ.UI.TabSession

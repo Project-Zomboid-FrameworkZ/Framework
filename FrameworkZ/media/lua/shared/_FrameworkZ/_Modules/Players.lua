@@ -13,7 +13,6 @@ FrameworkZ = FrameworkZ or {}
 --! \brief Players module for FrameworkZ. Defines and interacts with PLAYER object.
 --! \class FrameworkZ.Players
 FrameworkZ.Players = {}
-FrameworkZ.Players.__index = FrameworkZ.Players
 
 --! \brief List of all instanced players in the game.
 FrameworkZ.Players.List = {}
@@ -37,40 +36,9 @@ PLAYER.__index = PLAYER
 --! \brief Initializes the player object.
 --! \return \string The username of the player.
 function PLAYER:Initialize()
-    if not self.isoPlayer then return end
+    if not self.isoPlayer then return false end
 
-    local firstConnection = false
-    local characterModData = self.isoPlayer:getModData()["FZ_PLY"] or nil
-
-    if not characterModData then
-        firstConnection = true
-
-        self:InitializeDefaultFactionWhitelists()
-
-        self.isoPlayer:getModData()["FZ_PLY"] = {
-            username = self.username,
-            steamID = self.steamID,
-            role = self.role,
-            maxCharacters = self.maxCharacters,
-            previousCharacter = self.previousCharacter,
-            whitelists = self.whitelists,
-            characters = self.characters
-        }
-
-        if isClient() then
-            self.isoPlayer:transmitModData()
-        end
-    end
-
-    self:ValidatePlayerData()
-
-    --[[if isClient() then
-        FrameworkZ.Timers:Simple(5, function()
-            sendClientCommand("FZ_PLY", "initialize", {self.isoPlayer:getUsername()})
-        end)
-    end--]]
-
-    return FrameworkZ.Players:Initialize(self.username, self)
+    self:InitializeDefaultFactionWhitelists()
 end
 
 --! \brief Saves the player's data.
@@ -90,7 +58,7 @@ function PLAYER:Save(shouldTransmit)
     playerData.maxCharacters = self.maxCharacters
     playerData.previousCharacter = self.previousCharacter
     playerData.whitelists = self.whitelists
-    playerData.characters = self.characters
+    playerData.Characters = self.Characters
 
     if shouldTransmit then
         self.isoPlayer:transmitModData()
@@ -136,72 +104,26 @@ function PLAYER:InitializeDefaultFactionWhitelists()
     end
 end
 
-function PLAYER:ValidatePlayerData()
-    local characterModData = self.isoPlayer:getModData()["FZ_PLY"]
-
-    if not characterModData then return false end
-
-    local initializedNewData = false
-
-    if not characterModData.username then
-        initializedNewData = true
-        characterModData.username = self.username or getPlayer():getUsername()
-    end
-
-    if not characterModData.steamID then
-        initializedNewData = true
-        characterModData.steamID = self.steamID or getPlayer():getSteamID()
-    end
-
-    if not characterModData.role then
-        initializedNewData = true
-        characterModData.role = self.role or FrameworkZ.Players.Roles.User
-    end
-
-    if not characterModData.maxCharacters then
-        initializedNewData = true
-        characterModData.maxCharacters = self.maxCharacters or FrameworkZ.Config.DefaultMaxCharacters
-    end
-
-    if not characterModData.previousCharacter then
-        initializedNewData = true
-        characterModData.previousCharacter = self.previousCharacter or nil
-    end
-
-    if not characterModData.whitelists then
-        self:InitializeDefaultFactionWhitelists()
-        initializedNewData = true
-        characterModData.whitelists = self.whitelists
-    end
-
-    if not characterModData.characters then
-        initializedNewData = true
-        characterModData.characters = self.characters or {}
-    end
-
-    if isClient() then
-        self.isoPlayer:transmitModData()
-    end
-
-    self.username = characterModData.username
-    self.steamID = characterModData.steamID
-    self.role = characterModData.role
-    self.maxCharacters = characterModData.maxCharacters
-    self.previousCharacter = characterModData.previousCharacter
-    self.whitelists = characterModData.whitelists
-    self.characters = characterModData.characters
-
-    return initializedNewData
-end
-
 function PLAYER:GetCharacter()
     return self.loadedCharacter
+end
+
+function PLAYER:SetCharacter(character)
+    self.loadedCharacter = character
+end
+
+function PLAYER:GetCharacters()
+    return self.Characters
+end
+
+function PLAYER:SetCharacters(characters)
+    self.Characters = characters
 end
 
 function PLAYER:GetCharacterByID(characterID)
     if not characterID then return false end
 
-    local character = self.characters[characterID]
+    local character = self.Characters[characterID]
 
     if character then
         return character
@@ -212,6 +134,10 @@ end
 
 function PLAYER:GetIsoPlayer()
     return self.isoPlayer
+end
+
+function PLAYER:GetSaveableData()
+    return FrameworkZ.Foundation:ProcessSaveableData(self, {"isoPlayer"}, {"Characters, loadedCharacter"})
 end
 
 --! \brief Gets the stored player mod data table. Used internally. Do not use this unless you know what you are doing. Updating data on the mod data will cause inconsistencies between the mod data and the FrameworkZ player object.
@@ -256,19 +182,80 @@ function PLAYER:StopSound(soundNameOrID)
     end
 end
 
+--[[
+function PLAYER:ValidatePlayerData()
+    local characterModData = self.isoPlayer:getModData()["FZ_PLY"]
+
+    if not characterModData then return false end
+
+    local initializedNewData = false
+
+    if not characterModData.username then
+        initializedNewData = true
+        characterModData.username = self.username or getPlayer():getUsername()
+    end
+
+    if not characterModData.steamID then
+        initializedNewData = true
+        characterModData.steamID = self.steamID or getPlayer():getSteamID()
+    end
+
+    if not characterModData.role then
+        initializedNewData = true
+        characterModData.role = self.role or FrameworkZ.Players.Roles.User
+    end
+
+    if not characterModData.maxCharacters then
+        initializedNewData = true
+        characterModData.maxCharacters = self.maxCharacters or FrameworkZ.Config.Options.DefaultMaxCharacters
+    end
+
+    if not characterModData.previousCharacter then
+        initializedNewData = true
+        characterModData.previousCharacter = self.previousCharacter or nil
+    end
+
+    if not characterModData.whitelists then
+        self:InitializeDefaultFactionWhitelists()
+        initializedNewData = true
+        characterModData.whitelists = self.whitelists
+    end
+
+    if not characterModData.Characters then
+        initializedNewData = true
+        characterModData.Characters = self.Characters or {}
+    end
+
+    if isClient() then
+        self.isoPlayer:transmitModData()
+    end
+
+    self.username = characterModData.username
+    self.steamID = characterModData.steamID
+    self.role = characterModData.role
+    self.maxCharacters = characterModData.maxCharacters
+    self.previousCharacter = characterModData.previousCharacter
+    self.whitelists = characterModData.whitelists
+    self.Characters = characterModData.Characters
+
+    return initializedNewData
+end
+--]]
+
 function FrameworkZ.Players:New(isoPlayer)
     if not isoPlayer then return false end
 
+    -- TODO Reminder: Update FrameworkZ.Players:OnStorageSet() when updating here.
     local object = {
-        username = isoPlayer:getUsername(),
         isoPlayer = isoPlayer,
+        username = isoPlayer:getUsername(),
         steamID = isoPlayer:getSteamID(),
         role = FrameworkZ.Players.Roles.User,
         loadedCharacter = nil,
-        maxCharacters = FrameworkZ.Config.DefaultMaxCharacters,
+        maxCharacters = FrameworkZ.Config.Options.DefaultMaxCharacters,
         previousCharacter = nil,
         whitelists = {},
-        characters = {}
+        Characters = {}
     }
 
     setmetatable(object, PLAYER)
@@ -279,17 +266,23 @@ end
 function FrameworkZ.Players:StartPlayerTick(isoPlayer)
     if not isClient() then return end
 
-    FrameworkZ.Timers:Create("FZ_CHAR_TICK", FrameworkZ.Config.PlayerTickInterval, 0, function()
+    -- TODO rename CHAR to PLAYER
+    FrameworkZ.Timers:Create("FZ_CHAR_TICK", FrameworkZ.Config.Options.PlayerTickInterval, 0, function()
         FrameworkZ.Foundation:ExecuteAllHooks("PlayerTick", isoPlayer)
     end)
 end
 
-function FrameworkZ.Players:Initialize(username, player)
+function FrameworkZ.Players:Initialize(isoPlayer)
+    local player = FrameworkZ.Players:New(isoPlayer) if not player then return false end
+    local username = player.username
+    player:Initialize()
+
     self.List[username] = player
+    self:StartPlayerTick(isoPlayer)
 
-    FrameworkZ.Players:StartPlayerTick(player.isoPlayer)
+    FrameworkZ.Foundation:GetData(isoPlayer, "Initialization", "Players", username)
 
-    return username
+    return player
 end
 
 function FrameworkZ.Players:GetPlayerByID(username)
@@ -322,7 +315,7 @@ function FrameworkZ.Players:GetCharacterByID(username, characterID)
     local player = self:GetPlayerByID(username)
 
     if player then
-        local character = player.characters[characterID]
+        local character = player.Characters[characterID]
 
         if character then
             return character
@@ -342,7 +335,7 @@ function FrameworkZ.Players:GetCharacterDataByID(username, characterID)
     local player = FrameworkZ.Players:GetPlayerByID(username)
 
     if player then
-        local character = player.characters[characterID]
+        local character = player.Characters[characterID]
 
         if character then
             return character
@@ -352,41 +345,62 @@ function FrameworkZ.Players:GetCharacterDataByID(username, characterID)
     return false
 end
 
+function FrameworkZ.Players:GetNextCharacterID(username)
+    if not username then return false end
+
+    local player = self:GetPlayerByID(username)
+
+    if player then
+        local nextID = #player.Characters + 1
+
+        if nextID > player.maxCharacters then
+            return false, "Max characters reached."
+        end
+
+        return nextID
+    end
+
+    return false, "Player not found."
+end
+
 function FrameworkZ.Players:ResetCharacterSaveInterval()
     if FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
         FrameworkZ.Timers:Start("FZ_CharacterSaveInterval")
     end
 end
 
-function FrameworkZ.Players.CreateCharacter(data, username, characterData)
-    return FrameworkZ.Players:OnCreateCharacter(username, characterData)
-end
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.CreateCharacter", FrameworkZ.Players.CreateCharacter)
+function FrameworkZ.Players.OnCreateCharacter(data, username, characterData)
+    if not username then return false, "Username is nil." end
+    if not characterData then return false, "Character data is nil." end
 
-function FrameworkZ.Players:OnCreateCharacter(username, data)
-    if not username or not data then return false end
+    return FrameworkZ.Players:CreateCharacter(username, characterData)
+end
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnCreateCharacter", FrameworkZ.Players.OnCreateCharacter)
+
+function FrameworkZ.Players:CreateCharacter(username, characterData, characterID)
+    if not username then return false, "Username is nil" end
+    if not characterData then return false, "Character data is nil." end
 
     local player = self:GetPlayerByID(username)
 
-    if player and player.characters then
+    if player and player.Characters then
         if isClient() then
             FrameworkZ.Players:ResetCharacterSaveInterval()
         end
 
-        data.META_ID = #player.characters + 1
-        data.META_FIRST_LOAD = true
+        characterData.META_ID = characterID and characterID or #player.Characters + 1
+        characterData.META_FIRST_LOAD = true
 
-        table.insert(player.characters, data)
-        player:GetStoredData().characters = player.characters
-
-        if isClient() then
-            player.isoPlayer:transmitModData()
+        if not characterID then
+            table.insert(player.Characters, characterData)
+        else
+            player.Characters[characterID] = characterData
         end
 
-        return true, #player.characters
+        return true, characterData.META_ID
     end
 
-    return false
+    return false, "Player not found."
 end
 
 --! \brief Saves the player and their currently loaded character.
@@ -547,23 +561,6 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
 
         character:OnPostLoad(characterData.META_FIRST_LOAD)
 
-        if characterData.META_FIRST_LOAD == true then
-            isoPlayer:setX(FrameworkZ.Config.SpawnX)
-            isoPlayer:setY(FrameworkZ.Config.SpawnY)
-            isoPlayer:setZ(FrameworkZ.Config.SpawnZ)
-            isoPlayer:setLx(FrameworkZ.Config.SpawnX)
-            isoPlayer:setLy(FrameworkZ.Config.SpawnY)
-            isoPlayer:setLz(FrameworkZ.Config.SpawnZ)
-        else
-            isoPlayer:setX(characterData.POSITION_X)
-            isoPlayer:setY(characterData.POSITION_Y)
-            isoPlayer:setZ(characterData.POSITION_Z)
-            isoPlayer:setLx(characterData.POSITION_X)
-            isoPlayer:setLy(characterData.POSITION_Y)
-            isoPlayer:setLz(characterData.POSITION_Z)
-            isoPlayer:setDirectionAngle(characterData.DIRECTION_ANGLE)
-        end
-
         isoPlayer:clearWornItems()
         isoPlayer:getInventory():clear()
 
@@ -596,19 +593,45 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
             VoiceManager:playerSetMute(username)
         end
 
+        FrameworkZ.Foundation.LoadingNotifications = {} -- TODO store loading notifications and parent them, then remove from parent after main menu is finally closed.
 
-        if not self:SaveCharacter(username, characterData) then
-            FrameworkZ.Notifications:AddToQueue("Failed to load character: Not saved.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
-            return
-        end
-
-        if characterData.META_FIRST_LOAD then
-            characterData.META_FIRST_LOAD = false
-        end
-
-        FrameworkZ.Notifications:AddToQueue("Loaded character in " .. tostring(string.format(" %.2f", (getTimestampMs() - loadCharacterStartTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success)
         FrameworkZ.Notifications:AddToQueue("Please wait a few seconds for the map to load.", FrameworkZ.Notifications.Types.Warning)
-        PFW_MainMenu.instance:onClose()
+
+        FrameworkZ.Timers:Simple(1, function()
+            if characterData.META_FIRST_LOAD == true then
+                isoPlayer:setX(FrameworkZ.Config.Options.SpawnX)
+                isoPlayer:setY(FrameworkZ.Config.Options.SpawnY)
+                isoPlayer:setZ(FrameworkZ.Config.Options.SpawnZ)
+                isoPlayer:setLx(FrameworkZ.Config.Options.SpawnX)
+                isoPlayer:setLy(FrameworkZ.Config.Options.SpawnY)
+                isoPlayer:setLz(FrameworkZ.Config.Options.SpawnZ)
+            else
+                isoPlayer:setX(characterData.POSITION_X)
+                isoPlayer:setY(characterData.POSITION_Y)
+                isoPlayer:setZ(characterData.POSITION_Z)
+                isoPlayer:setLx(characterData.POSITION_X)
+                isoPlayer:setLy(characterData.POSITION_Y)
+                isoPlayer:setLz(characterData.POSITION_Z)
+                isoPlayer:setDirectionAngle(characterData.DIRECTION_ANGLE)
+            end
+
+            if not self:SaveCharacter(username, characterData) then
+                FrameworkZ.Notifications:AddToQueue("Failed to load character: Not saved.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+
+                FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.TeleportToLimbo", function(success)
+                    if success then
+                        FrameworkZ.Foundation.TeleportToLimbo({isoPlayer = isoPlayer})
+                    end
+                end)
+            else
+                PFW_MainMenu.instance:onClose()
+                FrameworkZ.Notifications:AddToQueue("Loaded character in " .. tostring(string.format(" %.2f", (getTimestampMs() - loadCharacterStartTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success)
+
+                if characterData.META_FIRST_LOAD then
+                    characterData.META_FIRST_LOAD = false
+                end
+            end
+        end)
     end, characterData)
 end
 
@@ -628,57 +651,102 @@ end
 function FrameworkZ.Players:DeleteCharacterByID(username, characterID)
 
 end
-
-function FrameworkZ.Players:InitializeClient(isoPlayer)
-    local player = FrameworkZ.Players:New(isoPlayer)
-
-    if player then
-        player:Initialize()
-    end
+function FrameworkZ.Players:OnInitGlobalModData(isNewGame)
+    FrameworkZ.Foundation:RegisterNamespace("Players")
+    FrameworkZ.Foundation:RegisterNamespace("Players_Characters")
 end
 
-if not isClient() then
-    function FrameworkZ.Players.OnClientCommand(module, command, isoPlayer, args)
-        if module == "FZ_PLY" then
-            if command == "initialize" then
-                local player = FrameworkZ.Players:New(isoPlayer)
+function FrameworkZ.Players:OnStorageGet(isoPlayer, command, namespace, keys, value)
+    if namespace == "Players" then
+        if command == "Initialization" then
+            local username = keys
+            local data = value
+            local player = self:GetPlayerByID(username) if not player then return end
 
-                if player then
-                    player:Initialize()
-                end
-            elseif command == "remove_limbo_protection" then
-                isoPlayer:setGodMod(false)
-                isoPlayer:setInvincible(false)
-                isoPlayer:setInvisible(false)
-                isoPlayer:setGhostMode(false)
-                isoPlayer:setNoClip(false)
-                sendPlayerExtraInfo(isoPlayer)
-            elseif command == "on_first_load" then
-                isoPlayer:setX(FrameworkZ.Config.SpawnX)
-                isoPlayer:setY(FrameworkZ.Config.SpawnY)
-                isoPlayer:setZ(FrameworkZ.Config.SpawnZ)
-                isoPlayer:setLx(FrameworkZ.Config.SpawnX)
-                isoPlayer:setLy(FrameworkZ.Config.SpawnY)
-                isoPlayer:setLz(FrameworkZ.Config.SpawnZ)
-            elseif command == "destroy" then
-                local username = args[1]
-                local player = FrameworkZ.Players:GetPlayerByID(username)
-
-                if player then
-                    player:Destroy()
+            if data then
+                for k, v in pairs(data) do
+                    if data[k] and player[k] then
+                        player[k] = data[k] -- Restore saved data on default fields
+                    elseif data[k] and not player[k] then
+                        player[k] = data[k] -- Restore saved custom data
+                    end
                 end
 
-                FrameworkZ.Characters.List[username] = nil
-            elseif command == "update" then
-                local username = args[1]
-                local field = args[2]
-                local newData = args[3]
+                for k, v in pairs(player) do
+                    if player[k] and not data[k] then
+                        data[k] = player[k] -- Add new data fields from default fields (probably from an update)
+                    end
+                end
 
-                FrameworkZ.Players.List[username][field] = newData
+                FrameworkZ.Foundation:GetData(isoPlayer, "Initialization", "Players_Characters", username)
+            elseif isServer() then
+                local saveableData = player:GetSaveableData()
+
+                FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players", username, saveableData)
+                FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players_Characters", username, saveableData.Characters)
+            end
+        end
+    elseif namespace == "Players_Characters" then
+        if command == "Initialization" then
+            local username = keys
+            local data = value
+            local player = self:GetPlayerByID(username) if not player then return end
+
+            if data then
+                player:SetCharacters(data)
             end
         end
     end
-    Events.OnClientCommand.Add(FrameworkZ.Players.OnClientCommand)
+end
+
+function FrameworkZ.Players:OnStorageSet(isoPlayer, command, namespace, keys, value)
+    --[[if namespace == "Players" then
+        if command == "Initialize" then
+            local ns = FrameworkZ.Foundation:GetNamespace("Players")
+            local player = self:GetPlayerByID(isoPlayer:getUsername()) if not player then return end
+            local username = player.username
+
+            if ns and ns[username] then
+                local data = ns[username]
+
+                for k, v in pairs(data) do
+                    if data[k] and player[k] then
+                        player[k] = data[k] -- Restore saved data on default fields
+                    elseif data[k] and not player[k] then
+                        player[k] = data[k] -- Restore saved custom data
+                    end
+                end
+
+                for k, v in pairs(player) do
+                    if player[k] and not data[k] then
+                        data[k] = player[k] -- Add new data fields from default fields (probably from an update)
+                    end
+                end
+
+                --FrameworkZ.Foundation:SaveNamespace(isoPlayer, "Players")
+            else
+                --local data = value
+
+                --FrameworkZ.Foundation:SaveNamespace(isoPlayer, "Players")
+            end
+        end
+    elseif namespace == "Players.Characters" then
+        if command == "CreateCharacter" then
+            local username = isoPlayer:getUsername()
+            local data = value
+            if not username or not data then return false end
+            local player = self:GetPlayerByID(username)
+
+            if player and player.Characters then
+                data.META_ID = self:GetNextCharacterID(username)
+                data.META_FIRST_LOAD = true
+
+                table.insert(player.Characters, data)
+
+                --FrameworkZ.Foundation:SaveNamespace(isoPlayer, "Players.Characters")
+            end
+        end
+    end--]]
 end
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Players)

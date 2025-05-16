@@ -1,16 +1,16 @@
 FrameworkZ = FrameworkZ or {}
-FrameworkZ.fzuiTabMenu = ISPanel:derive("fzuiTabMenu")
+FrameworkZ.UI.TabMenu = ISPanel:derive("fzuiTabMenu")
 
 local getTexture = getTexture
 local ISButton = ISButton
 local ISPanel = ISPanel
 
-function FrameworkZ.fzuiTabMenu:initialise()
+function FrameworkZ.UI.TabMenu:initialise()
     ISPanel.initialise(self)
 
     local buttonWidth = self.fzIconOff:getWidthOrig()
     local buttonHeight = self.fzIconOff:getHeightOrig()
-    self.tabButton = ISButton:new(5, 0, buttonWidth, buttonHeight, "", self, FrameworkZ.fzuiTabMenu.onOptionMouseDown)
+    self.tabButton = ISButton:new(5, 0, buttonWidth, buttonHeight, "", self, FrameworkZ.UI.TabMenu.onOptionMouseDown)
     self.tabButton:setImage(self.fzIconOff)
     self.tabButton.internal = "TAB_MENU"
     self.tabButton:initialise()
@@ -26,32 +26,32 @@ function FrameworkZ.fzuiTabMenu:initialise()
     self:setHeight(self.tabButton:getBottom())
 end
 
-function FrameworkZ.fzuiTabMenu:onOptionMouseDown(button, x, y)
+function FrameworkZ.UI.TabMenu:onOptionMouseDown(button, x, y)
     if button.internal == "TAB_MENU" then
-        if FrameworkZ.fzuiTabPanel.instance then
-            FrameworkZ.fzuiTabPanel.instance:onClose()
+        if FrameworkZ.UI.TabPanel.instance then
+            FrameworkZ.UI.TabPanel.instance:onClose()
         else
-            local modal = FrameworkZ.fzuiTabPanel:new(self.isoPlayer)
+            local modal = FrameworkZ.UI.TabPanel:new(self.isoPlayer)
             modal:initialise()
             modal:addToUIManager()
         end
     end
 end
 
-function FrameworkZ.fzuiTabMenu:onClose()
+function FrameworkZ.UI.TabMenu:onClose()
     self:setVisible(false)
     self:removeFromUIManager()
 end
 
-function FrameworkZ.fzuiTabMenu:render()
+function FrameworkZ.UI.TabMenu:render()
     ISPanel.render(self)
 end
 
-function FrameworkZ.fzuiTabMenu:prerender()
+function FrameworkZ.UI.TabMenu:prerender()
     ISPanel.prerender(self)
 
     if self.tabButton then
-        if FrameworkZ.fzuiTabPanel.instance then
+        if FrameworkZ.UI.TabPanel.instance then
             self.tabButton:setImage(self.fzIconOn);
         else
             self.tabButton:setImage(self.fzIconOff);
@@ -59,11 +59,11 @@ function FrameworkZ.fzuiTabMenu:prerender()
     end
 end
 
-function FrameworkZ.fzuiTabMenu:update()
+function FrameworkZ.UI.TabMenu:update()
     ISPanel.update(self)
 end
 
-function FrameworkZ.fzuiTabMenu:new(x, y, width, height, isoPlayer)
+function FrameworkZ.UI.TabMenu:new(x, y, width, height, isoPlayer)
 	local o = {}
 
 	o = ISPanel:new(x, y, width, height)
@@ -75,9 +75,9 @@ function FrameworkZ.fzuiTabMenu:new(x, y, width, height, isoPlayer)
 	o.isoPlayer = isoPlayer
     o.fzIconOn = getTexture("media/textures/fz-on.png")
     o.fzIconOff = getTexture("media/textures/fz-off.png")
-	FrameworkZ.fzuiTabMenu.instance = o
+	FrameworkZ.UI.TabMenu.instance = o
 
 	return o
 end
 
-return FrameworkZ.fzuiTabMenu
+return FrameworkZ.UI.TabMenu

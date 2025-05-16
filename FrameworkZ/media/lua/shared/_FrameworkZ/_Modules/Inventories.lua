@@ -99,6 +99,10 @@ function INVENTORY:GetName()
     return self.name or "Someone's Inventory"
 end
 
+function INVENTORY:GetSaveableData()
+    return FrameworkZ.Foundation:ProcessSaveableData(self, {}, {})
+end
+
 --! \brief Create a new inventory object.
 --! \param username \string The owner's username. Can be nil for no owner.
 --! \param type \string The type of inventory. Can be nil, but creates a character inventory type by default. Refer to FrameworkZ.Inventories.Types table for available types.

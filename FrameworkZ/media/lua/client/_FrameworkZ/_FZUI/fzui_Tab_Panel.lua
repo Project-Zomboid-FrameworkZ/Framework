@@ -5,9 +5,9 @@ local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
 
-FrameworkZ.fzuiTabPanel = ISPanel:derive("fzuiTabPanel")
+FrameworkZ.UI.TabPanel = ISPanel:derive("fzuiTabPanel")
 
-function FrameworkZ.fzuiTabPanel:initialise()
+function FrameworkZ.UI.TabPanel:initialise()
     local TITLE_TEXT = "Tab Menu"
     local FONT_TITLE = UIFont.Title
     local TITLE_WIDTH = getTextManager():MeasureStringX(FONT_TITLE, TITLE_TEXT)
@@ -24,14 +24,14 @@ function FrameworkZ.fzuiTabPanel:initialise()
     self.titleLabel:initialise()
     self:addChild(self.titleLabel)
 
-    self.closeButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_WIDTH - PANEL_MARGIN_X, PANEL_MARGIN_Y, "X", self, FrameworkZ.fzuiTabPanel.onMenuSelect)
+    self.closeButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_WIDTH - PANEL_MARGIN_X, PANEL_MARGIN_Y, "X", self, FrameworkZ.UI.TabPanel.onMenuSelect)
     self.closeButton:setX(PANEL_WIDTH - self.closeButton:getWidth() - PANEL_MARGIN_X)
     self.closeButton.internal = "CLOSE"
 
     local yOffset = self.titleLabel:getY() + self.titleLabel:getHeight() + TITLE_PADDING_BOTTOM
     self.buttons = {}
 
-    for _, buttonData in ipairs(FrameworkZ.fzuiTabPanel.buttons) do
+    for _, buttonData in ipairs(FrameworkZ.UI.TabPanel.buttons) do
         local button = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, yOffset, buttonData.text, self, buttonData.callback)
         button.internal = buttonData.internal
         table.insert(self.buttons, button)
@@ -39,7 +39,7 @@ function FrameworkZ.fzuiTabPanel:initialise()
     end
 
     local textHeight = getTextManager():MeasureStringY(FrameworkZ.UserInterfaces.ButtonTheme.hugeButtonFontSize, "Close")
-    self.textCloseButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, PANEL_HEIGHT - textHeight - PANEL_MARGIN_Y, "Close", self, FrameworkZ.fzuiTabPanel.onMenuSelect)
+    self.textCloseButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, PANEL_HEIGHT - textHeight - PANEL_MARGIN_Y, "Close", self, FrameworkZ.UI.TabPanel.onMenuSelect)
     self.textCloseButton.internal = "CLOSE"
 
     FrameworkZ.Timers:Create("TabPanelSlideOut", 0.01, 0, function()
@@ -52,25 +52,25 @@ function FrameworkZ.fzuiTabPanel:initialise()
     end)
 end
 
-function FrameworkZ.fzuiTabPanel:render()
+function FrameworkZ.UI.TabPanel:render()
     ISPanel.render(self)
 end
 
-function FrameworkZ.fzuiTabPanel:prerender()
+function FrameworkZ.UI.TabPanel:prerender()
     ISPanel.prerender(self)
 end
 
-function FrameworkZ.fzuiTabPanel:update()
+function FrameworkZ.UI.TabPanel:update()
     ISPanel.update(self)
 end
 
-function FrameworkZ.fzuiTabPanel:onClose()
+function FrameworkZ.UI.TabPanel:onClose()
     if FrameworkZ.Timers:Exists("TabPanelSlideOut") then
         FrameworkZ.Timers:Remove("TabPanelSlideOut")
     end
 
-    if FrameworkZ.fzuiTabSession.instance then
-        FrameworkZ.fzuiTabSession.instance:onClose()
+    if FrameworkZ.UI.TabSession.instance then
+        FrameworkZ.UI.TabSession.instance:onClose()
     end
 
     FrameworkZ.Timers:Create("TabPanelSlideIn", 0.1, 0, function()
@@ -82,12 +82,12 @@ function FrameworkZ.fzuiTabPanel:onClose()
             self:setX(-PANEL_WIDTH)
             self:setVisible(false)
             self:removeFromUIManager()
-            FrameworkZ.fzuiTabPanel.instance = nil
+            FrameworkZ.UI.TabPanel.instance = nil
         end
     end)
 end
 
-function FrameworkZ.fzuiTabPanel:onMenuSelect(button, x, y)
+function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
     if button.internal == "CLOSE" then
         self:onClose()
     elseif button.internal == "CHARACTERS" then
@@ -101,12 +101,12 @@ function FrameworkZ.fzuiTabPanel:onMenuSelect(button, x, y)
     elseif button.internal == "MY_CHARACTER" then
         print("Opening My Character Menu")
     elseif button.internal == "SESSION" then
-        if FrameworkZ.fzuiTabSession.instance then
-            FrameworkZ.fzuiTabSession.instance:setVisible(false)
-            FrameworkZ.fzuiTabSession.instance:removeFromUIManager()
-            FrameworkZ.fzuiTabSession.instance = nil
+        if FrameworkZ.UI.TabSession.instance then
+            FrameworkZ.UI.TabSession.instance:setVisible(false)
+            FrameworkZ.UI.TabSession.instance:removeFromUIManager()
+            FrameworkZ.UI.TabSession.instance = nil
         else
-            local session = FrameworkZ.fzuiTabSession:new(self.isoPlayer)
+            local session = FrameworkZ.UI.TabSession:new(self.isoPlayer)
 
             if session then
                 session:initialise()
@@ -120,15 +120,15 @@ function FrameworkZ.fzuiTabPanel:onMenuSelect(button, x, y)
     end
 end
 
-FrameworkZ.fzuiTabPanel.buttons = {
-    {text = "CHARACTERS", internal = "CHARACTERS", callback = FrameworkZ.fzuiTabPanel.onMenuSelect},
-    {text = "MY CHARACTER", internal = "MY_CHARACTER", callback = FrameworkZ.fzuiTabPanel.onMenuSelect},
-    {text = "Session", internal = "SESSION", callback = FrameworkZ.fzuiTabPanel.onMenuSelect},
-    {text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.fzuiTabPanel.onMenuSelect},
-    {text = "Config", internal = "CONFIG", callback = FrameworkZ.fzuiTabPanel.onMenuSelect}
+FrameworkZ.UI.TabPanel.buttons = {
+    {text = "CHARACTERS", internal = "CHARACTERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {text = "MY CHARACTER", internal = "MY_CHARACTER", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect}
 }
 
-function FrameworkZ.fzuiTabPanel:new(isoPlayer)
+function FrameworkZ.UI.TabPanel:new(isoPlayer)
     local o = ISPanel:new(-PANEL_WIDTH, PANEL_Y, PANEL_WIDTH, PANEL_HEIGHT)
     setmetatable(o, self)
     self.__index = self
@@ -138,9 +138,9 @@ function FrameworkZ.fzuiTabPanel:new(isoPlayer)
     o.moveWithMouse = false
     o.isoPlayer = isoPlayer
 
-    FrameworkZ.fzuiTabPanel.instance = o
+    FrameworkZ.UI.TabPanel.instance = o
 
     return o
 end
 
-return FrameworkZ.fzuiTabPanel
+return FrameworkZ.UI.TabPanel

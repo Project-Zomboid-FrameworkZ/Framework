@@ -1,22 +1,31 @@
 local Events = Events
+local internalPlugins = {}
 
 --! \brief Plugins module for FrameworkZ. Extends the framework with modular plugins.
 --! \class FrameworkZ.Plugins
 FrameworkZ.Plugins = {}
 FrameworkZ.Plugins.__index = FrameworkZ.Plugins
+FrameworkZ.Plugins.__internalPlugins = internalPlugins
 FrameworkZ.Plugins.RegisteredPlugins = {}
 FrameworkZ.Plugins.Commands = {}
 FrameworkZ.Plugins.LoadedPlugins = {}
 FrameworkZ.Plugins.EventHandlers = {}
 FrameworkZ.Plugins = FrameworkZ.Foundation:NewModule(FrameworkZ.Plugins, "Plugins")
 
--- Define the base plugin metatable
-FrameworkZ.Plugins.BasePlugin = {}
-FrameworkZ.Plugins.BasePlugin.__index = FrameworkZ.Plugins.BasePlugin
+FrameworkZ.Plugins.BasePlugin = {
+    __valid = function(object)
+        local currentHash = FrameworkZ.Security:HashPlugin(object)
+        return object.__hash == currentHash
+    end,
 
--- Function to initialize a new plugin
+    __index = function(tbl, key)
+        return rawget(FrameworkZ.Plugins.BasePlugin, key)
+    end
+}
+
 function FrameworkZ.Plugins:CreatePlugin(name)
     local plugin = setmetatable({}, self.BasePlugin)
+
     plugin.Meta = {
         Author = "N/A",
         Name = name,
@@ -25,69 +34,158 @@ function FrameworkZ.Plugins:CreatePlugin(name)
         Compatibility = ""
     }
 
+    plugin.__valid = self.BasePlugin.__valid
+    plugin.__locked = false
+
+    internalPlugins[name] = plugin
+
     return plugin
 end
 
--- TODO add to FrameworkZ.Utilities library?
-local function mergeTables(t1, t2)
-    for k, v in pairs(t2) do
-        if type(v) == "table" and type(t1[k]) == "table" then
-            mergeTables(t1[k], v)
-        else
-            t1[k] = v
+local function createSecureFunction(originalFunction, plugin)
+    return setmetatable({}, {
+        __call = function(_, ...)
+            if not plugin.__valid(plugin) then
+                FrameworkZ.Notifications:AddToQueue("Tampering Detected: Plugin integrity check failed. This has been logged.", FrameworkZ.Notifications.Types.Danger)
+                return false
+            end
+            return originalFunction(...)
+        end,
+        __metatable = false
+    })
+end
+
+local function wrapFunctionsWithValidation(tbl, plugin, visited)
+    visited = visited or {}
+    if visited[tbl] then return end
+    visited[tbl] = true
+
+    for k, v in pairs(tbl) do
+        if type(v) == "function" and not k:match("^_") then
+            tbl[k] = createSecureFunction(v, plugin)
+
+        elseif type(v) == "table" and not k:match("^_") and not v.__skipWrap then
+            wrapFunctionsWithValidation(v, plugin, visited)
         end
     end
 end
 
---! \brief Register a plugin.
---! \param pluginName \string The name of the plugin.
---! \param pluginTable \table The table containing the plugin's functions and data.
---! \param metadata \table Optional metadata for the plugin.
 function FrameworkZ.Plugins:RegisterPlugin(plugin)
-    if not self.RegisteredPlugins[plugin.Meta.Name] then
-        self.RegisteredPlugins[plugin.Meta.Name] = plugin
-    else
-        mergeTables(self.RegisteredPlugins[plugin.Meta.Name], plugin)
-        FrameworkZ.Foundation:UnregisterPluginHandler(plugin) -- TODO add MergePluginHandlers instead for optimization? Also skip re-registery
+    if not plugin.Meta or not plugin.Meta.Name then
+        print("Plugin missing metadata or name.")
+
+        return false
     end
 
-    FrameworkZ.Foundation:RegisterPluginHandler(plugin)
-    FrameworkZ.Plugins:LoadPlugin(plugin.Meta.Name)
+    if plugin.__locked then
+        if isClient() then
+            FrameworkZ.Notifications:AddToQueue("Security Alert: Attempted to re-register locked plugin '" .. plugin.Meta.Name .. "'. This has been logged.", FrameworkZ.Notifications.Types.Warning, 60)
+        end
+
+        return false
+    end
+
+    local name = plugin.Meta.Name
+    internalPlugins[name] = plugin
+end
+
+function FrameworkZ.Plugins:LockAndLoadPlugin(plugin)
+    if not plugin or not plugin.Meta or not plugin.Meta.Name then
+        error("Invalid plugin passed to LockAndLoadPlugin.")
+    end
+
+    if plugin.__locked then
+        error("Plugin '" .. plugin.Meta.Name .. "' is already locked.")
+    end
+
+    local name = plugin.Meta.Name
+
+    wrapFunctionsWithValidation(plugin, plugin)
+    plugin.__hash = FrameworkZ.Security:HashPlugin(plugin)
+    plugin.__locked = true
+
+    local proxy = {}
+    local mt = {
+        __index = plugin,
+        __newindex = function(t, key, value)
+            if isClient() then
+                FrameworkZ.Notifications:AddToQueue("Tampering Attempt: Cannot override plugin after locking. This has been logged.", FrameworkZ.Notifications.Types.Danger, 60)
+            end
+        end,
+        __pairs = function() return pairs(plugin) end,
+        __ipairs = function() return ipairs(plugin) end,
+        __len = function() return #plugin end,
+        __metatable = false
+    }
+
+    local lockedPlugin = setmetatable(proxy, mt)
+
+    self.RegisteredPlugins[name] = lockedPlugin
+    internalPlugins[name] = nil
+
+    if not self.LoadedPlugins[name] then
+        if plugin.Initialize then
+            plugin:Initialize()
+        end
+
+        self.LoadedPlugins[name] = lockedPlugin
+    end
+
+    return lockedPlugin
+end
+
+function FrameworkZ.Plugins:GetAllPlugins()
+    local hasRegisteredPlugin = false
+
+    for k, v in pairs(self.RegisteredPlugins) do
+        if v then
+            hasRegisteredPlugin = true
+            break
+        end
+    end
+
+    return hasRegisteredPlugin and self.RegisteredPlugins or internalPlugins
 end
 
 function FrameworkZ.Plugins:GetPlugin(pluginName)
-    return self.RegisteredPlugins[pluginName]
+    return self.RegisteredPlugins[pluginName] or internalPlugins[pluginName]
 end
 
---! \brief Load a registered plugin.
---! \param pluginName \string The name of the plugin to load.
+function FrameworkZ.Plugins:GetLoadedPlugin(pluginName)
+    return self.LoadedPlugins[pluginName]
+end
+
 function FrameworkZ.Plugins:LoadPlugin(pluginName)
     local plugin = self.RegisteredPlugins[pluginName]
+
     if plugin and not self.LoadedPlugins[pluginName] then
         if plugin.Initialize then
             plugin:Initialize()
         end
 
         self.LoadedPlugins[pluginName] = plugin
-        --self:RegisterPluginEventHandlers(plugin)
+
+        return plugin
     end
 end
 
---! \brief Unload a loaded plugin.
---! \param pluginName \string The name of the plugin to unload.
 function FrameworkZ.Plugins:UnloadPlugin(pluginName)
-    local plugin = self.LoadedPlugins[pluginName]
-    if plugin then
-        self:UnregisterPluginEventHandlers(plugin)
-
-        if plugin.Cleanup then
-            plugin:Cleanup()
+    if not self._allowUnload then
+        if isClient() then
+            FrameworkZ.Notifications:AddToQueue("Security Warning: Unload attempt blocked for '" .. pluginName .. "'. This has been logged.", FrameworkZ.Notifications.Types.Danger)
         end
 
-        self.LoadedPlugins[pluginName] = nil
+        return false
     end
+
+    self.RegisteredPlugins[pluginName] = nil
+    self.LoadedPlugins[pluginName] = nil
+    internalPlugins[pluginName] = nil
+
+    return true
 end
 
+--[[
 --! \brief Register event handlers for a plugin.
 --! \param plugin \table The plugin table containing the functions.
 function FrameworkZ.Plugins:RegisterPluginEventHandlers(plugin)
@@ -185,7 +283,6 @@ function FrameworkZ.Plugins:ExecuteCommand(commandName, ...)
     end
 end
 
---[[
 function FrameworkZ.Plugins.EveryOneMinute()
     FrameworkZ.Plugins:ExecutePluginHook("EveryOneMinute")
 end

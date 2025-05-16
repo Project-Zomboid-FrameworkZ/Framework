@@ -5,8 +5,8 @@ PFW_Introduction = ISPanel:derive("PFW_Introduction")
 function PFW_Introduction:initialise()
     local emitter = self.playerObject:getEmitter()
 	self.vignetteTexture = getTexture("media/textures/vignette.png")
-	self.cfwTexture = getTexture(FrameworkZ.Config.IntroFrameworkImage)
-	self.hl2rpTexture = getTexture(FrameworkZ.Config.IntroGamemodeImage)
+	self.cfwTexture = getTexture(FrameworkZ.Config.Options.IntroFrameworkImage)
+	self.hl2rpTexture = getTexture(FrameworkZ.Config.Options.IntroGamemodeImage)
 
 	ISPanel.initialise(self)
 
@@ -16,7 +16,7 @@ function PFW_Introduction:initialise()
 
 	self.currentTick = 1
 
-	FrameworkZ.Timers:Create("FZ_INITIALIZATION", FrameworkZ.Config.InitializationDuration, 1, function()
+	FrameworkZ.Timers:Create("FZ_INITIALIZATION", FrameworkZ.Config.Options.InitializationDuration, 1, function()
 		FrameworkZ.Timers:Create("FZ_INIT_TICK", 0.2, 0, function()
 			if not FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername()) then
 				if self.currentTick == 0 then
@@ -37,9 +37,9 @@ function PFW_Introduction:initialise()
 				self.initializing:setName("--- Initialized ---")
 
 				FrameworkZ.Timers:Simple(2, function()
-					if not FrameworkZ.Config.SkipIntro then
+					if not FrameworkZ.Config.Options.SkipIntro then
 						self:removeChild(self.initializing)
-						emitter:playSoundImpl(FrameworkZ.Config.IntroMusic, nil)
+						emitter:playSoundImpl(FrameworkZ.Config.Options.IntroMusic, nil)
 
 						emitter:playSoundImpl("button1", nil)
 						self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
@@ -90,8 +90,10 @@ function PFW_Introduction:initialise()
 											characterSelect:initialise()
 											characterSelect:addToUIManager()
 
-											self:setVisible(false)
-											self:removeFromUIManager()
+											FrameworkZ.Timers:Simple(1, function()
+												self:setVisible(false)
+												self:removeFromUIManager()
+											end)
 										end)
 									end)
 								end)
@@ -104,8 +106,10 @@ function PFW_Introduction:initialise()
 						characterSelect:initialise()
 						characterSelect:addToUIManager()
 
-						self:setVisible(false)
-						self:removeFromUIManager()
+						FrameworkZ.Timers:Simple(1, function()
+							self:setVisible(false)
+							self:removeFromUIManager()
+						end)
 					end
 				end)
 			end

@@ -20,7 +20,6 @@ FrameworkZ = FrameworkZ or {}
 --! \brief Characters module for FrameworkZ. Defines and interacts with CHARACTER object.
 --! \class FrameworkZ.Characters
 FrameworkZ.Characters = {}
-FrameworkZ.Characters.__index = FrameworkZ.Characters
 
 SKIN_COLOR_PALE = 0
 SKIN_COLOR_WHITE = 1
@@ -479,11 +478,13 @@ function CHARACTER:Initialize()
 
     --self:ValidateCharacterData()
 
-    if isClient() then
+    --[[
+	if isClient() then
         FrameworkZ.Timers:Simple(5, function()
             sendClientCommand("FZ_CHAR", "initialize", {self.isoPlayer:getUsername()})
         end)
     end
+	--]]
 
     return FrameworkZ.Characters:Initialize(self.username, self)
 end
@@ -553,7 +554,7 @@ function CHARACTER:Save(shouldTransmit)
     modData.status.sick = character:getBodyDamage():getSicknessLevel()
     --]]
 
-    player:GetStoredData().characters[self.id] = characterData
+    player.Characters[self.id] = characterData
 
     if isClient() and shouldTransmit == true then
         self.isoPlayer:transmitModData()
@@ -564,9 +565,11 @@ end
 
 --! \brief Destroy a character. This will remove the character from the list of characters and is usually called after a player has disconnected.
 function CHARACTER:Destroy()
-    if isClient() then
+    --[[
+	if isClient() then
         sendClientCommand("FZ_CHAR", "destroy", {self.isoPlayer:getUsername()})
     end
+	--]]
     
     self.isoPlayer = nil
 end
@@ -683,6 +686,10 @@ function CHARACTER:GetIsoPlayer()
     return self.isoPlayer
 end
 
+function CHARACTER:GetSaveableData()
+    return FrameworkZ.Foundation:ProcessSaveableData(self, {"isoPlayer"}, {"inventory"})
+end
+
 --! \brief Set the age of the character.
 --! \param age \integer The age of the character.
 function CHARACTER:SetAge(age)
@@ -690,9 +697,9 @@ function CHARACTER:SetAge(age)
     self.isoPlayer:getModData()["FZ_CHAR"].age = age
     self.isoPlayer:transmitModData()
 
-    if isClient() then
+    --[[if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "age", age})
-    end
+    end--]]
 end
 
 --! \brief Set the faction of the character.
@@ -702,9 +709,11 @@ function CHARACTER:SetFaction(faction)
     self.isoPlayer:getModData()["FZ_CHAR"].faction = faction
     self.isoPlayer:transmitModData()
     
-    if isClient() then
+    --[[
+	if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "faction", faction})
     end
+	--]]
 end
 
 function CHARACTER:GetName()
@@ -718,9 +727,11 @@ function CHARACTER:SetName(name)
     self.isoPlayer:getModData()["FZ_CHAR"].name = name
     self.isoPlayer:transmitModData()
     
+	--[[
     if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "name", name})
     end
+	--]]
 end
 
 function CHARACTER:GetDescription()
@@ -734,9 +745,11 @@ function CHARACTER:SetDescription(description)
     self.isoPlayer:getModData()["FZ_CHAR"].description = description
     self.isoPlayer:transmitModData()
 
-    if isClient() then
+    --[[
+	if isClient() then
         sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "description", description})
     end
+	--]]
 end
 
 function CHARACTER:GetID()
@@ -998,7 +1011,7 @@ if isServer() then
             end
 
             character.uid = uid
-            player:GetStoredData().characters[character.id].META_UID = uid
+            player.Characters[character.id].META_UID = uid
 
             FrameworkZ.Characters.UIDs[username][uid] = true
             ModData.add("FZ_CHAR_UIDS", FrameworkZ.Characters.UIDs)
@@ -1027,7 +1040,7 @@ function FrameworkZ.Characters:SetupUID(isoPlayer, characterID)
             FrameworkZ.Characters.UIDs[username] = FrameworkZ.Characters.UIDs[username] or {}
 
             character.uid = uid
-            player:GetStoredData().characters[character.id].META_UID = uid
+            player.Characters[character.id].META_UID = uid
             FrameworkZ.Characters.UIDs[username][uid] = true
 
             FrameworkZ.Notifications:AddToQueue("Character UID has been set to: " .. uid, FrameworkZ.Notifications.Types.Info)
@@ -1152,11 +1165,11 @@ if isClient() then
             end
         end
 
-        if currentSaveTick >= FrameworkZ.Config.TicksUntilCharacterSave then
+        if currentSaveTick >= FrameworkZ.Config.Options.TicksUntilCharacterSave then
             local success, message = FrameworkZ.Players:Save(isoPlayer:getUsername())
 
             if success then
-                if FrameworkZ.Config.ShouldNotifyOnCharacterSave then
+                if FrameworkZ.Config.Options.ShouldNotifyOnCharacterSave then
                     FrameworkZ.Notifications:AddToQueue("Saved player and character data.", FrameworkZ.Notifications.Types.Success)
                 end
             else
@@ -1177,7 +1190,7 @@ if isServer() then
     --! \param command \string
     --! \param player \table Player object.
     --! \param args \string
-    function FrameworkZ.Characters.OnClientCommand(module, command, player, args)
+    --[[function FrameworkZ.Characters.OnClientCommand(module, command, player, args)
         if module == "FZ_CHAR" then
             if command == "initialize" then
                 local username = args[1]
@@ -1203,9 +1216,9 @@ if isServer() then
             end
         end
     end
-    Events.OnClientCommand.Add(FrameworkZ.Characters.OnClientCommand)
+    Events.OnClientCommand.Add(FrameworkZ.Characters.OnClientCommand)--]]
 end
 
-FrameworkZ.Characters.Meta = CHARACTER
+FrameworkZ.Characters.MetaObject = CHARACTER
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Characters)

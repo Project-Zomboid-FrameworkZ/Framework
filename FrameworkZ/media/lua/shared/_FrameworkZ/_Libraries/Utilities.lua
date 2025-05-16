@@ -8,7 +8,7 @@ FrameworkZ.Utilities = FrameworkZ.Foundation:NewModule(FrameworkZ.Utilities, "Ut
 --! \param originalTable \table The table to copy.
 --! \param tableCopies \table (Internal) The table of copies used internally by the function.
 --! \return \table The copied table.
-function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies)
+function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies, shouldCopyMetatable)
     tableCopies = tableCopies or {}
 
     local originalType = type(originalTable)
@@ -25,13 +25,64 @@ function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies)
                 copy[self:CopyTable(originalKey, tableCopies)] = self:CopyTable(originalValue, tableCopies)
             end
 
-            setmetatable(copy, self:CopyTable(getmetatable(originalTable), tableCopies))
+            local mt = getmetatable(originalTable)
+
+            if mt and type(mt) == "table" then
+                setmetatable(copy, self:CopyTable(mt, tableCopies))
+            end
         end
     else -- number, string, boolean, etc
         copy = originalTable
     end
 
     return copy
+end
+
+function FrameworkZ.Utilities:MergeTables(t1, t2)
+    for k, v in pairs(t2) do
+        if type(v) == "table" and type(t1[k]) == "table" then
+            self:MergeTables(t1[k], v)
+        else
+            t1[k] = v
+        end
+    end
+end
+
+function FrameworkZ.Utilities:DumpTable(tbl)
+    if type(tbl) == 'table' then
+        local s = '{ '
+        for k,v in pairs(tbl) do
+            if type(k) ~= 'number' then k = '"'..k..'"' end
+            s = s .. '['..k..'] = ' .. self:DumpTable(v) .. ','
+        end
+        return s .. '} '
+    else
+        return tostring(tbl)
+    end
+end
+
+function FrameworkZ.Utilities:PrintTable(tbl)
+    print(self:DumpTable(tbl))
+end
+
+function FrameworkZ.Utilities:TableContainsKey(t, key)
+    for k, v in pairs(t) do
+        if k == key then
+            return true
+        end
+    end
+
+    return false
+end
+
+function FrameworkZ.Utilities:TableContainsValue(t, value)
+    for _, v in pairs(t) do
+        if v == value then
+            return true
+        end
+    end
+
+    return false
 end
 
 function FrameworkZ.Utilities:RemoveContextDuplicates(worldObjects)

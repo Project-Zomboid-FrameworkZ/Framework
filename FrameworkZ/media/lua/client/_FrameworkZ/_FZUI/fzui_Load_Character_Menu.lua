@@ -3,11 +3,12 @@ PFW_LoadCharacterMenu = ISPanel:derive("PFW_LoadCharacterMenu")
 function PFW_LoadCharacterMenu:initialise()
     ISPanel.initialise(self)
 
+    local isoPlayer = self.player.isoPlayer
+
     self.currentIndex = 1
     self.gender = "Male"
-    self.characters = self.player:GetStoredData().characters
+    self.characters = self.player:GetCharacters()
 
-    local isoPlayer = self.player.isoPlayer
     local transitionButtonHeight = self.height / 2
     local transitionButtonY = self.height / 2 - transitionButtonHeight / 2
     local isFemale = (self.gender == "Female" and true) or (self.gender == "Male" and false)
