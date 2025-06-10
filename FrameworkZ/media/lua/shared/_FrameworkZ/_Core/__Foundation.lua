@@ -345,12 +345,8 @@ function FrameworkZ.Foundation:Fire(key, data, arguments)
     if subscribers then
         local results
 
-        FrameworkZ.Utilities:PrintTable(self:GetChannel(key))
-        print("=============================================")
-        FrameworkZ.Utilities:PrintTable(subscribers)
-
         for id, callback in ipairs(subscribers) do
-            results = {callback(data, unpack(arguments))}
+            results = FrameworkZ.Utilities:Pack(callback(data, FrameworkZ.Utilities:Unpack(arguments)))
 
             returnValues[id] = results
         end
@@ -400,7 +396,7 @@ function FrameworkZ.Foundation:SendGet(key, callback, callbackID, broadcast, ...
         broadcast = broadcast,
         callbackID = callbackID,
         requestID = requestID,
-        args = {...}
+        args = FrameworkZ.Utilities:Pack(...)
     })
 
     return requestID
@@ -451,7 +447,7 @@ function FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, callback, ...
         local payload = {
             requestID = requestID,
             subID = subscriptionID,
-            args = {...},
+            args = FrameworkZ.Utilities:Pack(...),
             clientSentAt = getTimestamp()
         }
 
@@ -461,7 +457,7 @@ function FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, callback, ...
             playerID = playerID,
             requestID = requestID,
             subID = subscriptionID,
-            args = {...},
+            args = FrameworkZ.Utilities:Pack(...),
             serverSentAt = getTimestamp()
         }
 
@@ -630,7 +626,7 @@ if isServer() then
                         lastFiredAt = meta.lastFiredAt,
                     }
 
-                    callback(data, unpack(returnArgs))
+                    callback(data, FrameworkZ.Utilities:Unpack(returnArgs))
                 end
 
                 self.PendingConfirmations[arguments.requestID] = nil
@@ -716,25 +712,14 @@ if isClient() then
                 returnValues = returnValues
             })
         elseif command == "ConfirmFire" then
-            print("ACTUAL CONFIRM FIRE")
             local confirmation = self.PendingConfirmations[arguments.requestID]
-            FrameworkZ.Utilities:PrintTable(confirmation)
 
             if confirmation then
-                print("Confirmed")
-
                 local meta = arguments.meta or {}
                 local callback = confirmation.callback
                 local returnValues = arguments.returnValues or {}
 
-                print(meta)
-                print(callback)
-                print(returnValues)
-
                 for _, returnArgs in pairs(returnValues) do
-                    print("Firing callback")
-                    print(unpack(returnArgs))
-
                     local data = {
                         subscriptionID = confirmation.subID,
                         isoPlayer = getSpecificPlayer(confirmation.playerID),
@@ -743,9 +728,7 @@ if isClient() then
                         lastFiredAt = meta.lastFiredAt,
                     }
 
-                    FrameworkZ.Utilities:PrintTable(data)
-
-                    callback(data, unpack(returnArgs))
+                    callback(data, FrameworkZ.Utilities:Unpack(returnArgs))
                 end
 
                 self.PendingConfirmations[arguments.requestID] = nil
@@ -1009,7 +992,7 @@ end
 --! \param ... \multiple Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation:ExecuteHook(hookName, category, ...)
     category = category or HOOK_CATEGORY_GENERIC
-    local args = {...}
+    local args = FrameworkZ.Utilities:Pack(...)
 
     local hooks = self.RegisteredHooks[category] and self.RegisteredHooks[category][hookName]
     if hooks then
@@ -1023,16 +1006,16 @@ function FrameworkZ.Foundation:ExecuteHook(hookName, category, ...)
                     local shouldPassOverHookableObject = rawget(object, functionName .. "_PassOverHookableObject")
 
                     if shouldPassOverHookableObject then
-                        func(unpack(args))
+                        func(FrameworkZ.Utilities:Unpack(args))
                     else
                         if args[1] ~= object then
-                            func(object, unpack(args))
+                            func(object, FrameworkZ.Utilities:Unpack(args))
                         else
-                            func(unpack(args))
+                            func(FrameworkZ.Utilities:Unpack(args))
                         end
                     end
                 else
-                    func(unpack(args))
+                    func(FrameworkZ.Utilities:Unpack(args))
                 end
             end
         end
@@ -1132,8 +1115,8 @@ function FrameworkZ.Foundation.Events:OnFillInventoryObjectContextMenu(player, c
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnFillInventoryObjectContextMenu")
 
-function FrameworkZ.Foundation.Events:OnFillWorldObjectContextMenu(player, context, worldObjects, test)
-    self:ExecuteAllHooks("OnFillWorldObjectContextMenu", player, context, worldObjects, test)
+function FrameworkZ.Foundation.Events:OnFillWorldObjectContextMenu(playerNumber, context, worldObjects, test)
+    self:ExecuteAllHooks("OnFillWorldObjectContextMenu", playerNumber, context, worldObjects, test)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnFillWorldObjectContextMenu")
 
@@ -1142,8 +1125,8 @@ function FrameworkZ.Foundation.Events:OnGameStart()
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnGameStart")
 
-function FrameworkZ.Foundation.Events:OnInitGlobalModData()
-    self:ExecuteAllHooks("OnInitGlobalModData")
+function FrameworkZ.Foundation.Events:OnInitGlobalModData(isNewGame)
+    self:ExecuteAllHooks("OnInitGlobalModData", isNewGame)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnInitGlobalModData")
 
@@ -1218,39 +1201,51 @@ end
 function FrameworkZ.Foundation:StartServerTick()
     if not isServer() then return end
 
+    local loops = 0
+
     FrameworkZ.Timers:Create("FZ_SERVER_TICK", FrameworkZ.Config.Options.ServerTickInterval, 0, function()
         self:ExecuteAllHooks("ServerTick")
     end)
+
+    FrameworkZ.Timers:Create("FZ_SERVER_TIMER", 1, 0, function()
+        self:ExecuteAllHooks("ServerTimer", loops)
+
+        loops = loops + 1
+    end)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("ServerTick")
+FrameworkZ.Foundation:AddAllHookHandlers("ServerTimer")
 
 function FrameworkZ.Foundation:OnServerStarted()
-    self:StartServerTick()
+    if isServer() then
+        self:StartServerTick()
+    end
 end
 
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
-    local isoPlayer = getPlayer()
-    startTime = getTimestampMs()
+    if isClient() then
+        local isoPlayer = getPlayer()
+        startTime = getTimestampMs()
 
-    self:ExecuteFrameworkHooks("PreInitializeClient", isoPlayer)
+        self:ExecuteFrameworkHooks("PreInitializeClient", isoPlayer)
+    end
 end
 
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
-    if isClient() then
-        local sidebar = ISEquippedItem.instance
-        self.fzuiTabMenu = FrameworkZ.UI.TabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
-        self.fzuiTabMenu:initialise()
-        self.fzuiTabMenu:addToUIManager()
+    local sidebar = ISEquippedItem.instance
+    self.fzuiTabMenu = FrameworkZ.UI.TabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
+    self.fzuiTabMenu:initialise()
+    self.fzuiTabMenu:addToUIManager()
 
-        local ui = PFW_Introduction:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), getPlayer())
-        ui:initialise()
-        ui:addToUIManager()
-    end
+    local ui = PFW_Introduction:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), getPlayer())
+    ui:initialise()
+    ui:addToUIManager()
 
     self:ExecuteModuleHooks("PreInitializeClient", isoPlayer)
     self:ExecuteGamemodeHooks("PreInitializeClient",isoPlayer)
     self:ExecutePluginHooks("PreInitializeClient", isoPlayer)
+
     self:ExecuteFrameworkHooks("InitializeClient", isoPlayer)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
@@ -1304,9 +1299,9 @@ function FrameworkZ.Foundation:InitializeClient(isoPlayer)
                 isoPlayer2:setLx(FrameworkZ.Config.Options.LimboX)
                 isoPlayer2:setLy(FrameworkZ.Config.Options.LimboY)
                 isoPlayer2:setLz(FrameworkZ.Config.Options.LimboZ)
-            end
 
-            FrameworkZ.Foundation:InitializePlayer(isoPlayer)
+                self:InitializePlayer(isoPlayer2)
+            end
         end)
     end)
 end
@@ -1314,16 +1309,53 @@ FrameworkZ.Foundation:AddAllHookHandlers("InitializeClient")
 
 if isServer() then
     function FrameworkZ.Foundation.OnInitializePlayer(data)
-        FrameworkZ.Foundation:InitializePlayer(data.isoPlayer)
+        return FrameworkZ.Foundation:InitializePlayer(data.isoPlayer)
     end
 end
 
 function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
     if not isoPlayer then return false end
 
+    local player = FrameworkZ.Players:Initialize(isoPlayer) if not player then return false end
+    local username = player:GetUsername()
     local options = FrameworkZ.Config.Options
     local x, y, z = options.LimboX, options.LimboY, options.LimboZ
-    FrameworkZ.Players:Initialize(isoPlayer)
+
+    FrameworkZ.Foundation:RestoreData(isoPlayer, "RestoreData", "Players", username, function(restored, playerData)
+        if restored then
+            player:RestoreData(playerData)
+            print("[FZ] Restored player for '" .. username .. "'.")
+        else
+            local saveableData = player:GetSaveableData()
+
+            FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players", username, saveableData)
+
+            print("[FZ] Created new player for '" .. username .. "'.")
+        end
+    end)
+
+    FrameworkZ.Foundation:RestoreData(isoPlayer, "RestoreData", "Characters", username, function(restored, charactersData)
+        if restored then
+            player:SetCharacters(charactersData)
+
+            print("[FZ] Restored characters for '" .. username .. "'.")
+        else
+            local characters = player:GetCharacters()
+
+            FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Characters", username, characters)
+
+            print("[FZ] Created new characters field for '" .. username .. "'.")
+        end
+    end)
+
+    --[[
+    if isServer() then
+        local saveableData = player:GetSaveableData()
+
+        FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players", username, saveableData)
+        FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Characters", username, player:GetCharacters())
+    end
+    --]]
 
     isoPlayer:setX(x)
     isoPlayer:setY(y)
@@ -1346,7 +1378,7 @@ function FrameworkZ.Foundation:PostInitializeClient(isoPlayer)
     self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
 
     if isClient() then
-        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
+        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config.Options.InitializationDuration) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
     end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
@@ -1389,10 +1421,14 @@ FrameworkZ.Foundation.Namespaces = FrameworkZ.Foundation.Namespaces or {}
 FrameworkZ.Foundation.SyncQueues = FrameworkZ.Foundation.SyncQueues or {}
 
 --! \brief Registers a storage namespace, e.g., "Players"
+--! \param name \string The name of the namespace to register.
+--! \note This must be used in the shared scope within an OnInitGlobalModData function.
 function FrameworkZ.Foundation:RegisterNamespace(name)
     if isServer() then
         self.Namespaces[name] = ModData.getOrCreate(self.StorageName .. "_" .. name)
-    else
+    end
+
+    if isClient() then
         self.Namespaces[name] = self.Namespaces[name] or {}
     end
 end
@@ -1401,14 +1437,16 @@ function FrameworkZ.Foundation:GetLocalData(namespace, keys)
     local ns = self:GetNamespace(namespace)
 
     if ns then
-        if type(keys) == "string" then
-            return ns[keys]
+        if not keys then
+            return ns
+        elseif type(keys) == "string" then
+            return ns[keys] or false
         elseif type(keys) == "table" then
-            return self:GetNestedValue(ns, keys)
+            return self:GetNestedValue(ns, keys) or false
         end
     end
 
-    print("[FZ] ERROR: Failed to get value for namespace '" .. namespace and tostring(namespace) or "null" .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+    print("[FZ] ERROR: Failed to get value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
 
     return false
 end
@@ -1417,7 +1455,9 @@ function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
     local ns = self:GetNamespace(namespace)
 
     if ns then
-        if type(keys) == "string" then
+        if not keys then
+            self.Namespaces[namespace] = value
+        elseif type(keys) == "string" then
             ns[keys] = value
         elseif type(keys) == "table" then
             value = self:SetNestedValue(ns, keys, value)
@@ -1426,7 +1466,7 @@ function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
         return true
     end
 
-    print("[FZ] ERROR: Failed to set value for namespace '" .. namespace and tostring(namespace) or "null" .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+    print("[FZ] ERROR: Failed to set value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
 
     return false
 end
@@ -1451,22 +1491,29 @@ elseif isServer() then
     end
 end
 
-if isServer() then
-    function FrameworkZ.Foundation.OnGetData(data, command, namespace, keys)
+function FrameworkZ.Foundation.OnGetData(data, command, namespace, keys)
+    if isServer() then
         local value = FrameworkZ.Foundation:GetLocalData(namespace, keys)
-        FrameworkZ.Foundation:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+
+        if value ~= false and command then
+            FrameworkZ.Foundation:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+        end
 
         return value
     end
+end
 
-    function FrameworkZ.Foundation.OnSetData(data, command, namespace, keys, value, broadcast)
+function FrameworkZ.Foundation.OnSetData(data, command, namespace, keys, value, broadcast)
+    if isServer() then
         local isoPlayer = data.isoPlayer
 
         if not FrameworkZ.Foundation:SetLocalData(namespace, keys, value) then
             return false
         end
 
-        FrameworkZ.Foundation:ExecuteAllHooks("OnStorageSet", isoPlayer, command, namespace, keys, value)
+        if command then
+            FrameworkZ.Foundation:ExecuteAllHooks("OnStorageSet", isoPlayer, command, namespace, keys, value)
+        end
 
         -- Broadcast is handled here because the value should be managed before broadcasting [instead of in FrameworkZ.Foundation:Set()].
         if broadcast then
@@ -1490,12 +1537,15 @@ function FrameworkZ.Foundation:GetData(isoPlayer, command, namespace, keys)
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnGetData", function(data, value)
             if value == false then
-                print("[FZ] ERROR: Failed to get server-side value for namespace '" .. namespace and tostring(namespace) or "null" .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+                print("[FZ] ERROR: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
                 return
             end
 
             self:SetLocalData(namespace, keys, value)
-            self:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+
+            if command then
+                self:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+            end
         end, command, namespace, keys)
     elseif isServer() then
         return self:GetLocalData(namespace, keys)
@@ -1514,15 +1564,60 @@ function FrameworkZ.Foundation:SetData(isoPlayer, command, namespace, keys, valu
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnSetData", function(data, success)
             if not success then
-                print("[FZ] ERROR: Failed to set server-side value for namespace '" .. namespace and tostring(namespace) or "null" .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+                print("[FZ] ERROR: Failed to set server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
                 return
             end
 
             self:SetLocalData(namespace, keys, value)
-            self:ExecuteAllHooks("OnStorageSet", data.isoPlayer, command, namespace, keys, value)
+
+            if command then
+                self:ExecuteAllHooks("OnStorageSet", data.isoPlayer, command, namespace, keys, value)
+            end
         end, command, namespace, keys, value, broadcast)
     elseif isServer() then
         return self:SetLocalData(namespace, keys, value)
+    end
+end
+
+function FrameworkZ.Foundation:RestoreData(isoPlayer, command, namespace, keys, callback)
+    if isServer() then
+        local stored = self:GetLocalData(namespace, keys)
+
+        if stored and type(stored) == "table" then
+            --[[for k, v in pairs(stored) do
+                object[k] = v
+            end--]]
+
+            if callback then
+                callback(true, stored)
+            end
+
+            return true
+        end
+
+        if callback then
+            callback(false)
+        end
+
+        return false
+    elseif isClient() then
+        local handlerName = "RestoreData_" .. tostring(namespace) .. "_" .. tostring(command)
+
+        local function tempHook(_isoPlayer, _command, _namespace, _keys, value)
+            if _namespace == namespace and _command == command then
+                if value then
+                    if callback then callback(true, value) end
+                else
+                    if callback then callback(false) end
+                end
+
+                -- Unregister this handler after first use
+                FrameworkZ.Foundation:UnregisterHandler("OnStorageGet", tempHook, nil, handlerName, HOOK_CATEGORY_FRAMEWORK)
+            end
+        end
+
+        FrameworkZ.Foundation:RegisterHandler("OnStorageGet", tempHook, nil, handlerName, HOOK_CATEGORY_FRAMEWORK)
+        self:GetData(isoPlayer, command, namespace, keys)
     end
 end
 
@@ -1694,13 +1789,22 @@ function FrameworkZ.Foundation:ProcessSaveableData(object, ignoreList, encodeLis
     local saveableData = {}
 
     for k, v in pairs(object) do
-        if type(v) == "table" and not FrameworkZ.Utilities:TableContainsKey(ignoreList, k) and FrameworkZ.Utilities:TableContainsKey(encodeList, k) then
-            saveableData[k] = v.GetSaveableData and v:GetSaveableData()
+        if FrameworkZ.Utilities:TableContainsValue(ignoreList, k) then
+            -- skip ignored keys
+        elseif type(v) == "function" then
+            -- skip functions
+        elseif type(v) == "table" then
+            if FrameworkZ.Utilities:TableContainsValue(encodeList, k) and v.GetSaveableData then
+                saveableData[k] = v:GetSaveableData()
 
-            if not saveableData[k] then
-                print("[FZ] Failed to save '" .. tostring(v) .. "' at '" .. tostring(k) .. "'. OBJECT:GetSaveableData() is not implemented.")
+                if not saveableData[k] then
+                    print("[FZ] Failed to save '" .. tostring(v) .. "' at '" .. tostring(k) .. "'. OBJECT:GetSaveableData() is not implemented.")
+                end
+            else
+                -- Recursively process plain tables
+                saveableData[k] = self:ProcessSaveableData(v, ignoreList, encodeList)
             end
-        elseif type(v) ~= "function" and not FrameworkZ.Utilities:TableContainsKey(ignoreList, k) then
+        else
             saveableData[k] = v
         end
     end

@@ -229,7 +229,8 @@ function FrameworkZ.Entities.OnGameStart()
 end
 
 function FrameworkZ.Entities:LoadGridsquare(square)
-    for i = 0, square:getObjects():size() - 1 do
+    --[[
+	for i = 0, square:getObjects():size() - 1 do
         local object = square:getObjects():get(i)
 
         if object and object:getModData()["PFW_ENT"] then
@@ -242,4 +243,5 @@ function FrameworkZ.Entities:LoadGridsquare(square)
             end
         end
     end
+	--]]
 end

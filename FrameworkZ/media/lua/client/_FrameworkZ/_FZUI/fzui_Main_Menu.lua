@@ -333,45 +333,22 @@ function PFW_MainMenu:onFinalizeCharacter(menu)
         EQUIPMENT_SLOT_SHOES = {id = shoes}
     }
 
-    --[[local characterID, message = FrameworkZ.Players:GetNextCharacterID(self.playerObject:getUsername())
+    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, serverCharacterID, serverMessage)
+        if serverCharacterID then
+            local clientCharacterID, clientMessage = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), characterData, serverCharacterID)
 
-    if not characterID then
-        FrameworkZ.Notifications:AddToQueue("Failed to create character: " .. message, FrameworkZ.Notifications.Types.Warning, nil, self)
-
-        return false
-    end--]]
-
-    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, success, messageOrCharacterID)
-        if success then
-            local success2, messageOrCharacterID2 = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), characterData, messageOrCharacterID)
-
-            if success2 then
-                FrameworkZ.Notifications:AddToQueue("Successfully created character #" .. messageOrCharacterID2 .. ": " .. characterData.INFO_NAME, FrameworkZ.Notifications.Types.Success, nil, self)
+            if clientCharacterID and clientCharacterID == serverCharacterID then
+                FrameworkZ.Notifications:AddToQueue("Successfully created character #" .. clientCharacterID .. ": " .. characterData.INFO_NAME, FrameworkZ.Notifications.Types.Success, nil, self)
+            elseif clientCharacterID ~= serverCharacterID then
+                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: Character ID mistmatch.", FrameworkZ.Notifications.Types.Warning, nil, self)
             else
-                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. messageOrCharacterID2, FrameworkZ.Notifications.Types.Warning, nil, self)
+                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. clientMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
             end
         else
-            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. messageOrCharacterID, FrameworkZ.Notifications.Types.Warning, nil, self)
+            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. serverMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
             return false
         end
     end, self.playerObject:getUsername(), characterData)
-
-
-
-
-    --FrameworkZ.Foundation:SetData(self.playerObject, "CreateCharacter", "Players.Characters", {self.playerObject:getUsername(), characterID}, characterData)
-
-    --[[
-    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.CreateCharacter", function(data, _success, _characterID)
-        local success, characterID = FrameworkZ.Players.CreateCharacter({isoPlayer = self.playerObject}, self.playerObject:getUsername(), characterData)
-
-        if success then
-            FrameworkZ.Notifications:AddToQueue("Successfully created character " .. name .. " #" .. characterID .. ".", nil, nil, self)
-        else
-            FrameworkZ.Notifications:AddToQueue("Failed to create character.", nil, nil, self)
-        end
-    end, self.playerObject:getUsername(), characterData)
-    --]]
 
     return true
 end
@@ -442,6 +419,14 @@ function PFW_MainMenu:onEnterMainMenuFromLoadCharacterMenu()
 end
 
 function PFW_MainMenu:onLoadCharacter()
+    local characterID = self.loadCharacterMenu.currentIndex
+    FrameworkZ.Players:LoadCharacterByID(self.playerObject:getUsername(), characterID)
+
+
+
+
+
+    --[[
     local loadCharacterStartTime = getTimestampMs()
     local characterID = self.loadCharacterMenu.currentIndex
     local character = FrameworkZ.Players:GetCharacterByID(self.playerObject:getUsername(), characterID)
@@ -451,6 +436,7 @@ function PFW_MainMenu:onLoadCharacter()
     else
         FrameworkZ.Notifications:AddToQueue("No character selected.", FrameworkZ.Notifications.Types.Warning, nil, self)
     end
+    --]]
 end
 
 function PFW_MainMenu:onDisconnect()

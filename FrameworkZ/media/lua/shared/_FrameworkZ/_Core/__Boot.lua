@@ -115,7 +115,7 @@ FrameworkZ.Meta.Version = "1.0.0"
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
     SkipIntro = true,
-    Version = "8.7.3",
+    Version = "9.7.3",
     VersionType = "alpha",
 
     IntroFrameworkImage = "media/textures/fz.png",
@@ -138,7 +138,7 @@ FrameworkZ.Config.Options = {
 
     InitializationDuration = 1, --In seconds. Not recommended to set any lower than 1 second.
     ServerTickInterval = 1, -- In seconds. Increasing this may improve performance at the cost of responsiveness. Default: 1 second.
-    TicksUntilServerSave = 240, -- In ticks, by the Server Tick Interval. Default: 1200 (20 minutes).
+    TicksUntilServerSave = 180, -- In ticks, by the Server Tick Interval. Default: 1200 (20 minutes).
 
     PlayerTickInterval = 1, -- In seconds. Increasing this may improve performance at the cost of responsiveness. Default: 1 seconds.
     TicksUntilCharacterSave = 1200, -- In ticks, by the Player Tick Interval. Default: 1200 (10 minutes).
@@ -172,6 +172,15 @@ FrameworkZ.Config.Options = {
         }
     }
 }
+
+function FrameworkZ.Config:GetOption(optionName)
+    return self.Options[optionName]
+end
+
+function FrameworkZ.Config:SetOption(optionName, value)
+    self.Options[optionName] = value
+end
+
 FrameworkZ.Config = FrameworkZ:CreateObject(FrameworkZ.Config, "Config")
 
 function FrameworkZ:LoadAndLockObject(object)
@@ -323,18 +332,6 @@ end
 function FrameworkZ:InitializeObject()
     if self.__initialized then return end
     self.__initialized = true
-
     self.Foundation.Initialize(self.Foundation)
-
-    --[[
-    for k, v in pairs(internalObjects) do
-        if v.InitializeObject then
-            v.InitializeObject(v)
-        end
-    end
-    --]]
-
     self.__finalized = true
 end
-
---FrameworkZ:RegisterObject(FrameworkZ)

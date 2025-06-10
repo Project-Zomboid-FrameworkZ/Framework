@@ -523,6 +523,10 @@ function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, item
                     option:setText("Malformed Item")
                     menuManager:addOption(option, interactSubMenu)
                 end
+            else
+                local dropText = multipleTypesSelected and "Drop Selected Items" or "Drop " .. v:getName()
+                local dropOption = Options.new(dropText, self, FrameworkZ.Items.OnDropItemCallback, {items, player, isoPlayer}, false, true, multipleTypesSelected and 1 or uniqueIDCounts[v:getFullType()])
+                menuManager:addAggregatedOption(multipleTypesSelected and "DropSelectedItems" or v:getFullType(), dropOption, manageSubMenu)
             end
 
             if primaryItem and secondaryItem and v == primaryItem and v == secondaryItem then

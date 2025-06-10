@@ -11,7 +11,7 @@ end
 
 function MenuManager:addOption(option, target)
     target = target or self.contextMenuBuilder
-    target:addOption(option.text, option.target, option.callback, option.callbackParameters, option.addOnTop)
+    return target:addOption(option.text, option.target, option.callback, option.callbackParameters, option.addOnTop)
 end
 
 function MenuManager:addSubMenu(name, addOnTop, options)

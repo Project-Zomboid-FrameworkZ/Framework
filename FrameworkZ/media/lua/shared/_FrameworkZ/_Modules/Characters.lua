@@ -409,7 +409,7 @@ FrameworkZ.Characters.SlotList = {
 FrameworkZ.Characters.List = {}
 
 --! \brief Unique IDs list for characters.
-FrameworkZ.Characters.UIDs = {}
+FrameworkZ.Characters.Cache = {}
 
 --! \brief Deprecated. To be removed.
 FrameworkZ.Characters.EquipmentSlots = {
@@ -433,76 +433,20 @@ FrameworkZ.Characters = FrameworkZ.Foundation:NewModule(FrameworkZ.Characters, "
 local CHARACTER = {}
 CHARACTER.__index = CHARACTER
 
---! \brief Initialize a character.
---! \return \string username
-function CHARACTER:Initialize()
-	if not self.isoPlayer then return end
-
-    local firstConnection = false
-    local characterModData = self.isoPlayer:getModData()["FZ_CHAR"] or nil
-
-    if not self.inventory then
-        local inventory = FrameworkZ.Inventories:New(self.isoPlayer:getUsername())
-        self.inventoryID = inventory:Initialize()
-        self.inventory = inventory
-    end
-
-    if not characterModData then
-        firstConnection = true
-
-        self.isoPlayer:getModData()["FZ_CHAR"] = {
-            id = self.id or -1,
-            name = self.name or "Unknown",
-            description = self.description or "No description available.",
-            faction = self.faction or FACTION_CITIZEN,
-            age = self.age or 20,
-            height = self.height or 70,
-            eyeColor = self.eyeColor or "Brown",
-            hairColor = self.hairColor or "Brown",
-            skinColor = self.skinColor or "White",
-            physique = self.physique or "Average",
-            weight = self.weight or "125",
-            inventory = self.inventory or {},
-            recognizes = self.recognizes or {},
-            upgrades = {}
-        }
-
-        if isClient() then
-            self.isoPlayer:transmitModData()
-        end
-    end
-
-    if firstConnection then
-        self:InitializeDefaultItems()
-    end
-
-    --self:ValidateCharacterData()
-
-    --[[
-	if isClient() then
-        FrameworkZ.Timers:Simple(5, function()
-            sendClientCommand("FZ_CHAR", "initialize", {self.isoPlayer:getUsername()})
-        end)
-    end
-	--]]
-
-    return FrameworkZ.Characters:Initialize(self.username, self)
-end
-
 --! \brief Save the character's data from the character object.
 --! \param shouldTransmit \boolean (Optional) Whether or not to transmit the character's data to the server.
 --! \return \boolean Whether or not the character was successfully saved.
 function CHARACTER:Save(shouldTransmit)
     if shouldTransmit == nil then shouldTransmit = true end
 
-    local player = FrameworkZ.Players:GetPlayerByID(self.isoPlayer:getUsername())
-    local characterData = FrameworkZ.Players:GetCharacterDataByID(self.isoPlayer:getUsername(), self.id)
+    local player = FrameworkZ.Players:GetPlayerByID(self:GetIsoPlayer():getUsername())
+    local characterData = FrameworkZ.Players:GetCharacterDataByID(self:GetIsoPlayer():getUsername(), self.id)
 
     if not player or not characterData then return false end
     FrameworkZ.Players:ResetCharacterSaveInterval()
 
     -- Save "physical" character inventory
-    local inventory = self.isoPlayer:getInventory():getItems()
+    local inventory = self:GetIsoPlayer():getInventory():getItems()
     characterData.INVENTORY_PHYSICAL = {}
     for i = 0, inventory:size() - 1 do
         table.insert(characterData.INVENTORY_PHYSICAL, {id = inventory:get(i):getFullType()})
@@ -512,26 +456,26 @@ function CHARACTER:Save(shouldTransmit)
     characterData.INVENTORY_LOGICAL = self.inventory.items
 
     -- Save character equipment
-    characterData.EQUIPMENT_SLOT_HEAD = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_HEAD) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_HEAD):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_FACE = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_FACE) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_FACE):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_EARS = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_EARS) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_EARS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_BACKPACK = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_BACKPACK) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_BACKPACK):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_GLOVES = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_GLOVES) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_GLOVES):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_UNDERSHIRT = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_UNDERSHIRT) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_UNDERSHIRT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_OVERSHIRT = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_OVERSHIRT) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_OVERSHIRT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_VEST = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_VEST) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_VEST):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_BELT = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_BELT) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_BELT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_PANTS = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_PANTS) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_PANTS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_SOCKS = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_SOCKS) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_SOCKS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_SHOES = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_SHOES) and {id = self.isoPlayer:getWornItem(EQUIPMENT_SLOT_SHOES):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_HEAD = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_HEAD) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_HEAD):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_FACE = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_FACE) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_FACE):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_EARS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_EARS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_EARS):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_BACKPACK = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BACKPACK) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BACKPACK):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_GLOVES = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_GLOVES) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_GLOVES):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_UNDERSHIRT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_UNDERSHIRT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_UNDERSHIRT):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_OVERSHIRT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_OVERSHIRT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_OVERSHIRT):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_VEST = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_VEST) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_VEST):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_BELT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BELT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BELT):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_PANTS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_PANTS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_PANTS):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_SOCKS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SOCKS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SOCKS):getFullType()} or nil
+    characterData.EQUIPMENT_SLOT_SHOES = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SHOES) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SHOES):getFullType()} or nil
 
     -- Save character position/direction angle
-    characterData.POSITION_X = self.isoPlayer:getX()
-    characterData.POSITION_Y = self.isoPlayer:getY()
-    characterData.POSITION_Z = self.isoPlayer:getZ()
-    characterData.DIRECTION_ANGLE = self.isoPlayer:getDirectionAngle()
+    characterData.POSITION_X = self:GetIsoPlayer():getX()
+    characterData.POSITION_Y = self:GetIsoPlayer():getY()
+    characterData.POSITION_Z = self:GetIsoPlayer():getZ()
+    characterData.DIRECTION_ANGLE = self:GetIsoPlayer():getDirectionAngle()
 
-    local getStats = self.isoPlayer:getStats()
+    local getStats = self:GetIsoPlayer():getStats()
     characterData.STAT_HUNGER = getStats:getHunger()
     characterData.STAT_THIRST = getStats:getThirst()
     characterData.STAT_FATIGUE = getStats:getFatigue()
@@ -557,7 +501,7 @@ function CHARACTER:Save(shouldTransmit)
     player.Characters[self.id] = characterData
 
     if isClient() and shouldTransmit == true then
-        self.isoPlayer:transmitModData()
+        self:GetIsoPlayer():transmitModData()
     end
 
     return true
@@ -567,11 +511,11 @@ end
 function CHARACTER:Destroy()
     --[[
 	if isClient() then
-        sendClientCommand("FZ_CHAR", "destroy", {self.isoPlayer:getUsername()})
+        sendClientCommand("FZ_CHAR", "destroy", {self:GetIsoPlayer():getUsername()})
     end
 	--]]
-    
-    self.isoPlayer = nil
+
+    self.IsoPlayer = nil
 end
 
 --! \brief Initialize the default items for a character based on their faction. Called when FZ_CHAR mod data is first created.
@@ -585,186 +529,86 @@ function CHARACTER:InitializeDefaultItems()
     end
 end
 
---! \brief Validate the character's data.
---! \return \boolean Whether or not any of the character's new data was initialized.
-function CHARACTER:ValidateCharacterData()
-    local characterModData = self.isoPlayer:getModData()["FZ_CHAR"]
+function CHARACTER:GetAge() return self.Age end
+function CHARACTER:SetAge(age) self.Age = age end
 
-    if not characterModData then return false end
+function CHARACTER:GetBeardColor() return self.BeardColor end
+function CHARACTER:SetBeardColor(beardColor) self.BeardColor = beardColor end
 
-    local initializedNewData = false
+function CHARACTER:GetBeardStyle() return self.BeardStyle end
+function CHARACTER:SetBeardStyle(beardStyle) self.BeardStyle = beardStyle end
 
-    if not characterModData.name then
-        initializedNewData = true
-        characterModData.name = self.name or "Unknown"
-    end
+function CHARACTER:GetDescription() return self.Description end
+function CHARACTER:SetDescription(description) self.Description = description end
 
-    if not characterModData.description then
-        initializedNewData = true
-        characterModData.description = self.description or "No description available."
-    end
+function CHARACTER:GetEyeColor() return self.EyeColor end
+function CHARACTER:SetEyeColor(eyeColor) self.EyeColor = eyeColor end
 
-    if not characterModData.faction then
-        initializedNewData = true
-        characterModData.faction = self.faction or FACTION_CITIZEN
-    end
+function CHARACTER:GetFaction() return self.Faction end
+function CHARACTER:SetFaction(faction) self.Faction = faction end
 
-    if not characterModData.age then
-        initializedNewData = true
-        characterModData.age = self.age or 20
-    end
+function CHARACTER:GetHairColor() return self.HairColor end
+function CHARACTER:SetHairColor(hairColor) self.HairColor = hairColor end
 
-    if not characterModData.heightFeet then
-        initializedNewData = true
-        characterModData.heightFeet = self.heightFeet or 5
-    end
+function CHARACTER:GetHairStyle() return self.HairStyle end
+function CHARACTER:SetHairStyle(hairStyle) self.HairStyle = hairStyle end
 
-    if not characterModData.heightInches then
-        initializedNewData = true
-        characterModData.heightInches = self.heightInches or 10
-    end
+function CHARACTER:GetHeight() return self.Height end
+function CHARACTER:SetHeight(height) self.Height = height end
 
-    if not characterModData.eyeColor then
-        initializedNewData = true
-        characterModData.eyeColor = self.eyeColor or "Brown"
-    end
+function CHARACTER:GetID() return self.ID end
+function CHARACTER:SetID(id) self.ID = id end
 
-    if not characterModData.hairColor then
-        initializedNewData = true
-        characterModData.hairColor = self.hairColor or "Brown"
-    end
+function CHARACTER:GetInventory() return self.Inventory end
+function CHARACTER:SetInventory(inventory) self.Inventory = inventory end
 
-    if not characterModData.physique then
-        initializedNewData = true
-        characterModData.physique = self.physique or "Average"
-    end
+function CHARACTER:GetIsoPlayer() return self.IsoPlayer end
+function CHARACTER:SetIsoPlayer(isoPlayer) print("Failed to set IsoPlayer object to '" .. tostring(isoPlayer) .. "'. IsoPlayer is read-only and must be set upon object creation.") end
 
-    if not characterModData.weight then
-        initializedNewData = true
-        characterModData.weight = self.weight or "125"
-    end
+function CHARACTER:GetLogicalInventory() return self.LogicalInventory end
+function CHARACTER:SetLogicalInventory(logicalInventory) self.LogicalInventory = logicalInventory end
 
-    if not characterModData.inventory then
-        initializedNewData = true
-        characterModData.inventory = self.inventory or {}
-    end
+function CHARACTER:GetName() return self.Name end
+function CHARACTER:SetName(name) self.Name = name end
 
-    if not characterModData.upgrades then
-        initializedNewData = true
-        characterModData.upgrades = {}
-    end
+function CHARACTER:GetPhysicalInventory() return self.PhysicalInventory end
+function CHARACTER:SetPhysicalInventory(physicalInventory) self.PhysicalInventory = physicalInventory end
 
-    if not characterModData.recognizes then
-        initializedNewData = true
-        characterModData.recognizes = {}
-    end
+function CHARACTER:GetPhysique() return self.Physique end
+function CHARACTER:SetPhysique(physique) self.Physique = physique end
 
-    if isClient() then
-        self.isoPlayer:transmitModData()
-    end
+function CHARACTER:GetPlayer() return self.Player end
+function CHARACTER:SetPlayer(player) self.Player = player end
 
-    self.name = characterModData.name
-    self.description = characterModData.description
-    self.faction = characterModData.faction
-    self.age = characterModData.age
-    self.heightFeet = characterModData.heightFeet
-    self.heightInches = characterModData.heightInches
-    self.eyeColor = characterModData.eyeColor
-    self.hairColor = characterModData.hairColor
-    self.physique = characterModData.physique
-    self.upgrades = characterModData.upgrades
-    self.recognizes = characterModData.recognizes
+function CHARACTER:GetRecognizes() return self.Recognizes end
+function CHARACTER:SetRecognizes(recognizes) self.Recognizes = recognizes end
 
-    return initializedNewData
-end
+function CHARACTER:GetSkinColor() return self.SkinColor end
+function CHARACTER:SetSkinColor(skinColor) self.SkinColor = skinColor end
 
-function CHARACTER:GetFaction()
-    return self.faction
-end
+function CHARACTER:GetUID() return self.UID end
+function CHARACTER:SetUID(uid) self.UID = uid end
 
-function CHARACTER:GetIsoPlayer()
-    return self.isoPlayer
-end
+function CHARACTER:GetUsername() return self.Username end
+function CHARACTER:SetUsername(username) print("Failed to set username to: '" .. username .. "'. Username is read-only and must be set upon object creation.") end
+
+function CHARACTER:GetWeight() return self.Weight end
+function CHARACTER:SetWeight(weight) self.Weight = weight end
 
 function CHARACTER:GetSaveableData()
     return FrameworkZ.Foundation:ProcessSaveableData(self, {"isoPlayer"}, {"inventory"})
 end
 
---! \brief Set the age of the character.
---! \param age \integer The age of the character.
-function CHARACTER:SetAge(age)
-    self.age = age
-    self.isoPlayer:getModData()["FZ_CHAR"].age = age
-    self.isoPlayer:transmitModData()
+--[[ Note: Setup UID on Player object inside of stored Characters at Character
+function CHARACTER:SetUID(uid)
+    local player = FrameworkZ.Players:GetPlayerByID(self:GetUsername()) if not player then return false, "Could not find player by ID." end
 
-    --[[if isClient() then
-        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "age", age})
-    end--]]
+    self.uid = uid
+    player.Characters[self:GetID()].META_UID = uid
+
+    return true
 end
-
---! \brief Set the faction of the character.
---! \param faction \string The ID of the faction to set on the character.
-function CHARACTER:SetFaction(faction)
-    self.faction = faction
-    self.isoPlayer:getModData()["FZ_CHAR"].faction = faction
-    self.isoPlayer:transmitModData()
-    
-    --[[
-	if isClient() then
-        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "faction", faction})
-    end
-	--]]
-end
-
-function CHARACTER:GetName()
-    return self.name
-end
-
---! \brief Set the name of the character.
---! \param name \string The new name for the character.
-function CHARACTER:SetName(name)
-    self.name = name
-    self.isoPlayer:getModData()["FZ_CHAR"].name = name
-    self.isoPlayer:transmitModData()
-    
-	--[[
-    if isClient() then
-        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "name", name})
-    end
-	--]]
-end
-
-function CHARACTER:GetDescription()
-    return self.description
-end
-
---! \brief Set the description of the character.
---! \param description \string The description of the character's appearance.
-function CHARACTER:SetDescription(description)
-    self.description = description
-    self.isoPlayer:getModData()["FZ_CHAR"].description = description
-    self.isoPlayer:transmitModData()
-
-    --[[
-	if isClient() then
-        sendClientCommand("FZ_CHAR", "update", {self.isoPlayer:getUsername(), "description", description})
-    end
-	--]]
-end
-
-function CHARACTER:GetID()
-    return self.id
-end
-
-function CHARACTER:GetUID()
-    return self.uid
-end
-
---! \brief Get the character's inventory object.
---! \return \table The character's inventory object.
-function CHARACTER:GetInventory()
-    return FrameworkZ.Inventories:GetInventoryByID(self.inventoryID)
-end
+--]]
 
 --! \brief Give a character items by the specified amount.
 --! \param itemID \string The ID of the item to give.
@@ -787,7 +631,7 @@ end
 function CHARACTER:GiveItem(uniqueID)
     local inventory = self:GetInventory()
     if not inventory then return false, "Failed to find inventory." end
-    local instance, message = FrameworkZ.Items:CreateItem(uniqueID, self.isoPlayer)
+    local instance, message = FrameworkZ.Items:CreateItem(uniqueID, self:GetIsoPlayer())
     if not instance then return false, "Failed to create item: " .. message end
 
     inventory:AddItem(instance)
@@ -799,7 +643,7 @@ end
 --! \param uniqueID \string The unique ID of the item to take.
 --! \return \boolean \string Whether or not the item was successfully taken and the success or failure message.
 function CHARACTER:TakeItem(uniqueID)
-    local success, message = FrameworkZ.Items:RemoveItemInstanceByUniqueID(self.isoPlayer:getUsername(), uniqueID)
+    local success, message = FrameworkZ.Items:RemoveItemInstanceByUniqueID(self:GetIsoPlayer():getUsername(), uniqueID)
 
     if success then
         return true, "Successfully took " .. uniqueID .. "."
@@ -812,7 +656,7 @@ end
 --! \param instanceID \integer The instance ID of the item to take.
 --! \return \boolean \string Whether or not the item was successfully taken and the success or failure message.
 function CHARACTER:TakeItemByInstanceID(instanceID)
-    local success, message = FrameworkZ.Items:RemoveInstance(instanceID, self.isoPlayer:getUsername())
+    local success, message = FrameworkZ.Items:RemoveInstance(instanceID, self:GetIsoPlayer():getUsername())
 
     if success then
         return true, "Successfully took item with instance ID " .. instanceID .. "."
@@ -849,14 +693,74 @@ function CHARACTER:IsCombine()
     return false
 end
 
+function CHARACTER:AddRecognition(character, alias)
+    if not character then return false, "Character not supplied in parameters." end
+
+    if not self:GetRecognizes()[character:GetUID()] then
+        self:GetRecognizes()[character:GetUID()] = alias or character:GetName()
+        return true, "Successfully added character to recognition list."
+    end
+
+    return false, "Character already exists in recognition list."
+end
+
+function CHARACTER:GetRecognition(character)
+    if not character then return false, "Character not supplied in parameters." end
+
+    local recognizes = self:GetRecognizes()
+
+    if recognizes[character:GetUID()] then
+        return recognizes[character:GetUID()]
+    else
+        return character:GetDescription()
+    end
+end
+
 function CHARACTER:RecognizesCharacter(character)
     if not character then return false, "Character not supplied in parameters." end
 
-    if self.recognizes[character.username] then
+    if self:GetRecognizes()[character:GetUID()] then
         return true
     end
 
     return false
+end
+
+function CHARACTER:RestoreData()
+    local player = self:GetPlayer() if not player then return false, "Player not found." end
+    local characterData = player:GetCharacterDataByID(self:GetID()) if not characterData then return false, "Character data not found." end
+
+    self:SetAge(characterData.INFO_AGE)
+    self:SetBeardColor(characterData.INFO_BEARD_COLOR)
+    self:SetBeardStyle(characterData.INFO_BEARD_STYLE)
+    self:SetDescription(characterData.INFO_DESCRIPTION)
+    self:SetEyeColor(characterData.INFO_EYE_COLOR)
+    self:SetFaction(characterData.INFO_FACTION)
+    self:SetHairColor(characterData.INFO_HAIR_COLOR)
+    self:SetHairStyle(characterData.INFO_HAIR_STYLE)
+    self:SetHeight(characterData.INFO_HEIGHT)
+    self:SetID(characterData.META_ID)
+    self:SetLogicalInventory(characterData.INVENTORY_LOGICAL)
+    self:SetName(characterData.INFO_NAME)
+    self:SetPhysique(characterData.INFO_PHYSIQUE)
+    self:SetPhysicalInventory(characterData.INVENTORY_PHYSICAL)
+    self:SetRecognizes(characterData.META_RECOGNIZES or {})
+    self:SetSkinColor(characterData.INFO_SKIN_COLOR)
+    self:SetUID(characterData.META_UID)
+    self:SetWeight(characterData.INFO_WEIGHT)
+
+    return true, "Character data restored."
+end
+
+--! \brief Initialize a character.
+--! \return \string username
+function CHARACTER:Initialize()
+	if not self:GetIsoPlayer() then return false, "IsoPlayer not set." end
+
+    --self:GetInventory():Initialize()
+    local success, message = self:RestoreData() if not success then return false, "Failed to restore character data: " .. message end
+
+    return true, "Character initialized."
 end
 
 --! \brief Create a new character object.
@@ -864,21 +768,24 @@ end
 --! \param id \integer The character's ID from the player stored data.
 --! \param data \table (Optional) The character's data stored on the object.
 --! \return \table The new character object.
-function FrameworkZ.Characters:New(username, id, data)
-    if not username then return false end
+function FrameworkZ.Characters:New(isoPlayer, id)
+    if not isoPlayer then return false, "IsoPlayer is invalid." end
 
-    local object
+    local username = isoPlayer:getUsername()
+    local object = {
+        ID = id or -1,
+        Player = FrameworkZ.Players:GetPlayerByID(username),
+        IsoPlayer = isoPlayer,
+        Username = username,
+        Inventory = FrameworkZ.Inventories:New(username),
+        CustomData = {},
+        Recognizes = {}
+    }
 
-    if not data then
-        object = {
-            username = username,
-            id = id or -1
-        }
-    else
-        object = data
-        object.username = username
-        object.id = id or -1
-    end
+    if object.ID <= -1 then return false, "New character ID is invalid." end
+    if not object.Player then return false, "Player not found." end
+    if not object.Inventory then return false, "Inventory not found." end
+    if object.Player and not object.Player:GetCharacterDataByID(object.ID) then return false, "Player character data not found." end
 
     setmetatable(object, CHARACTER)
 
@@ -889,10 +796,49 @@ end
 --! \param username \string The player's username.
 --! \param character \table The character's object data.
 --! \return \string The username added to the list of characters.
-function FrameworkZ.Characters:Initialize(username, character)
-    self.List[username] = character
+function FrameworkZ.Characters:Initialize(isoPlayer, id)
+    local character, message = FrameworkZ.Characters:New(isoPlayer, id) if not character then return false, "Could not create new character object, " .. message end
+    local username = character:GetUsername()
+    local success, message2 = character:Initialize() if not success then return false, "Failed to initialize character object: " .. message2 end
 
-    return username
+    if not self:AddToList(username, character) then
+        return false, "Failed to add character to list."
+    end
+
+    if not self:AddToCache(character:GetUID(), character) then
+        self:RemoveFromList(username)
+        return false, "Failed to add character to cache."
+    end
+
+    return character
+end
+
+function FrameworkZ.Characters:AddToList(username, character)
+    if not username or not character then return false end
+
+    self.List[username] = character
+    return self.List[username]
+end
+
+function FrameworkZ.Characters:RemoveFromList(username)
+    if not username then return false end
+
+    self.List[username] = nil
+    return true
+end
+
+function FrameworkZ.Characters:AddToCache(uid, character)
+    if not uid or not character then return false end
+
+    self.Cache[uid] = character
+    return self.Cache[uid]
+end
+
+function FrameworkZ.Characters:RemoveFromCache(uid)
+    if not uid then return false end
+
+    self.Cache[uid] = nil
+    return true
 end
 
 --! \brief Gets the user's loaded character by their ID.
@@ -900,6 +846,12 @@ end
 --! \return \table The character object from the list of characters.
 function FrameworkZ.Characters:GetCharacterByID(username)
     local character = self.List[username] or nil
+
+    return character
+end
+
+function FrameworkZ.Characters:GetCharacterByUID(uid)
+    local character = self.Cache[uid] or nil
 
     return character
 end
@@ -941,10 +893,6 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
 
 function CHARACTER:OnPostLoad(firstLoad)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", self, firstLoad)
-
-    if firstLoad then
-        FrameworkZ.Characters:SetupUID(self:GetIsoPlayer(), self.id)
-    end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
 
@@ -964,18 +912,18 @@ function FrameworkZ.Characters:OnPostLoad(isoPlayer, characterData)
 
     character:OnPreLoad()
 
-    character.isoPlayer = isoPlayer
-    character.name = characterData.INFO_NAME
-    character.description = characterData.INFO_DESCRIPTION
-    character.faction = characterData.INFO_FACTION
-    character.age = characterData.INFO_AGE
-    character.heightInches = characterData.INFO_HEIGHT
-    character.eyeColor = characterData.INFO_EYE_COLOR
-    character.hairColor = characterData.INFO_HAIR_STYLE
-    character.skinColor = characterData.INFO_SKIN_COLOR
-    character.physique = characterData.INFO_PHYSIQUE
-    character.weight = characterData.INFO_WEIGHT
-    character.recognizes = {}
+    character.IsoPlayer = isoPlayer
+    character.Name = characterData.INFO_NAME
+    character.Description = characterData.INFO_DESCRIPTION
+    character.Faction = characterData.INFO_FACTION
+    character.Age = characterData.INFO_AGE
+    character.HeightInches = characterData.INFO_HEIGHT
+    character.EyeColor = characterData.INFO_EYE_COLOR
+    character.HairColor = characterData.INFO_HAIR_STYLE
+    character.SkinColor = characterData.INFO_SKIN_COLOR
+    character.Physique = characterData.INFO_PHYSIQUE
+    character.Weight = characterData.INFO_WEIGHT
+    character.Recognizes = {}
 
     local newInventory = FrameworkZ.Inventories:New(username)
     local _success, _message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(isoPlayer, newInventory, characterData.INVENTORY_LOGICAL or nil)
@@ -990,64 +938,10 @@ function FrameworkZ.Characters:OnPostLoad(isoPlayer, characterData)
     character:OnLoad()
 
     player.loadedCharacter = character
+    self.Cache[characterData.META_UID] = character
+    character:SetUID(characterData.META_UID)
 
     return character
-end
-
-if isServer() then
-    function FrameworkZ.Characters.GenerateUID(data, characterID)
-        local username = data.isoPlayer:getUsername()
-        local player = FrameworkZ.Players:GetPlayerByID(username)
-        local character = player and player:GetCharacter()
-        local characterData = player and player:GetCharacterByID(characterID)
-
-        if player and character and characterData and character.id == characterData.META_ID then
-            FrameworkZ.Characters.UIDs[username] = FrameworkZ.Characters.UIDs[username] or {}
-
-            local uid = username .. "_" .. FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
-
-            while FrameworkZ.Characters.UIDs[username][uid] do
-                uid = username .. "_" ..  FrameworkZ.Utilities:GetRandomNumber(1, 999999, true)
-            end
-
-            character.uid = uid
-            player.Characters[character.id].META_UID = uid
-
-            FrameworkZ.Characters.UIDs[username][uid] = true
-            ModData.add("FZ_CHAR_UIDS", FrameworkZ.Characters.UIDs)
-
-            return characterData.META_ID, uid
-        end
-
-        return false
-    end
-    FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.GenerateUID", FrameworkZ.Characters.GenerateUID)
-end
-
-function FrameworkZ.Characters:OnInitGlobalModData()
-    self.UIDs = ModData.getOrCreate("FZ_CHAR_UIDS")
-end
-
-function FrameworkZ.Characters:SetupUID(isoPlayer, characterID)
-    if not isoPlayer then return false end
-    local username = isoPlayer:getUsername()
-
-    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Characters.GenerateUID", function(data, checkedCharacterID, uid)
-        local player = FrameworkZ.Players:GetPlayerByID(username)
-        local character = player and player:GetCharacter()
-
-        if player and character and character.id == checkedCharacterID then
-            FrameworkZ.Characters.UIDs[username] = FrameworkZ.Characters.UIDs[username] or {}
-
-            character.uid = uid
-            player.Characters[character.id].META_UID = uid
-            FrameworkZ.Characters.UIDs[username][uid] = true
-
-            FrameworkZ.Notifications:AddToQueue("Character UID has been set to: " .. uid, FrameworkZ.Notifications.Types.Info)
-        else
-            FrameworkZ.Notifications:AddToQueue("Failed to setup character UID. Player switched character or potential issues(!).", FrameworkZ.Notifications.Types.Warning)
-        end
-    end, characterID)
 end
 
 if isClient() then
@@ -1183,40 +1077,22 @@ if isClient() then
     end
 end
 
-if isServer() then
+function FrameworkZ.Characters:OnStorageSet(isoPlayer, command, namespace, keys, value)
+    if namespace == "Characters" then
+        if command == "Initialize" then
+            local username = keys
+            local data = value
+            local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return end
 
-    --! \brief Initialize a character called by OnServerStarted event hook.
-    --! \param module \string
-    --! \param command \string
-    --! \param player \table Player object.
-    --! \param args \string
-    --[[function FrameworkZ.Characters.OnClientCommand(module, command, player, args)
-        if module == "FZ_CHAR" then
-            if command == "initialize" then
-                local username = args[1]
-                local character = FrameworkZ.Characters:New(username)
-
-                character.isoPlayer = player
-                character:Initialize()
-            elseif command == "destroy" then
-                local username = args[1]
-                local character = FrameworkZ.Characters:GetCharacterByID(username)
-
-                if character then
-                    character:Destroy()
-                end
-
-                FrameworkZ.Characters.List[username] = nil
-            elseif command == "update" then
-                local username = args[1]
-                local field = args[2]
-                local newData = args[3]
-
-                FrameworkZ.Characters.List[username][field] = newData
+            if data then
+                player:SetCharacters(data)
             end
         end
     end
-    Events.OnClientCommand.Add(FrameworkZ.Characters.OnClientCommand)--]]
+end
+
+function FrameworkZ.Characters:OnInitGlobalModData()
+    FrameworkZ.Foundation:RegisterNamespace("Characters")
 end
 
 FrameworkZ.Characters.MetaObject = CHARACTER

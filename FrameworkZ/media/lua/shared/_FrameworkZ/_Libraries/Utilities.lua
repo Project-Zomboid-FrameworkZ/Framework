@@ -1,8 +1,20 @@
+local IsoFlagType = IsoFlagType
+local select = select
+local unpack = unpack
+
 --! \brief Utility module for FrameworkZ. Contains utility functions and classes.
 --! \class FrameworkZ.Utility
 FrameworkZ.Utilities = {}
 FrameworkZ.Utilities.__index = FrameworkZ.Utilities
 FrameworkZ.Utilities = FrameworkZ.Foundation:NewModule(FrameworkZ.Utilities, "Utilities")
+
+function FrameworkZ.Utilities:Pack(...)
+    return {n = select("#", ...), ...}
+end
+
+function FrameworkZ.Utilities:Unpack(t)
+    return unpack(t, 1, t.n)
+end
 
 --! \brief Copies a table.
 --! \param originalTable \table The table to copy.
@@ -65,10 +77,27 @@ function FrameworkZ.Utilities:PrintTable(tbl)
     print(self:DumpTable(tbl))
 end
 
+function FrameworkZ.Utilities:TableIsEmpty(t)
+    if type(t) ~= "table" then
+        return false
+    end
+
+    local isEmpty = true
+
+    for _, _ in pairs(t) do
+        isEmpty = false
+        break
+    end
+
+    return isEmpty
+end
+
 function FrameworkZ.Utilities:TableContainsKey(t, key)
-    for k, v in pairs(t) do
-        if k == key then
-            return true
+    if t then
+        for k, _ in pairs(t) do
+            if k == key then
+                return true
+            end
         end
     end
 
@@ -76,9 +105,11 @@ function FrameworkZ.Utilities:TableContainsKey(t, key)
 end
 
 function FrameworkZ.Utilities:TableContainsValue(t, value)
-    for _, v in pairs(t) do
-        if v == value then
-            return true
+    if t then
+        for _, v in pairs(t) do
+            if v == value then
+                return true
+            end
         end
     end
 
@@ -198,4 +229,117 @@ function FrameworkZ.Utilities:GetRandomNumber(min, max, keepLeadingZeros)
     local maxDigits = math.max(#tostring(min), #tostring(max))
 
     return keepLeadingZeros and string.format("%0" .. maxDigits .. "d", ZombRandBetween(min, max)) or ZombRandBetween(min, max)
+end
+
+FrameworkZ.Utilities.Directions = {
+    { dx =  1, dy =  0, wallFlag = IsoFlagType.collideW, doorFlag = IsoFlagType.doorW, windowFlag = IsoFlagType.windowW },
+    { dx = -1, dy =  0, wallFlag = IsoFlagType.collideW, doorFlag = IsoFlagType.doorW, windowFlag = IsoFlagType.windowW },
+    { dx =  0, dy =  1, wallFlag = IsoFlagType.collideN, doorFlag = IsoFlagType.doorN, windowFlag = IsoFlagType.windowN },
+    { dx =  0, dy = -1, wallFlag = IsoFlagType.collideN, doorFlag = IsoFlagType.doorN, windowFlag = IsoFlagType.windowN },
+}
+
+function FrameworkZ.Utilities:IsExterior(square)
+    return not square or square:getRoom() == nil
+end
+
+function FrameworkZ.Utilities:IsTrulyInterior(square)
+    if not square then return false end
+    local room = square:getRoom()
+    if not room then return false end
+
+    local seen = {}
+    local queue = { square }
+    seen[square] = true
+
+    while #queue > 0 do
+        local currentSquare = table.remove(queue, 1)
+
+        for _, dir in ipairs(self.Directions) do
+            local nx, ny, nz = currentSquare:getX() + dir.dx, currentSquare:getY() + dir.dy, currentSquare:getZ()
+            local nextSquare = getCell():getGridSquare(nx, ny, nz)
+
+            if nextSquare and not seen[nextSquare] then
+                local blocked = nextSquare:Is(dir.wallFlag) or nextSquare:Is(dir.doorFlag) or nextSquare:Is(dir.windowFlag)
+
+                if not blocked then
+                    if not nextSquare:getRoom() then
+                        return false
+                    end
+
+                    if nextSquare:getRoom() == room then
+                        seen[nextSquare] = true
+                        table.insert(queue, nextSquare)
+                    end
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+function FrameworkZ.Utilities:IsSemiExterior(square)
+    if not square or not square:getRoom() then return false end
+    return not FrameworkZ.Utilities:IsTrulyInterior(square)
+end
+
+function FrameworkZ.Utilities:GetPrettyDuration(timeInSeconds)
+    local seconds = math.floor(tonumber(timeInSeconds) or 0)
+    local days = math.floor(seconds / 86400)
+    seconds = seconds % 86400
+    local hours = math.floor(seconds / 3600)
+    seconds = seconds % 3600
+    local minutes = math.floor(seconds / 60)
+    seconds = seconds % 60
+
+    local parts = {}
+
+    if days > 0 then
+        table.insert(parts, days .. (days == 1 and " day" or " days"))
+        if hours > 0 then
+            table.insert(parts, hours .. (hours == 1 and " hour" or " hours"))
+        end
+    elseif hours > 0 then
+        table.insert(parts, hours .. (hours == 1 and " hour" or " hours"))
+        if minutes > 0 then
+            table.insert(parts, minutes .. (minutes == 1 and " minute" or " minutes"))
+        end
+    elseif minutes > 0 then
+        table.insert(parts, minutes .. (minutes == 1 and " minute" or " minutes"))
+        if seconds > 0 then
+            table.insert(parts, seconds .. (seconds == 1 and " second" or " seconds"))
+        end
+    else
+        table.insert(parts, seconds .. (seconds == 1 and " second" or " seconds"))
+    end
+
+    return table.concat(parts, " and ")
+end
+
+--! \brief Trims a string to a maximum length, optionally adding ellipsis.
+--! \param str \string The string to trim.
+--! \param maxLength \int The maximum allowed length.
+--! \param addEllipsis \boolean (Optional) If true, appends "..." if trimmed.
+--! \return \string The trimmed string.
+function FrameworkZ.Utilities:TrimString(str, maxLength, addEllipsis)
+    if type(str) ~= "string" or type(maxLength) ~= "number" then
+        return str
+    end
+
+    if #str <= maxLength then
+        return str
+    end
+
+    if addEllipsis then
+        local ellipsis = "..."
+        if maxLength > #ellipsis then
+            local trimmed = string.sub(str, 1, maxLength - #ellipsis)
+            trimmed = trimmed:match("^(.-)%s*$")
+            return trimmed .. ellipsis
+        else
+            return string.sub(str, 1, maxLength)
+        end
+    else
+        return string.sub(str, 1, maxLength)
+    end
 end

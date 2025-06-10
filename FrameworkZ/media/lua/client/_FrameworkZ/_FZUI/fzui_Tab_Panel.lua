@@ -4,6 +4,7 @@ local PANEL_WIDTH = getCore():getScreenWidth() * 0.2
 local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
+local SLIDE_TIME = 0.25
 
 FrameworkZ.UI.TabPanel = ISPanel:derive("fzuiTabPanel")
 
@@ -42,12 +43,49 @@ function FrameworkZ.UI.TabPanel:initialise()
     self.textCloseButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, PANEL_HEIGHT - textHeight - PANEL_MARGIN_Y, "Close", self, FrameworkZ.UI.TabPanel.onMenuSelect)
     self.textCloseButton.internal = "CLOSE"
 
-    FrameworkZ.Timers:Create("TabPanelSlideOut", 0.01, 0, function()
-        if self:getX() < 0 then
-            self:setX(self:getX() + self:getWidth() * 0.1)
-        else
-            self:setX(0)
+    self:slideOut()
+end
+
+function FrameworkZ.UI.TabPanel:slideOut()
+    if not self:isVisible() then
+        self:setX(-PANEL_WIDTH)
+        self:setVisible(true)
+    end
+
+    FrameworkZ.Timers:Remove("TabPanelSlideOut")
+
+    FrameworkZ.Timers:Create("TabPanelSlideOut", 0, 0, function()
+        local fps = getAverageFPS() or 60
+        local dt = 1 / fps
+        local speed = PANEL_WIDTH / SLIDE_TIME
+        local dx = speed * dt
+
+        local newX = math.min(self:getX() + dx, 0)
+        self:setX(newX)
+
+        if newX >= 0 then
             FrameworkZ.Timers:Remove("TabPanelSlideOut")
+        end
+    end)
+end
+
+function FrameworkZ.UI.TabPanel:slideIn()
+    FrameworkZ.Timers:Remove("TabPanelSlideIn")
+
+    FrameworkZ.Timers:Create("TabPanelSlideIn", 0, 0, function()
+        local fps = getAverageFPS() or 60
+        local dt = 1 / fps
+        local speed = PANEL_WIDTH / SLIDE_TIME
+        local dx = speed * dt
+
+        local newX = math.max(self:getX() - dx, -PANEL_WIDTH)
+        self:setX(newX)
+
+        if newX <= -PANEL_WIDTH then
+            FrameworkZ.Timers:Remove("TabPanelSlideIn")
+            self:setVisible(false)
+            self:removeFromUIManager()
+            FrameworkZ.UI.TabPanel.instance = nil
         end
     end)
 end
@@ -65,26 +103,13 @@ function FrameworkZ.UI.TabPanel:update()
 end
 
 function FrameworkZ.UI.TabPanel:onClose()
-    if FrameworkZ.Timers:Exists("TabPanelSlideOut") then
-        FrameworkZ.Timers:Remove("TabPanelSlideOut")
-    end
+    FrameworkZ.Timers:Remove("TabPanelSlideOut")
 
     if FrameworkZ.UI.TabSession.instance then
         FrameworkZ.UI.TabSession.instance:onClose()
     end
 
-    FrameworkZ.Timers:Create("TabPanelSlideIn", 0.1, 0, function()
-        if self:getX() > -PANEL_WIDTH then
-            self:setX(self:getX() - self:getWidth() * 0.1)
-        else
-            FrameworkZ.Timers:Remove("TabPanelSlideIn")
-
-            self:setX(-PANEL_WIDTH)
-            self:setVisible(false)
-            self:removeFromUIManager()
-            FrameworkZ.UI.TabPanel.instance = nil
-        end
-    end)
+    self:slideIn()
 end
 
 function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
