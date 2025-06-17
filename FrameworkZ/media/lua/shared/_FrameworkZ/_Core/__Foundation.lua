@@ -112,24 +112,27 @@ FrameworkZ.Foundation.Events = {}
 --! \class FrameworkZ.Foundation.Modules
 FrameworkZ.Foundation.Modules = {}
 
---! \brief Create a new instance of the FrameworkZ Framework.
---! \return \table The new instance of the FrameworkZ Framework.
+--! \brief Create a new instance of the FrameworkZ framework.
+--! \return \table The new instance of the FrameworkZ framework.
 function FrameworkZ.Foundation.New()
     return FrameworkZ:CreateObject(FrameworkZ.Foundation, "Foundation")
 end
 
---! \brief Create a new module for the FrameworkZ Framework.
---! \param MODULE_TABLE \table The table to use as the module.
+--! \brief Create a new module for the FrameworkZ framework.
+--! \param moduleObject \object The object to use as the module.
 --! \param moduleName \string The name of the module.
---! \return \table The new module.
+--! \return \object The new module.
 function FrameworkZ.Foundation:NewModule(moduleObject, moduleName)
     local object = FrameworkZ:CreateObject(moduleObject, moduleName)
-    --local newObject = setmetatable(moduleObject, object)
+
     self.Modules[moduleName] = object
 
 	return object
 end
 
+--! \brief Get a module by name.
+--! \param moduleName \string The name of the module.
+--! \return \object The module object or \false if the module was not found.
 function FrameworkZ.Foundation:GetModule(moduleName)
     if not moduleName or moduleName == "" then return false, "No module name supplied." end
     if not self.Modules[moduleName] then return false, "Module not found." end
@@ -137,9 +140,9 @@ function FrameworkZ.Foundation:GetModule(moduleName)
     return self.Modules[moduleName]
 end
 
---! \brief Get the meta object stored on a module. Not every module will have a meta object. This is a very specific use case and is used for getting instantiable objects such as PLAYER objects or CHARACTER objects.
+--! \brief Get a module's meta object stored on a module. Not every module will have a meta object. This is a very specific use case and is used for getting instantiable objects such as PLAYER objects or CHARACTER objects.
 --! \param moduleName \string The name of the module.
---! \return \table The meta object stored on the module or \nil if nothing was found.
+--! \return \object The meta object stored on the module or false if nothing was found.
 function FrameworkZ.Foundation:GetModuleMetaObject(moduleName)
     local module, message = self:GetModule(moduleName)
     if not module then return false, message end
@@ -148,18 +151,21 @@ function FrameworkZ.Foundation:GetModuleMetaObject(moduleName)
     return module.MetaObject
 end
 
+--! \brief Register FrameworkZ. This is called after framework definition.
 function FrameworkZ.Foundation:RegisterFramework()
 	FrameworkZ.Foundation:RegisterFrameworkHandler()
     FrameworkZ:RegisterObject(self)
 end
 
+--! \brief Register a module for FrameworkZ. This is called after module definition.
+--! \param module \object The module to register.
 function FrameworkZ.Foundation:RegisterModule(module)
 	FrameworkZ.Foundation:RegisterModuleHandler(module)
     FrameworkZ:RegisterObject(module)
 end
 
---! \brief Get the version of the FrameworkZ Framework.
---! \return \string The version of the FrameworkZ Framework.
+--! \brief Get the version of FrameworkZ Foundation.
+--! \return \string The version of the FrameworkZ Foundation.
 function FrameworkZ.Foundation:GetVersion()
     return self.version
 end
@@ -180,16 +186,27 @@ FrameworkZ.Foundation = FrameworkZ.Foundation.New()
 
 --]]
 
+--! \brief The name of the networking module for commands in OnClientCommand and OnServerCommand. Not to be confused with a FrameworkZ module.
 FrameworkZ.Foundation.NetworksName = "FZ_NETWORKS"
+
+--! \brief Pending confirmations for network requests. This is used to track requests that are waiting for a response.
 FrameworkZ.Foundation.PendingConfirmations = {}
+
+--! \brief Subscribers for the network system. This is used to track subscribers for channels.
 FrameworkZ.Foundation.Subscribers = {}
+
+--! \brief Meta data for the subscribers. This is used to track when a channel was created and when it was last fired.
 FrameworkZ.Foundation.SubscribersMeta = {}
 
 --! \brief Generate a time-based unique request ID for network requests.
+--! \return \string A unique request ID based on the current timestamp and a random number.
 local function generateRequestID()
     return tostring(getTimestamp()) .. "-" .. tostring(ZombRand(100000, 999999))
 end
 
+--! \brief Convert a path to a string. This is used to convert a table path to a string path.
+--! \param path \string or \table The path to convert. If a string is supplied, it will be returned as is. If a table is supplied, it will be concatenated with dots.
+--! \return \string The string representation of the path.
 function FrameworkZ.Foundation:PathToString(path)
     if type(path) == "string" then
         return path
@@ -266,9 +283,9 @@ end
 
 --! \brief Subscribes to a key to listen for changes with the first three arguments supplied, or can be used for sending/receiving fire events with the first two arguments supplied.
 --! \param key \string The key to subscribe to. Use a \table to subscribe to nested values. \note Example key argument as a table: {"key", "subkey"} == _G["key"]["subkey"] or _G.key.subkey on lookup when subscribing.
---! \param id \mixed The \string ID of the function callback being added for key changes, or a \function callback for the client-server/server-client fire events.
---! \param callback \function (Optional) The callback to call when the key changes.
---! \return \function The callback that was added to the channel. Useful if an inline callback was supplied for the idOrCallback parameter when setting up a fire event.
+--! \param idOrCallback \string or \function The ID of the function callback being added, or the callback function itself. If a string is supplied, it will be used as the ID for the callback.
+--! \param maybeCallback \function The callback function to call when the key changes. This is optional if the first argument is a function.
+--! \return \function The callback function that was added. This can be used to unsubscribe later.
 function FrameworkZ.Foundation:Subscribe(key, idOrCallback, maybeCallback)
     local id, callback
 
@@ -324,6 +341,7 @@ end
 --! \brief Check if a subscription exists for a key. This will return true if the subscription exists, false otherwise.
 --! \param key \string The key to check for. Use a \table to check for nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
 --! \param id \string The ID of the function callback being checked.
+--! \return \boolean True if the subscription exists, false otherwise.
 function FrameworkZ.Foundation:HasSubscription(key, id)
     local channel = self:GetChannel(key)
 
@@ -334,6 +352,7 @@ end
 --! \param key \string The key to fire the callback for. Use a \table to fire the callback for nested values. \see FrameworkZ.Foundation::Subscribe for an example on how to supply a table as a key.
 --! \param data \table The standard data to pass to the callback. Generally contains diagnostic information.
 --! \param arguments \table The values to pass to the callback. This can be any type of values stored in the table.
+--! \return \table A table of return values from the callbacks. The keys are the IDs of the callbacks and the values are the return values from the callbacks.
 function FrameworkZ.Foundation:Fire(key, data, arguments)
     if not self:HasChannel(key) then
         print("[FZ] Warning: Received fire event for unknown ID: ", key)
@@ -430,6 +449,12 @@ function FrameworkZ.Foundation:SendSet(key, value, callback, callbackID, broadca
     return requestID
 end
 
+--! \brief Sends a fire event to the server or client. This is used to send events to subscribers.
+--! \param isoPlayer \object The player sending the fire event. If nil, the event will be fired but no confirmation will be sent back (send and forget).
+--! \param subscriptionID \string The ID of the subscription to fire. This is the key used to subscribe to the event. It's recommended to use a string matching your function's callback name in a unique way when adding a subscription.
+--! \param callback \function The callback to call when the server confirms the fire event. This is optional and can be nil if you don't need confirmation.
+--! \param ... \multiple Additional arguments of any amount to pass to the subscription. These can be any type of values except functions as they do not get networked.
+--! \return \string The request ID for the fire event. This can be used to track the request and get confirmation later.
 function FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, callback, ...)
     local playerID = isoPlayer and isoPlayer:getOnlineID() or nil
     local requestID = generateRequestID()
@@ -467,7 +492,11 @@ function FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, callback, ...
     return requestID
 end
 
-
+--! \brief Get a nested value from a table using a path. This is used to get values from nested tables.
+--! \param root \table The root table to get the value from.
+--! \param path \table The path to the value. This is a table of keys to traverse the nested tables.
+--! \return \mixed The value at the end of the path, or nil if the path does not exist.
+--! \note Example path argument: {"key", "subkey"} == root["key"]["subkey"]
 function FrameworkZ.Foundation:GetNestedValue(root, path)
     local current = root
 
@@ -479,6 +508,12 @@ function FrameworkZ.Foundation:GetNestedValue(root, path)
     return current
 end
 
+--! \brief Set a nested value in a table using a path. This is used to set values in nested tables.
+--! \param root \table The root table to set the value in.
+--! \param path \table The path to the value. This is a table of keys to traverse the nested tables.
+--! \param value \mixed The value to set at the end of the path.
+--! \return \mixed The value that was set at the end of the path.
+--! \note Example path argument: {"key", "subkey"} == root["key"]["subkey"] = value
 function FrameworkZ.Foundation:SetNestedValue(root, path, value)
     local current = root
 
@@ -496,6 +531,11 @@ end
 if isServer() then
 
     --! \brief Handles incoming commands from the client on the server.
+    --! \param module \string The name of the module that sent the command. This should match the NetworksName defined in FrameworkZ.Foundation.NetworksName.
+    --! \param command \string The command that was sent by the client.
+    --! \param isoPlayer \object The player that sent the command. This is the player object that sent the command.
+    --! \param arguments \table The arguments that were sent with the command. This contains the data needed to process the command.
+    --! \note This function is called on the server when a client sends a command to the server. It processes the command and sends a response back to the client using the networking system.
     function FrameworkZ.Foundation:OnClientCommand(module, command, isoPlayer, arguments)
         if module ~= self.NetworksName then return end
 
@@ -636,7 +676,12 @@ if isServer() then
 end
 
 if isClient() then
+    
     --! \brief Handles incoming commands from the server on the client.
+    --! \param module \string The name of the module that sent the command. This should match the NetworksName defined in FrameworkZ.Foundation.NetworksName.
+    --! \param command \string The command that was sent by the server.
+    --! \param arguments \table The arguments that were sent with the command. This contains the data needed to process the command.
+    --! \note This function is called on the client when the server sends a command to the client. It processes the command and sends a response back to the server using the networking system.
     function FrameworkZ.Foundation:OnServerCommand(module, command, arguments)
         if module ~= self.NetworksName then return end
 
@@ -745,6 +790,8 @@ if isClient() then
     end
 end
 
+--! \brief Cleans up pending confirmations that have not been confirmed within a timeout period.
+--! \param timeout \number The timeout in seconds to clean up pending confirmations. Default: 300 seconds (5 minutes).
 function FrameworkZ.Foundation:CleanupConfirmations(timeout)
     local now = getTimestamp()
 
@@ -756,6 +803,7 @@ function FrameworkZ.Foundation:CleanupConfirmations(timeout)
     end
 end
 
+--! TODO move to shared timer hook
 function FrameworkZ.Foundation:EveryDays()
     self:CleanupConfirmations(60 * 5) -- 5 minutes
 end
@@ -774,10 +822,19 @@ end
 
 --]]
 
+--! \brief Categories for framework hooks. HOOK_CATEGORY_FRAMEWORK = "framework"
 HOOK_CATEGORY_FRAMEWORK = "framework"
+
+--! \brief Categories for module hooks. HOOK_CATEGORY_MODULE = "module"
 HOOK_CATEGORY_MODULE = "module"
+
+--! \brief Categories for gamemode hooks. HOOK_CATEGORY_GAMEMODE = "gamemode"
 HOOK_CATEGORY_GAMEMODE = "gamemode"
+
+--! \brief Categories for plugin hooks. HOOK_CATEGORY_PLUGIN = "plugin"
 HOOK_CATEGORY_PLUGIN = "plugin"
+
+--! \brief Categories for generic hooks. HOOK_CATEGORY_GENERIC = "generic"
 HOOK_CATEGORY_GENERIC = "generic"
 
 FrameworkZ.Foundation.HookHandlers = {
@@ -795,6 +852,8 @@ FrameworkZ.Foundation.RegisteredHooks = {
     plugin = {},
     generic = {}
 }
+
+-- NOTE Last documented from here
 
 --! \brief Add a new hook handler to the list.
 --! \param hookName \string The name of the hook handler to add.
@@ -1085,10 +1144,7 @@ function FrameworkZ.Foundation.Events:EveryDays()
 end
 FrameworkZ.Foundation:AddAllHookHandlers("EveryDays")
 
-function FrameworkZ.Foundation.Events:LoadGridsquare(square)
-    self:ExecuteAllHooks("LoadGridsquare", square)
-end
-FrameworkZ.Foundation:AddAllHookHandlers("LoadGridsquare")
+-- The LoadGridSquare event is not defined for hook usage because of performance reasons.
 
 function FrameworkZ.Foundation.Events:OnClientCommand(module, command, isoPlayer, arguments)
     self:ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, arguments)
@@ -1336,9 +1392,15 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
 
     FrameworkZ.Foundation:RestoreData(isoPlayer, "RestoreData", "Characters", username, function(restored, charactersData)
         if restored then
+            local charactersStringOfIDs = ""
+
             player:SetCharacters(charactersData)
 
-            print("[FZ] Restored characters for '" .. username .. "'.")
+            for _, character in pairs(charactersData) do
+                charactersStringOfIDs = charactersStringOfIDs .. "#" .. character.META_ID .. ", "
+            end
+
+            print("[FZ] Restored characters for '" .. username .. "': " .. charactersStringOfIDs)
         else
             local characters = player:GetCharacters()
 
@@ -1378,15 +1440,24 @@ function FrameworkZ.Foundation:PostInitializeClient(isoPlayer)
     self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
 
     if isClient() then
-        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config.Options.InitializationDuration) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
+        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
     end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 
-function FrameworkZ.Foundation.TeleportToLimbo(data)
-    local isoPlayer = data.isoPlayer if not isoPlayer then return false end
-    local options = FrameworkZ.Config.Options
-    local x, y, z = options.LimboX, options.LimboY, options.LimboZ
+function FrameworkZ.Foundation.OnTeleportToLimbo(data)
+    local isoPlayer = data.isoPlayer
+
+    if not isoPlayer then print("[FZ] ERROR: Failed to teleport player to limbo, isoPlayer is nil.") return false end
+    if not FrameworkZ.Foundation:TeleportToLimbo(isoPlayer) then print("[FZ] ERROR: Failed to teleport player to limbo.") return false end
+
+    return true
+end
+
+function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+    if not isoPlayer then return false end
+
+    local x, y, z = FrameworkZ.Config:GetOption("LimboX"), FrameworkZ.Config:GetOption("LimboY"), FrameworkZ.Config:GetOption("LimboZ")
 
     isoPlayer:setX(x)
     isoPlayer:setY(y)
@@ -1826,6 +1897,8 @@ end
 
 -]]
 
+--! \brief Initializes the framework foundation.
+--! \note The LoadGridSquare event is not added to the hook system for performance reasons, as it is called very frequently.
 function FrameworkZ.Foundation:Initialize()
     local events = {}
 
@@ -1848,7 +1921,6 @@ function FrameworkZ.Foundation:Initialize()
     end
 
     events.EveryDays.Add(self.Events.EveryDays)
-    events.LoadGridsquare.Add(self.Events.LoadGridsquare)
     events.OnClientCommand.Add(self.Events.OnClientCommand)
     events.OnConnected.Add(self.Events.OnConnected)
     events.OnCreatePlayer.Add(self.Events.OnCreatePlayer)
@@ -1869,15 +1941,11 @@ function FrameworkZ.Foundation:Initialize()
     if isServer() then
         --self:Subscribe("FrameworkZ.Foundation.OnInitializeClient", self.OnInitializeClient)
         self:Subscribe("FrameworkZ.Foundation.OnGetData", self.OnGetData)
+        self:Subscribe("FrameworkZ.Foundation.OnInitializePlayer", self.OnInitializePlayer)
         self:Subscribe("FrameworkZ.Foundation.OnSetData", self.OnSetData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveData", self.OnSaveData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveNamespace", self.OnSaveNamespace)
-        self:Subscribe("FrameworkZ.Foundation.OnInitializePlayer", self.OnInitializePlayer)
-        self:Subscribe("FrameworkZ.Foundation.TeleportToLimbo", self.TeleportToLimbo)
-    end
-
-    if isServer() then
-        --self:Subscribe("FrameworkZ.Foundation.TeleportToLimbo", self.TeleportToLimbo)
+        self:Subscribe("FrameworkZ.Foundation.OnTeleportToLimbo", self.OnTeleportToLimbo)
     end
 end
 

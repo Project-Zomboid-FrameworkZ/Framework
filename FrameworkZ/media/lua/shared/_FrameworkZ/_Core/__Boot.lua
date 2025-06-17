@@ -136,7 +136,7 @@ FrameworkZ.Config.Options = {
     CharacterMinWeight = 80, -- Pounds
     CharacterMaxWeight = 300, -- Pounds
 
-    InitializationDuration = 1, --In seconds. Not recommended to set any lower than 1 second.
+    InitializationDuration = 3, --In seconds. Not recommended to set any lower than 3 second.
     ServerTickInterval = 1, -- In seconds. Increasing this may improve performance at the cost of responsiveness. Default: 1 second.
     TicksUntilServerSave = 180, -- In ticks, by the Server Tick Interval. Default: 1200 (20 minutes).
 

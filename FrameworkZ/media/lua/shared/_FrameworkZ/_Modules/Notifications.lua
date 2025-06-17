@@ -141,6 +141,10 @@ function FrameworkZ.Notifications:AddToQueue(message, notificationType, duration
 
     table.insert(self.Queue, notification)
 
+    if not self.isProcessing then
+        self.isProcessing = self:ProcessQueue(false)
+    end
+
     return notification
 end
 

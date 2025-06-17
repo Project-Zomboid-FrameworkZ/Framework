@@ -1,10 +1,6 @@
 FrameworkZ = FrameworkZ or {}
 FrameworkZ.Overrides = FrameworkZ.Foundation:GetModule("Overrides")
 
-require "ISUI/ISToolTipInv"
-require "OptionScreens/ConnectToServer"
-require "OptionScreens/MainScreen"
-
 function FrameworkZ.Overrides.onChatWindowInit()
     ISChat.instance:setVisible(false)
 end
@@ -36,17 +32,35 @@ ConnectToServer.OnConnected = function(self)
 end
 
 FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu = MainScreen.onMenuItemMouseDownMainMenu
-MainScreen.onMenuItemMouseDownMainMenu = function(item, x, y)
-    if item.internal == "EXIT" then
-        FrameworkZ.Players:Destroy(getPlayer():getUsername())
-    end
 
-    if item.internal == "QUIT_TO_DESKTOP" then
-        FrameworkZ.Players:Destroy(getPlayer():getUsername())
-    end
+function FrameworkZ.Overrides.onMenuItemMouseDownMainMenu(item, x, y)
+    local isoPlayer = getPlayer()
 
-    FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+    if item.internal == "EXIT" or item.internal == "QUIT_TO_DESKTOP" then
+        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, success)
+            FrameworkZ.Players:Destroy(isoPlayer:getUsername())
+
+            if success then
+                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+                print("[FZ] Player teleported to limbo. Disconnecting now...")
+            else
+                print("[FZ] Failed to teleport player to limbo. Disconnecting anyways...")
+            end
+
+            FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+        end)
+    else
+        FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+    end
 end
+
+function FrameworkZ.Overrides:OnGameStart()
+    MainScreen.onMenuItemMouseDownMainMenu = FrameworkZ.Overrides.onMenuItemMouseDownMainMenu
+
+    LoadMainScreenPanelInt(true)
+end
+Events.OnGameStart.Remove(LoadMainScreenPanelIngame)
+--Events.OnGameStart.Add(FrameworkZ.Overrides.OnGameStart)
 
 FrameworkZ.Overrides.ISToolTipInv_render = ISToolTipInv.render
 
