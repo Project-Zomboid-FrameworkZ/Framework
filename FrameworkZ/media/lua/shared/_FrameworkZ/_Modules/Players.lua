@@ -873,6 +873,7 @@ end
 function FrameworkZ.Players:DeleteCharacterByID(username, characterID)
 
 end
+
 function FrameworkZ.Players:OnInitGlobalModData(isNewGame)
     FrameworkZ.Foundation:RegisterNamespace("Players")
 end

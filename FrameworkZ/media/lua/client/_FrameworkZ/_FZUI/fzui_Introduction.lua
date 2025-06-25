@@ -18,7 +18,7 @@ function PFW_Introduction:initialise()
 
 	FrameworkZ.Timers:Create("FZ_INITIALIZATION", FrameworkZ.Config.Options.InitializationDuration, 1, function()
 		FrameworkZ.Timers:Create("FZ_INIT_TICK", 0.2, 0, function()
-			if not FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername()) then
+			if not FrameworkZ.Foundation.Initialized then
 				if self.currentTick == 0 then
 					self.initializing:setName("Initializing")
 					self.currentTick = 1

@@ -108,6 +108,7 @@ local function newFrameworkZ()
 end
 
 FrameworkZ = newFrameworkZ()
+FrameworkZ.Initialized = false
 FrameworkZ.Meta.Author = "RJ_RayJay"
 FrameworkZ.Meta.Description = "FrameworkZ Bootstrap"
 FrameworkZ.Meta.Version = "1.0.0"
@@ -327,6 +328,10 @@ end
 
 function FrameworkZ:GetObject(objectName)
     return lockedObjects[objectName]
+end
+
+function FrameworkZ:IsInitialized()
+    return self.__initialized or false
 end
 
 function FrameworkZ:InitializeObject()

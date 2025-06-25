@@ -1,3 +1,5 @@
+if not isClient() then return end
+
 local ISBaseTimedAction = ISBaseTimedAction
 local IsoFlagType = IsoFlagType
 

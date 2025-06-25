@@ -1280,7 +1280,18 @@ end
 
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
+    --self:IncludeFile("_FrameworkZ/_Libraries/DollarFormats.lua")
+
+
+
+
+
+
+
+
     if isClient() then
+        self.Initialized = false
+
         local isoPlayer = getPlayer()
         startTime = getTimestampMs()
 
@@ -1373,51 +1384,8 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
     if not isoPlayer then return false end
 
     local player = FrameworkZ.Players:Initialize(isoPlayer) if not player then return false end
-    local username = player:GetUsername()
     local options = FrameworkZ.Config.Options
     local x, y, z = options.LimboX, options.LimboY, options.LimboZ
-
-    FrameworkZ.Foundation:RestoreData(isoPlayer, "RestoreData", "Players", username, function(restored, playerData)
-        if restored then
-            player:RestoreData(playerData)
-            print("[FZ] Restored player for '" .. username .. "'.")
-        else
-            local saveableData = player:GetSaveableData()
-
-            FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players", username, saveableData)
-
-            print("[FZ] Created new player for '" .. username .. "'.")
-        end
-    end)
-
-    FrameworkZ.Foundation:RestoreData(isoPlayer, "RestoreData", "Characters", username, function(restored, charactersData)
-        if restored then
-            local charactersStringOfIDs = ""
-
-            player:SetCharacters(charactersData)
-
-            for _, character in pairs(charactersData) do
-                charactersStringOfIDs = charactersStringOfIDs .. "#" .. character.META_ID .. ", "
-            end
-
-            print("[FZ] Restored characters for '" .. username .. "': " .. charactersStringOfIDs)
-        else
-            local characters = player:GetCharacters()
-
-            FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Characters", username, characters)
-
-            print("[FZ] Created new characters field for '" .. username .. "'.")
-        end
-    end)
-
-    --[[
-    if isServer() then
-        local saveableData = player:GetSaveableData()
-
-        FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Players", username, saveableData)
-        FrameworkZ.Foundation:SetData(isoPlayer, "Initialize", "Characters", username, player:GetCharacters())
-    end
-    --]]
 
     isoPlayer:setX(x)
     isoPlayer:setY(y)
@@ -1426,21 +1394,75 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
     isoPlayer:setLy(y)
     isoPlayer:setLz(z)
 
-    FrameworkZ.Foundation:ExecuteModuleHooks("InitializeClient", isoPlayer)
-    FrameworkZ.Foundation:ExecuteGamemodeHooks("InitializeClient", isoPlayer)
-    FrameworkZ.Foundation:ExecutePluginHooks("InitializeClient", isoPlayer)
-    FrameworkZ.Foundation:ExecuteFrameworkHooks("PostInitializeClient", isoPlayer)
+    self:ExecuteModuleHooks("InitializeClient", isoPlayer)
+    self:ExecuteGamemodeHooks("InitializeClient", isoPlayer)
+    self:ExecutePluginHooks("InitializeClient", isoPlayer)
+
+    self:ExecuteFrameworkHooks("PostInitializeClient", player)
 
     return true
 end
 
-function FrameworkZ.Foundation:PostInitializeClient(isoPlayer)
-    self:ExecuteModuleHooks("PostInitializeClient", isoPlayer)
-    self:ExecuteGamemodeHooks("PostInitializeClient", isoPlayer)
-    self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
+if isServer() then
+    function FrameworkZ.Foundation.OnRestorePlayer(data, username)
+        FrameworkZ.Foundation:RestorePlayer(data.isoPlayer, username)
+    end
 
+    function FrameworkZ.Foundation:RestorePlayer(isoPlayer, username)
+        local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return end
+        local playerData = self:GetData(isoPlayer, "Players", username)
+        local charactersData = self:GetData(isoPlayer, "Charaters", username)
+
+        if playerData then
+            player:RestoreData(playerData)
+
+            if charactersData then
+                player:SetCharacters(charactersData)
+
+                return true, true
+            else
+                local characters = player:GetCharacters()
+                self:SetData(isoPlayer, "Characters", username, characters)
+
+                return true, false
+            end
+        else
+            local saveableData = player:GetSaveableData()
+            local characters = player:GetCharacters()
+
+            self:SetData(isoPlayer, "Players", username, saveableData)
+            self:SetData(isoPlayer, "Characters", username, characters)
+        end
+
+        return false, false
+    end
+end
+
+function FrameworkZ.Foundation:PostInitializeClient(player)
     if isClient() then
-        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
+        local isoPlayer = player:GetIsoPlayer()
+        local username = player:GetUsername()
+
+        self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnRestorePlayer", function(data, playerRestored, charactersRestored)
+            if playerRestored then
+                print("[FZ] Restored player for '" .. username .. "'.")
+            else
+                print("[FZ] Created new player for '" .. username .. "'.")
+            end
+
+            if charactersRestored then
+                print("[FZ] Restored characters for '" .. username .. "'.")
+            else
+                print("[FZ] Created new characters field for '" .. username .. "'.")
+            end
+
+            self:ExecuteModuleHooks("PostInitializeClient", isoPlayer)
+            self:ExecuteGamemodeHooks("PostInitializeClient", isoPlayer)
+            self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
+
+            FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
+            self.Initialized = true
+        end, username)
     end
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
@@ -1511,15 +1533,15 @@ function FrameworkZ.Foundation:GetLocalData(namespace, keys)
         if not keys then
             return ns
         elseif type(keys) == "string" then
-            return ns[keys] or false
+            return ns[keys] or "FZ ERROR CODE: 1"
         elseif type(keys) == "table" then
-            return self:GetNestedValue(ns, keys) or false
+            return self:GetNestedValue(ns, keys) or "FZ ERROR CODE: 1"
         end
     end
 
     print("[FZ] ERROR: Failed to get value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
 
-    return false
+    return "FZ ERROR CODE: 1"
 end
 
 function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
@@ -1562,28 +1584,26 @@ elseif isServer() then
     end
 end
 
-function FrameworkZ.Foundation.OnGetData(data, command, namespace, keys)
+function FrameworkZ.Foundation.OnGetData(data, namespace, keys, subscriptionID)
     if isServer() then
         local value = FrameworkZ.Foundation:GetLocalData(namespace, keys)
 
-        if value ~= false and command then
-            FrameworkZ.Foundation:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+        if value ~= false and subscriptionID then
+            FrameworkZ.Foundation:Fire(subscriptionID, data, FrameworkZ.Utilities:Pack(namespace, keys, value))
         end
 
         return value
     end
 end
 
-function FrameworkZ.Foundation.OnSetData(data, command, namespace, keys, value, broadcast)
+function FrameworkZ.Foundation.OnSetData(data, namespace, keys, value, subscriptionID, broadcast)
     if isServer() then
-        local isoPlayer = data.isoPlayer
-
         if not FrameworkZ.Foundation:SetLocalData(namespace, keys, value) then
             return false
         end
 
-        if command then
-            FrameworkZ.Foundation:ExecuteAllHooks("OnStorageSet", isoPlayer, command, namespace, keys, value)
+        if subscriptionID then
+            FrameworkZ.Foundation:Fire(subscriptionID, data, FrameworkZ.Utilities:Pack(namespace, keys, value))
         end
 
         -- Broadcast is handled here because the value should be managed before broadcasting [instead of in FrameworkZ.Foundation:Set()].
@@ -1601,37 +1621,51 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnStorageSet")
 --! \param isoPlayer \object (Optional) The player to get the value for. This is only used on the client to send a request to the server.
 --! \param namespace \string The namespace to get the value from.
 --! \param keys \string or \table The key(s) to get the value for. Supplying a table will do a lookup through all keys and get value at the last index.
---! \param storeLocally \boolean Whether to store the value locally on the client. This is only used on the client to store the value after getting it from the server.
---! \return \any (except \function) The value for the key in the namespace, or false if the namespace or key does not exist.
---! \note Client-side calls to this function are always defferred as a result of it requesting data from the server. This means that the value will not be available immediately and will be set in the namespace after the server responds. Use OBJECT:OnStorageGet() callback client-side to listen for changes to the value from the server.
-function FrameworkZ.Foundation:GetData(isoPlayer, command, namespace, keys)
+--! \param subscriptionID \string (Optional) A unique identifier for the subscription to be fired server-side after the value has been retrieved.
+--! \param callback \function (Optional) A callback function to call after the value is retrieved. This is only used on the client to handle the response from the server.
+--! \return \any (except \function) The value for the key in the namespace, or false if the namespace or key does not exist. Server-side only.
+--! \note If called on the client, the value may only be accessed in the callback immediately, or later after data has synchronized.
+function FrameworkZ.Foundation:GetData(isoPlayer, namespace, keys, subscriptionID, callback)
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnGetData", function(data, value)
-            if value == false then
+            if value == "FZ ERROR CODE: 1" then
                 print("[FZ] ERROR: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
                 return
             end
 
             self:SetLocalData(namespace, keys, value)
 
-            if command then
-                self:ExecuteAllHooks("OnStorageGet", data.isoPlayer, command, namespace, keys, value)
+            if callback then
+                callback(isoPlayer, namespace, keys, value)
             end
-        end, command, namespace, keys)
+        end, namespace, keys, subscriptionID)
     elseif isServer() then
-        return self:GetLocalData(namespace, keys)
+        local value = self:GetLocalData(namespace, keys)
+
+        if value == "FZ ERROR CODE: 1" then
+            print("[FZ] ERROR: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+            return false
+        end
+
+        if callback then
+            callback(isoPlayer, namespace, keys, value)
+        end
+
+        return value
     end
 end
 
 --! \brief Sets a value in a namespace and (optionally) broadcasts to all clients.
 --! \param isoPlayer \object (Optional when called server-side only) The player to set the value for. This is only used on the client to send a request to the server.
---! \param command \string (Optional when called server-side only) The command to run for setting the value in OBJECT:OnStorageSet() (handled server-sie). This is only used on the client to send a request to the server.
 --! \param namespace \string The namespace to set the value in.
 --! \param keys \string or \table The key(s) to set the value for. Supplying a table will do a lookup through all keys and set value at the last index.
 --! \param value \any (except \function) The value to set.
+--! \param subscriptionID \string (Optional) A unique identifier for the subscription to be fired server-side after the value has been set.
 --! \param broadcast \boolean (Optional) Whether or not to broadcast the value to all clients.
---! \note Use OBJECT:OnStorageSet() callback server-side to listen for changes to the value from the client. For security reasons, all values must be set server-side in a managed way.
-function FrameworkZ.Foundation:SetData(isoPlayer, command, namespace, keys, value, broadcast)
+--! \param callback \function (Optional) A callback function to call after the value is set. This is only used on the client to handle the response from the server.
+--! \return \boolean Whether or not the value was set successfully. Server-side only.
+--! \note If called on the client, the value may only be accessed in the callback immediately, or later after data has synchronized.
+function FrameworkZ.Foundation:SetData(isoPlayer, namespace, keys, value, subscriptionID, broadcast, callback)
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnSetData", function(data, success)
             if not success then
@@ -1641,12 +1675,23 @@ function FrameworkZ.Foundation:SetData(isoPlayer, command, namespace, keys, valu
 
             self:SetLocalData(namespace, keys, value)
 
-            if command then
-                self:ExecuteAllHooks("OnStorageSet", data.isoPlayer, command, namespace, keys, value)
+            if callback then
+                callback(isoPlayer, namespace, keys, value)
             end
-        end, command, namespace, keys, value, broadcast)
+        end, namespace, keys, value, subscriptionID, broadcast)
     elseif isServer() then
-        return self:SetLocalData(namespace, keys, value)
+        local success = self:SetLocalData(namespace, keys, value)
+
+        if not success then
+            print("[FZ] ERROR: Failed to set server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+            return false
+        end
+
+        if callback then
+            callback(isoPlayer, namespace, keys, value)
+        end
+
+        return success
     end
 end
 
@@ -1883,6 +1928,47 @@ function FrameworkZ.Foundation:ProcessSaveableData(object, ignoreList, encodeLis
     return saveableData
 end
 
+local function readRawFile(filename)
+    -- build the path relative to the mod root
+    local modID = "FrameworkZ"
+    local relPath = "media/lua/FrameworkZ/" .. filename
+
+    -- try to open it
+    local reader, err = getModFileReader(modID, relPath, false)
+    if not reader then
+        error(("FileLoader: could not open %q (%s)"):format(relPath, err or "unknown"))
+    end
+
+    -- read all lines
+    local lines = {}
+    while true do
+        local line = reader:readLine()
+        if not line then break end
+        lines[#lines+1] = line
+    end
+    reader:close()
+
+    return table.concat(lines, "\n")
+end
+
+-- FrameworkZ.Foundation:IncludeFile("test.lua")
+
+function FrameworkZ.Foundation:IncludeFile(filename, env)
+    local src = readRawFile(filename)
+    local chunk, err = loadstring(src, filename)
+    if not chunk then
+        error(("FileLoader: loadstring error in %q: %s"):format(filename, err))
+    end
+    if env then
+        setfenv(chunk, env)
+    end
+    return chunk()
+end
+
+function FrameworkZ.Foundation:IncludeDirectory(directoryPath)
+    
+end
+
 --[[ Finalization
 
 
@@ -1942,6 +2028,7 @@ function FrameworkZ.Foundation:Initialize()
         --self:Subscribe("FrameworkZ.Foundation.OnInitializeClient", self.OnInitializeClient)
         self:Subscribe("FrameworkZ.Foundation.OnGetData", self.OnGetData)
         self:Subscribe("FrameworkZ.Foundation.OnInitializePlayer", self.OnInitializePlayer)
+        self:Subscribe("FrameworkZ.Foundation.OnRestorePlayer", self.OnRestorePlayer)
         self:Subscribe("FrameworkZ.Foundation.OnSetData", self.OnSetData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveData", self.OnSaveData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveNamespace", self.OnSaveNamespace)
