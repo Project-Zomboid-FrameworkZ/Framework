@@ -1,10 +1,11 @@
-PFW_CharacterView = ISPanel:derive("PFW_CharacterView")
+FrameworkZ.UI.CharacterView = FrameworkZ.UI.CharacterView or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.CharacterView, "CharacterView")
 
 local FONT_HEIGHT_SMALL = getTextManager():getFontHeight(UIFont.Small)
 local FONT_HEIGHT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
 local FONT_HEIGHT_LARGE = getTextManager():getFontHeight(UIFont.Large)
 
-function PFW_CharacterView:initialise()
+function FrameworkZ.UI.CharacterView:initialise()
     ISPanel.initialise(self)
 
     if self.characterNameLabel then
@@ -39,7 +40,7 @@ function PFW_CharacterView:initialise()
     local previewHeight = self.height - self.characterNameLabel.height - descriptionHeight
     y = y + self.characterNameLabel.height + 4
 
-    self.characterPreview = PFW_CharacterPreview:new(0, y, self.width, previewHeight, "EventIdle", self.defaultDirection)
+    self.characterPreview = FrameworkZ.UI.CharacterPreview:new(0, y, self.width, previewHeight, "EventIdle", self.defaultDirection)
     self.characterPreview:initialise()
     self.characterPreview:removeChild(self.characterPreview.animCombo)
     self.characterPreview:setCharacter(self.isoPlayer)
@@ -81,13 +82,13 @@ function PFW_CharacterView:initialise()
     end
 end
 
-function PFW_CharacterView:render()
+function FrameworkZ.UI.CharacterView:render()
     ISPanel.prerender(self)
 
     -- Render the character preview and any other UI elements here
 end
 
-function PFW_CharacterView:updateAppearance()
+function FrameworkZ.UI.CharacterView:updateAppearance()
     local survivor = self.survivor
     local character = self.character
 
@@ -135,26 +136,26 @@ function PFW_CharacterView:updateAppearance()
     self.characterPreview:setSurvivorDesc(survivor)
 end
 
-function PFW_CharacterView:setCharacter(character)
+function FrameworkZ.UI.CharacterView:setCharacter(character)
     self.character = character
 end
 
-function PFW_CharacterView:setName(name)
+function FrameworkZ.UI.CharacterView:setName(name)
     self.name = name
 end
 
-function PFW_CharacterView:setDescription(description)
+function FrameworkZ.UI.CharacterView:setDescription(description)
     self.description = description
 end
 
-function PFW_CharacterView:reinitialize(character)
+function FrameworkZ.UI.CharacterView:reinitialize(character)
     self:setCharacter(character)
     self:setName(character.INFO_NAME)
     self:setDescription(character.INFO_DESCRIPTION)
     self:initialise()
 end
 
-function PFW_CharacterView:getDescriptionLines(description)
+function FrameworkZ.UI.CharacterView:getDescriptionLines(description)
     local lines = {}
     local line = ""
     local lineLength = 0
@@ -189,7 +190,7 @@ function PFW_CharacterView:getDescriptionLines(description)
     return lines
 end
 
-function PFW_CharacterView:new(x, y, width, height, isoPlayer, character, name, description, defaultDirection)
+function FrameworkZ.UI.CharacterView:new(x, y, width, height, isoPlayer, character, name, description, defaultDirection)
     local o = {}
 
 	o = ISPanel:new(x, y, width, height)
@@ -203,9 +204,9 @@ function PFW_CharacterView:new(x, y, width, height, isoPlayer, character, name, 
     o.name = name
     o.description = description
     o.defaultDirection = defaultDirection
-	PFW_CharacterView.instance = o
+	FrameworkZ.UI.CharacterView.instance = o
 
 	return o
 end
 
-return PFW_CharacterView
+return FrameworkZ.UI.CharacterView

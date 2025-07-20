@@ -1,3 +1,5 @@
+-- TODO rename module to something specific for UI steps and whatnot
+
 if not isClient() then return end
 
 FrameworkZ = FrameworkZ or {}

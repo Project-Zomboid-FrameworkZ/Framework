@@ -338,7 +338,7 @@ function FrameworkZ.Players:New(isoPlayer)
     local object = {
         IsoPlayer = isoPlayer,
         Username = isoPlayer:getUsername(),
-        steamID = isoPlayer:getSteamID(),
+        steamID = tostring(isoPlayer:getSteamID()),
         role = FrameworkZ.Players.Roles.User,
         LoadedCharacter = nil,
         maxCharacters = FrameworkZ.Config.Options.DefaultMaxCharacters,
@@ -359,17 +359,17 @@ function FrameworkZ.Players:Initialize(isoPlayer)
     player:Initialize()
 
     self.List[username] = player
-    self:StartPlayerTick(isoPlayer)
+    self:StartPlayerTick(player)
 
     return self.List[username]
 end
 
-function FrameworkZ.Players:StartPlayerTick(isoPlayer)
+function FrameworkZ.Players:StartPlayerTick(player)
     if not isClient() then return end
 
     -- TODO rename CHAR to PLAYER
-    FrameworkZ.Timers:Create("FZ_CHAR_TICK", FrameworkZ.Config.Options.PlayerTickInterval, 0, function()
-        FrameworkZ.Foundation:ExecuteAllHooks("PlayerTick", isoPlayer)
+    FrameworkZ.Timers:Create("FZ_PLY_TICK", FrameworkZ.Config.Options.PlayerTickInterval, 0, function()
+        FrameworkZ.Foundation:ExecuteAllHooks("PlayerTick", player)
     end)
 end
 
@@ -480,6 +480,10 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
         end
 
         characterData.META_UID = player:GenerateUID()
+
+        if isServer() then
+            FrameworkZ.Foundation:SetData(nil, "Characters", {username, characterData.META_ID}, characterData)
+        end
 
         return characterData.META_ID
     end
@@ -651,7 +655,7 @@ end
 function FrameworkZ.Players:LoadCharacterByID(username, characterID)
     local clientLoadCharacter = function(_data, success, message)
         if not success then
-            FrameworkZ.Notifications:AddToQueue("Failed to load character: " .. message, FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+            FrameworkZ.Notifications:AddToQueue("Failed to load character: " .. message, FrameworkZ.Notifications.Types.Danger, nil, FrameworkZ.UI.MainMenu.instance)
             return
         end
 
@@ -739,8 +743,8 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
             VoiceManager:playerSetMute(player:GetUsername())
         end
 
-        if isClient() and PFW_MainMenu.instance then
-            PFW_MainMenu.instance:onClose()
+        if isClient() and FrameworkZ.UI.MainMenu.instance then
+            FrameworkZ.UI.MainMenu.instance:onClose()
         end
 
         FrameworkZ.Timers:Simple(3, function()
@@ -778,7 +782,7 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
         local character = FrameworkZ.Characters.PostLoad({isoPlayer = isoPlayer}, characterData)
 
         if not character then
-            FrameworkZ.Notifications:AddToQueue("Failed to load character: Not found.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+            FrameworkZ.Notifications:AddToQueue("Failed to load character: Not found.", FrameworkZ.Notifications.Types.Danger, nil, FrameworkZ.UI.MainMenu.instance)
             return
         end
 
@@ -839,7 +843,7 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
             end
 
             if not self:SaveCharacter(username, characterData) then
-                FrameworkZ.Notifications:AddToQueue("Failed to load character: Not saved.", FrameworkZ.Notifications.Types.Danger, nil, PFW_MainMenu.instance)
+                FrameworkZ.Notifications:AddToQueue("Failed to load character: Not saved.", FrameworkZ.Notifications.Types.Danger, nil, FrameworkZ.UI.MainMenu.instance)
 
                 FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.TeleportToLimbo", function(success)
                     if success then
@@ -847,7 +851,7 @@ function FrameworkZ.Players:LoadCharacter(username, characterData, survivorDescr
                     end
                 end)
             else
-                PFW_MainMenu.instance:onClose()
+                FrameworkZ.UI.MainMenu.instance:onClose()
                 FrameworkZ.Notifications:AddToQueue("Loaded character in " .. tostring(string.format(" %.2f", (getTimestampMs() - loadCharacterStartTime) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success)
 
                 if characterData.META_FIRST_LOAD then

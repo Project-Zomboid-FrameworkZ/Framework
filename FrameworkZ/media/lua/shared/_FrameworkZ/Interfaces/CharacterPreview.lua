@@ -1,13 +1,10 @@
-FrameworkZ = FrameworkZ or {}
-
-require "ISUI/ISPanel"
-
-PFW_CharacterPreview = ISPanel:derive("PFW_CharacterPreview")
+FrameworkZ.UI.CharacterPreview = FrameworkZ.UI.CharacterPreview or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.CharacterPreview, "CharacterPreview")
 
 local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
 local FONT_HGT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
 
-function PFW_CharacterPreview:initialise()
+function FrameworkZ.UI.CharacterPreview:initialise()
     ISPanel.initialise(self)
 
     self.avatarBackgroundTexture = getTexture("media/ui/avatarBackground.png")
@@ -47,14 +44,14 @@ function PFW_CharacterPreview:initialise()
 	self.animCombo.selected = 1
 end
 
-function PFW_CharacterPreview:prerender()
+function FrameworkZ.UI.CharacterPreview:prerender()
     ISPanel.prerender(self)
 
 	self:drawRectBorder(self.avatarPanel.x - 2, self.avatarPanel.y - 2, self.avatarPanel.width + 4, self.avatarPanel.height + 4, 1, 0.3, 0.3, 0.3);
 	self:drawTextureScaled(self.avatarBackgroundTexture, self.avatarPanel.x, self.avatarPanel.y, self.avatarPanel.width, self.avatarPanel.height, 1, 1, 1, 1);
 end
 
-function PFW_CharacterPreview:onTurnChar(button, x, y)
+function FrameworkZ.UI.CharacterPreview:onTurnChar(button, x, y)
 	local direction = self.avatarPanel:getDirection()
 	if button.internal == "TURNCHARACTERLEFT" then
 		direction = IsoDirections.RotLeft(direction)
@@ -65,20 +62,20 @@ function PFW_CharacterPreview:onTurnChar(button, x, y)
 	end
 end
 
-function PFW_CharacterPreview:onAnimSelected(combo)
+function FrameworkZ.UI.CharacterPreview:onAnimSelected(combo)
 --	self.avatarPanel:setState(combo:getOptionData(combo.selected))
 	self.avatarPanel:reportEvent(combo:getOptionData(combo.selected))
 end
 
-function PFW_CharacterPreview:setCharacter(character)
+function FrameworkZ.UI.CharacterPreview:setCharacter(character)
 	self.avatarPanel:setCharacter(character)
 end
 
-function PFW_CharacterPreview:setSurvivorDesc(survivorDesc)
+function FrameworkZ.UI.CharacterPreview:setSurvivorDesc(survivorDesc)
 	self.avatarPanel:setSurvivorDesc(survivorDesc)
 end
 
-function PFW_CharacterPreview:new(x, y, width, height, defaultAnimation, defaultDirection)
+function FrameworkZ.UI.CharacterPreview:new(x, y, width, height, defaultAnimation, defaultDirection)
 	local o = ISPanel:new(x, y, width, height)
 
 	setmetatable(o, self)
@@ -93,4 +90,4 @@ function PFW_CharacterPreview:new(x, y, width, height, defaultAnimation, default
 	return o
 end
 
-return PFW_CharacterPreview
+return FrameworkZ.UI.CharacterPreview

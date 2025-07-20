@@ -1,6 +1,7 @@
-PFW_LoadCharacterMenu = ISPanel:derive("PFW_LoadCharacterMenu")
+FrameworkZ.UI.LoadCharacterMenu = FrameworkZ.UI.LoadCharacterMenu or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.LoadCharacterMenu, "LoadCharacterMenu")
 
-function PFW_LoadCharacterMenu:initialise()
+function FrameworkZ.UI.LoadCharacterMenu:initialise()
     ISPanel.initialise(self)
 
     local isoPlayer = self.player.isoPlayer
@@ -31,31 +32,31 @@ function PFW_LoadCharacterMenu:initialise()
     self.survivor = SurvivorFactory:CreateSurvivor(SurvivorType.Neutral, isFemale)
     self.survivor:setFemale(isFemale)
 
-    self.nextButton = ISButton:new(self.width - 30, transitionButtonY, 30, transitionButtonHeight, ">", self, PFW_LoadCharacterMenu.onNext)
+    self.nextButton = ISButton:new(self.width - 30, transitionButtonY, 30, transitionButtonHeight, ">", self, FrameworkZ.UI.LoadCharacterMenu.onNext)
     self.nextButton.font = UIFont.Large
     self.nextButton.internal = "NEXT"
     self.nextButton:initialise()
     self.nextButton:instantiate()
     self:addChild(self.nextButton)
 
-    self.previousButton = ISButton:new(0, transitionButtonY, 30, transitionButtonHeight, "<", self, PFW_LoadCharacterMenu.onPrevious)
+    self.previousButton = ISButton:new(0, transitionButtonY, 30, transitionButtonHeight, "<", self, FrameworkZ.UI.LoadCharacterMenu.onPrevious)
     self.previousButton.font = UIFont.Large
     self.previousButton.internal = "PREVIOUS"
     self.previousButton:initialise()
     self.previousButton:instantiate()
     self:addChild(self.previousButton)
 
-    self.leftCharacter = PFW_CharacterView:new(xLeft, yLeft, widthLeft, heightLeft, isoPlayer, self.characters[1], "", "", IsoDirections.SW)
+    self.leftCharacter = FrameworkZ.UI.CharacterView:new(xLeft, yLeft, widthLeft, heightLeft, isoPlayer, self.characters[1], "", "", IsoDirections.SW)
     self.leftCharacter:setVisible(false)
     self.leftCharacter:initialise()
     self:addChild(self.leftCharacter)
 
-    self.selectedCharacter = PFW_CharacterView:new(xSelected, ySelected, widthSelected, heightSelected, isoPlayer, self.characters[1], "", "", IsoDirections.S)
+    self.selectedCharacter = FrameworkZ.UI.CharacterView:new(xSelected, ySelected, widthSelected, heightSelected, isoPlayer, self.characters[1], "", "", IsoDirections.S)
     self.selectedCharacter:setVisible(false)
     self.selectedCharacter:initialise()
     self:addChild(self.selectedCharacter)
 
-    self.rightCharacter = PFW_CharacterView:new(xRight, yRight, widthRight, heightRight, isoPlayer, self.characters[1], "", "", IsoDirections.SE)
+    self.rightCharacter = FrameworkZ.UI.CharacterView:new(xRight, yRight, widthRight, heightRight, isoPlayer, self.characters[1], "", "", IsoDirections.SE)
     self.rightCharacter:setVisible(false)
     self.rightCharacter:initialise()
     self:addChild(self.rightCharacter)
@@ -117,7 +118,7 @@ function PFW_LoadCharacterMenu:initialise()
     end
 
     --[[
-    self.characterPreview = PFW_CharacterPreview:new(self.width / 2 - characterPreviewWidth / 2, self.height / 2 - characterPreviewHeight / 2, characterPreviewWidth, characterPreviewHeight, "EventIdle")
+    self.characterPreview = FrameworkZ.UI.CharacterPreview:new(self.width / 2 - characterPreviewWidth / 2, self.height / 2 - characterPreviewHeight / 2, characterPreviewWidth, characterPreviewHeight, "EventIdle")
     self.characterPreview:initialise()
     self.characterPreview:removeChild(self.characterPreview.animCombo)
     self.characterPreview:setCharacter(getPlayer())
@@ -126,17 +127,17 @@ function PFW_LoadCharacterMenu:initialise()
     --]]
 end
 
-function PFW_LoadCharacterMenu:onNext()
+function FrameworkZ.UI.LoadCharacterMenu:onNext()
     self.currentIndex = math.min(self.currentIndex + 1, #self.characters)
     self:updateCharacterPreview()
 end
 
-function PFW_LoadCharacterMenu:onPrevious()
+function FrameworkZ.UI.LoadCharacterMenu:onPrevious()
     self.currentIndex = math.max(self.currentIndex - 1, 1)
     self:updateCharacterPreview()
 end
 
-function PFW_LoadCharacterMenu:updateCharacterPreview()
+function FrameworkZ.UI.LoadCharacterMenu:updateCharacterPreview()
     self.selectedCharacter:setCharacter(self.characters[self.currentIndex])
     self.selectedCharacter:reinitialize(self.characters[self.currentIndex])
     self.selectedCharacter:setVisible(true)
@@ -158,13 +159,13 @@ function PFW_LoadCharacterMenu:updateCharacterPreview()
     end
 end
 
-function PFW_LoadCharacterMenu:render()
+function FrameworkZ.UI.LoadCharacterMenu:render()
     ISPanel.prerender(self)
 
     -- Render the character preview and any other UI elements here
 end
 
-function PFW_LoadCharacterMenu:new(x, y, width, height, player)
+function FrameworkZ.UI.LoadCharacterMenu:new(x, y, width, height, player)
     local o = {}
 
 	o = ISPanel:new(x, y, width, height)
@@ -174,9 +175,9 @@ function PFW_LoadCharacterMenu:new(x, y, width, height, player)
 	o.borderColor = {r=0, g=0, b=0, a=0}
 	o.moveWithMouse = false
 	o.player = player
-	PFW_LoadCharacterMenu.instance = o
+	FrameworkZ.UI.LoadCharacterMenu.instance = o
 
 	return o
 end
 
-return PFW_LoadCharacterMenu
+return FrameworkZ.UI.LoadCharacterMenu

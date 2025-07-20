@@ -116,7 +116,7 @@ FrameworkZ.Meta.Version = "1.0.0"
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
     SkipIntro = true,
-    Version = "9.7.3",
+    Version = "10.7.3",
     VersionType = "alpha",
 
     IntroFrameworkImage = "media/textures/fz.png",

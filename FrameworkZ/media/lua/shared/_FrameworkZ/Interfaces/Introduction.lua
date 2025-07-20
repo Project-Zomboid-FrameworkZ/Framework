@@ -1,8 +1,7 @@
-require "ISUI/ISPanel"
+FrameworkZ.UI.Introduction = FrameworkZ.UI.Introduction or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.Introduction, "Introduction")
 
-PFW_Introduction = ISPanel:derive("PFW_Introduction")
-
-function PFW_Introduction:initialise()
+function FrameworkZ.UI.Introduction:initialise()
     local emitter = self.playerObject:getEmitter()
 	self.vignetteTexture = getTexture("media/textures/vignette.png")
 	self.cfwTexture = getTexture(FrameworkZ.Config.Options.IntroFrameworkImage)
@@ -85,7 +84,7 @@ function PFW_Introduction:initialise()
 										FrameworkZ.Timers:Simple(0.1, function()
 											self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-											local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+											local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
 											characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 											characterSelect:initialise()
 											characterSelect:addToUIManager()
@@ -101,7 +100,7 @@ function PFW_Introduction:initialise()
 						end)
 					else
 						FrameworkZ.Timers:Remove("IntroTick")
-						local characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+						local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
 						characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 						characterSelect:initialise()
 						characterSelect:addToUIManager()
@@ -139,8 +138,8 @@ local function calculateWidthHeight(originalAspectRatio, width, height, changeVa
 end
 
 FrameworkZ.Timers:Create("IntroTick", 0.1, 0, function()
-	if PFW_Introduction.instance then
-		local instance = PFW_Introduction.instance
+	if FrameworkZ.UI.Introduction.instance then
+		local instance = FrameworkZ.UI.Introduction.instance
 
 		if instance.cfw then
 			if instance.cfw.shrinking == true and instance.cfw.scaledWidth / instance.cfw:getWidth() >= 0.95 then
@@ -190,11 +189,11 @@ FrameworkZ.Timers:Create("IntroTick", 0.1, 0, function()
 	end
 end)
 
-function PFW_Introduction:update()
+function FrameworkZ.UI.Introduction:update()
     ISPanel.update(self)
 end
 
-function PFW_Introduction:new(x, y, width, height, playerObject)
+function FrameworkZ.UI.Introduction:new(x, y, width, height, playerObject)
 	local o = {}
 
 	o = ISPanel:new(x, y, width, height)
@@ -204,9 +203,9 @@ function PFW_Introduction:new(x, y, width, height, playerObject)
 	o.borderColor = {r=0, g=0, b=0, a=1}
 	o.moveWithMouse = false
 	o.playerObject = playerObject
-	PFW_Introduction.instance = o
+	FrameworkZ.UI.Introduction.instance = o
 
 	return o
 end
 
-return PFW_Introduction
+return FrameworkZ.UI.Introduction

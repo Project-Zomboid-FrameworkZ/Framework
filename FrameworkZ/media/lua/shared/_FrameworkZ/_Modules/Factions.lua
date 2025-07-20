@@ -25,6 +25,10 @@ function FACTION:Initialize()
 	return FrameworkZ.Factions:Initialize(self.name, self)
 end
 
+function FACTION:GetColor()
+	return self.color
+end
+
 --! \brief Create a new faction object.
 --! \param name \string Faction name.
 --! \return \table The new faction object.
@@ -33,6 +37,7 @@ function FrameworkZ.Factions:New(name)
         id = name,
         name = name,
         description = "No description available.",
+        color = {r = 1, g = 1, b = 1, a = 1},
         limit = 0,
         members = {}
     }

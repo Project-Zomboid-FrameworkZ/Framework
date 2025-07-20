@@ -1,8 +1,7 @@
-require "ISUI/ISPanel"
+FrameworkZ.UI.Notification = FrameworkZ.UI.Notification or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.Notification, "Notification")
 
-PFW_Notification = ISPanel:derive("PFW_Notification")
-
-function PFW_Notification:initialise()
+function FrameworkZ.UI.Notification:initialise()
     self.uiHelper = FrameworkZ.UI
 
 	ISPanel.initialise(self)
@@ -27,7 +26,7 @@ function PFW_Notification:initialise()
     end)
 end
 
-function PFW_Notification:restartFadeOut()
+function FrameworkZ.UI.Notification:restartFadeOut()
     self.isExpiring = false
     self.hasExpired = false
     
@@ -40,7 +39,7 @@ function PFW_Notification:restartFadeOut()
     end)
 end
 
-function PFW_Notification:onMouseMove(x, y)
+function FrameworkZ.UI.Notification:onMouseMove(x, y)
     ISPanel.onMouseMove(self, x, y)
 
     if not self.hasEntered then
@@ -53,7 +52,7 @@ function PFW_Notification:onMouseMove(x, y)
     end
 end
 
-function PFW_Notification:onMouseMoveOutside(x, y)
+function FrameworkZ.UI.Notification:onMouseMoveOutside(x, y)
     ISPanel.onMouseMoveOutside(self, x, y)
 
     if self.hasEntered then
@@ -65,11 +64,11 @@ function PFW_Notification:onMouseMoveOutside(x, y)
     end
 end
 
-function PFW_Notification:update()
+function FrameworkZ.UI.Notification:update()
     ISPanel.update(self)
 end
 
-function PFW_Notification:new(type, text, duration, playerObject)
+function FrameworkZ.UI.Notification:new(type, text, duration, playerObject)
 	local padding = 10
     local margin = 10
     local textWidth = getTextManager():MeasureStringX(UIFont.Medium, text)
@@ -101,4 +100,4 @@ function PFW_Notification:new(type, text, duration, playerObject)
 	return o
 end
 
-return PFW_Notification
+return FrameworkZ.UI.Notification

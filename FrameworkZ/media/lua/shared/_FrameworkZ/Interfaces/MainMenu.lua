@@ -1,21 +1,19 @@
-require "ISUI/ISPanel"
-
-PFW_MainMenu = ISPanel:derive("PFW_MainMenu")
-
+FrameworkZ.UI.MainMenu = FrameworkZ.UI.MainMenu or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.MainMenu, "MainMenu")
 
 local mainMenuMusicVolume = 1.0
 local currentMainMenuSong = nil
 local nextLightning = 5
 
-function PFW_MainMenu:initialise()
+function FrameworkZ.UI.MainMenu:initialise()
     
     -- HL2RP LIGHTNING STUFF
     --[[
     FrameworkZ.Timers:Create("MainMenuTick", 1, 0, function()
-        if PFW_MainMenu.instance then
+        if FrameworkZ.UI.MainMenu.instance then
             if not FrameworkZ.Timers:Exists("NextLightning") then
                 FrameworkZ.Timers:Create("NextLightning", nextLightning, 1, function()
-                    local mainMenu = PFW_MainMenu.instance
+                    local mainMenu = FrameworkZ.UI.MainMenu.instance
                     mainMenu.shouldFlashLightning = true
                     mainMenu.hasFlashed1 = false
                     mainMenu.hasFlashed2 = false
@@ -62,13 +60,13 @@ function PFW_MainMenu:initialise()
     self.createCharacterSteps.onExitInitialMenu = self.onExitMainMenu
     self.createCharacterSteps:Initialize()
 
-    if PFW_MainMenu.customSteps then
-        PFW_MainMenu.customSteps()
+    if FrameworkZ.UI.MainMenu.customSteps then
+        FrameworkZ.UI.MainMenu.customSteps()
     else
-        self.createCharacterSteps:RegisterNextStep("MainMenu", "SelectFaction", self, PFW_CreateCharacterFaction, self.onEnterFactionMenu, self.onExitFactionMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("SelectFaction", "EnterInfo", PFW_CreateCharacterFaction, PFW_CreateCharacterInfo, self.onEnterInfoMenu, self.onExitInfoMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("EnterInfo", "CustomizeAppearance", PFW_CreateCharacterInfo, PFW_CreateCharacterAppearance, self.onEnterAppearanceMenu, self.onExitAppearanceMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("CustomizeAppearance", "MainMenu", PFW_CreateCharacterAppearance, self, self.onFinalizeCharacter, nil, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
+        self.createCharacterSteps:RegisterNextStep("MainMenu", "SelectFaction", self, FrameworkZ.UI.CreateCharacterFaction, self.onEnterFactionMenu, self.onExitFactionMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
+        self.createCharacterSteps:RegisterNextStep("SelectFaction", "EnterInfo", FrameworkZ.UI.CreateCharacterFaction, FrameworkZ.UI.CreateCharacterInfo, self.onEnterInfoMenu, self.onExitInfoMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
+        self.createCharacterSteps:RegisterNextStep("EnterInfo", "CustomizeAppearance", FrameworkZ.UI.CreateCharacterInfo, FrameworkZ.UI.CreateCharacterAppearance, self.onEnterAppearanceMenu, self.onExitAppearanceMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
+        self.createCharacterSteps:RegisterNextStep("CustomizeAppearance", "MainMenu", FrameworkZ.UI.CreateCharacterAppearance, self, self.onFinalizeCharacter, nil, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
     end
 
     self.titleY = self.uiHelper.GetHeight(UIFont.Title, title)
@@ -83,15 +81,15 @@ function PFW_MainMenu:initialise()
     self.createCharacterButton.font = UIFont.Large
     self:addChild(self.createCharacterButton)
 
-    self.loadCharacterButton = ISButton:new(middleX, middleY, 200, 50, loadCharacterLabel, self, PFW_MainMenu.onEnterLoadCharacterMenu)
+    self.loadCharacterButton = ISButton:new(middleX, middleY, 200, 50, loadCharacterLabel, self, FrameworkZ.UI.MainMenu.onEnterLoadCharacterMenu)
     self.loadCharacterButton.font = UIFont.Large
     self:addChild(self.loadCharacterButton)
 
-    self.disconnectButton = ISButton:new(middleX, middleY + 75, 200, 50, disconnectLabel, self, PFW_MainMenu.onDisconnect)
+    self.disconnectButton = ISButton:new(middleX, middleY + 75, 200, 50, disconnectLabel, self, FrameworkZ.UI.MainMenu.onDisconnect)
     self.disconnectButton.font = UIFont.Large
     self:addChild(self.disconnectButton)
 
-    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, PFW_MainMenu.onClose)
+    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, FrameworkZ.UI.MainMenu.onClose)
     self.closeButton.font = UIFont.Large
 
     if not FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
@@ -101,13 +99,13 @@ function PFW_MainMenu:initialise()
     self:addChild(self.closeButton)
 
     --[[
-    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, PFW_MainMenu.onClose)
+    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, FrameworkZ.UI.MainMenu.onClose)
     self.closeButton.font = UIFont.Large
     self:addChild(self.closeButton)
     --]]
 end
 
-function PFW_MainMenu:fadeOutMainMenuMusic()
+function FrameworkZ.UI.MainMenu:fadeOutMainMenuMusic()
     if self.emitter:isPlaying(currentMainMenuSong) then
         mainMenuMusicVolume = mainMenuMusicVolume - 0.002
         self.emitter:setVolume(currentMainMenuSong, mainMenuMusicVolume)
@@ -119,7 +117,7 @@ function PFW_MainMenu:fadeOutMainMenuMusic()
     end
 end
 
-function PFW_MainMenu:onClose()
+function FrameworkZ.UI.MainMenu:onClose()
     FrameworkZ.Timers:Create("FadeOutMainMenuMusic", 0.01, 0, function()
         self:fadeOutMainMenuMusic()
     end)
@@ -128,10 +126,10 @@ function PFW_MainMenu:onClose()
     self:removeFromUIManager()
 end
 
-function PFW_MainMenu:onEnterMainMenu()
-    PFW_CreateCharacterInfo.instance = nil
-    PFW_CreateCharacterFaction.instance = nil
-    PFW_CreateCharacterAppearance.instance = nil
+function FrameworkZ.UI.MainMenu:onEnterMainMenu()
+    FrameworkZ.UI.CreateCharacterInfo.instance = nil
+    FrameworkZ.UI.CreateCharacterFaction.instance = nil
+    FrameworkZ.UI.CreateCharacterAppearance.instance = nil
 
     self.createCharacterButton:setVisible(true)
     self.loadCharacterButton:setVisible(true)
@@ -142,7 +140,7 @@ function PFW_MainMenu:onEnterMainMenu()
     end
 end
 
-function PFW_MainMenu:onExitMainMenu()
+function FrameworkZ.UI.MainMenu:onExitMainMenu()
     local maxCharacters = 1
     local currentCharacters = 0
 
@@ -161,7 +159,7 @@ function PFW_MainMenu:onExitMainMenu()
     end
 end
 
-function PFW_MainMenu:showStepControls(menu, backButtonIndex, backButton, backButtonText, forwardButtonIndex, forwardButton, forwardButtonText)
+function FrameworkZ.UI.MainMenu:showStepControls(menu, backButtonIndex, backButton, backButtonText, forwardButtonIndex, forwardButton, forwardButtonText)
     if not backButton then
         local width = 200
         local height = 50
@@ -189,7 +187,7 @@ function PFW_MainMenu:showStepControls(menu, backButtonIndex, backButton, backBu
     end
 end
 
-function PFW_MainMenu:hideStepControls(backButton, forwardButton)
+function FrameworkZ.UI.MainMenu:hideStepControls(backButton, forwardButton)
     if backButton then
         backButton:setVisible(false)
     end
@@ -199,22 +197,22 @@ function PFW_MainMenu:hideStepControls(backButton, forwardButton)
     end
 end
 
-function PFW_MainMenu:onEnterFactionMenu(menu)
+function FrameworkZ.UI.MainMenu:onEnterFactionMenu(menu)
     self:showStepControls(menu, "returnToMainMenu", self.returnToMainMenu, "< Main Menu (Cancel)", "enterInfoForward", self.enterInfoForward, "Info >")
 end
 
-function PFW_MainMenu:onExitFactionMenu(menu)
+function FrameworkZ.UI.MainMenu:onExitFactionMenu(menu)
     self:hideStepControls(self.returnToMainMenu, self.enterInfoForward)
 
     return true
 end
 
-function PFW_MainMenu:onEnterInfoMenu(menu)
+function FrameworkZ.UI.MainMenu:onEnterInfoMenu(menu)
     self:showStepControls(menu, "selectFaction", self.selectFaction, "< Faction", "customizeAppearance", self.customizeAppearance, "Appearance >")
 end
 
-function PFW_MainMenu:onExitInfoMenu(menu, isForward)
-    local infoInstance = PFW_CreateCharacterInfo.instance
+function FrameworkZ.UI.MainMenu:onExitInfoMenu(menu, isForward)
+    local infoInstance = FrameworkZ.UI.CreateCharacterInfo.instance
     local name = infoInstance.nameEntry:getText()
     local description = infoInstance.descriptionEntry:getText()
     local warningMessage = ""
@@ -241,37 +239,37 @@ function PFW_MainMenu:onExitInfoMenu(menu, isForward)
     return true
 end
 
-function PFW_MainMenu:onEnterAppearanceMenu(menu)
-    menu.faction = PFW_CreateCharacterFaction.instance.faction
-    menu.gender = PFW_CreateCharacterInfo.instance.gender
-    menu.skinColor = PFW_CreateCharacterInfo.instance.skinColorDropdown:getOptionData(PFW_CreateCharacterInfo.instance.skinColorDropdown.selected)
-    menu.hairColor = PFW_CreateCharacterInfo.instance.hairColorDropdown:getOptionData(PFW_CreateCharacterInfo.instance.hairColorDropdown.selected)
+function FrameworkZ.UI.MainMenu:onEnterAppearanceMenu(menu)
+    menu.faction = FrameworkZ.UI.CreateCharacterFaction.instance.faction
+    menu.gender = FrameworkZ.UI.CreateCharacterInfo.instance.gender
+    menu.skinColor = FrameworkZ.UI.CreateCharacterInfo.instance.skinColorDropdown:getOptionData(FrameworkZ.UI.CreateCharacterInfo.instance.skinColorDropdown.selected)
+    menu.hairColor = FrameworkZ.UI.CreateCharacterInfo.instance.hairColorDropdown:getOptionData(FrameworkZ.UI.CreateCharacterInfo.instance.hairColorDropdown.selected)
 
-    PFW_CreateCharacterAppearance.instance.skinColor = menu.skinColor
-    PFW_CreateCharacterAppearance.instance.hairColor = menu.hairColor
+    FrameworkZ.UI.CreateCharacterAppearance.instance.skinColor = menu.skinColor
+    FrameworkZ.UI.CreateCharacterAppearance.instance.hairColor = menu.hairColor
 
-    PFW_CreateCharacterAppearance.instance:resetGender(menu.gender)
-    PFW_CreateCharacterAppearance.instance:resetHairColor()
-    PFW_CreateCharacterAppearance.instance:resetHairStyles()
-    PFW_CreateCharacterAppearance.instance:resetBeardStyles()
-    PFW_CreateCharacterAppearance.instance:resetSkinColor()
-    PFW_CreateCharacterAppearance.instance.wasGenderUpdated = false
+    FrameworkZ.UI.CreateCharacterAppearance.instance:resetGender(menu.gender)
+    FrameworkZ.UI.CreateCharacterAppearance.instance:resetHairColor()
+    FrameworkZ.UI.CreateCharacterAppearance.instance:resetHairStyles()
+    FrameworkZ.UI.CreateCharacterAppearance.instance:resetBeardStyles()
+    FrameworkZ.UI.CreateCharacterAppearance.instance:resetSkinColor()
+    FrameworkZ.UI.CreateCharacterAppearance.instance.wasGenderUpdated = false
 
     self:showStepControls(menu, "enterInfoBack", self.enterInfoBack, "< Info", "finalizeCharacter", self.finalizeCharacter, "Finalize >")
 end
 
-function PFW_MainMenu:onExitAppearanceMenu(menu)
+function FrameworkZ.UI.MainMenu:onExitAppearanceMenu(menu)
     self:hideStepControls(self.enterInfoBack, self.finalizeCharacter)
 
     return true
 end
 
-function PFW_MainMenu:onFinalizeCharacter(menu)
+function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
     self:hideStepControls(self.enterInfoBack, self.finalizeCharacter)
 
-    local infoInstance = PFW_CreateCharacterInfo.instance
-    local factionInstance = PFW_CreateCharacterFaction.instance
-    local appearanceInstance = PFW_CreateCharacterAppearance.instance
+    local infoInstance = FrameworkZ.UI.CreateCharacterInfo.instance
+    local factionInstance = FrameworkZ.UI.CreateCharacterFaction.instance
+    local appearanceInstance = FrameworkZ.UI.CreateCharacterAppearance.instance
 
     local faction = factionInstance.faction
     local gender = infoInstance.genderDropdown:getSelectedText()
@@ -353,7 +351,7 @@ function PFW_MainMenu:onFinalizeCharacter(menu)
     return true
 end
 
-function PFW_MainMenu:onEnterLoadCharacterMenu()
+function FrameworkZ.UI.MainMenu:onEnterLoadCharacterMenu()
     local player = FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername())
 
     if not player then
@@ -374,7 +372,7 @@ function PFW_MainMenu:onEnterLoadCharacterMenu()
         local x = self.width / 2 - width / 2
         local y = self.height / 2 - height / 2
 
-        self.loadCharacterMenu = PFW_LoadCharacterMenu:new(x, y, width, height, player)
+        self.loadCharacterMenu = FrameworkZ.UI.LoadCharacterMenu:new(x, y, width, height, player)
         self.loadCharacterMenu:initialise()
         self:addChild(self.loadCharacterMenu)
     else
@@ -410,7 +408,7 @@ function PFW_MainMenu:onEnterLoadCharacterMenu()
     --self.loadCharacterMenu:addToUIManager()
 end
 
-function PFW_MainMenu:onEnterMainMenuFromLoadCharacterMenu()
+function FrameworkZ.UI.MainMenu:onEnterMainMenuFromLoadCharacterMenu()
     self.loadCharacterBackButton:setVisible(false)
     self.loadCharacterForwardButton:setVisible(false)
     self.loadCharacterMenu:setVisible(false)
@@ -418,7 +416,7 @@ function PFW_MainMenu:onEnterMainMenuFromLoadCharacterMenu()
     self:onEnterMainMenu()
 end
 
-function PFW_MainMenu:onLoadCharacter()
+function FrameworkZ.UI.MainMenu:onLoadCharacter()
     local characterID = self.loadCharacterMenu.currentIndex
     FrameworkZ.Players:LoadCharacterByID(self.playerObject:getUsername(), characterID)
 
@@ -439,13 +437,13 @@ function PFW_MainMenu:onLoadCharacter()
     --]]
 end
 
-function PFW_MainMenu:onDisconnect()
+function FrameworkZ.UI.MainMenu:onDisconnect()
     self:setVisible(false)
     self:removeFromUIManager()
 	getCore():exitToMenu()
 end
 
-function PFW_MainMenu:prerender()
+function FrameworkZ.UI.MainMenu:prerender()
     ISPanel.prerender(self)
 
     -- HL2RP LIGHTNING STUFF
@@ -478,18 +476,18 @@ function PFW_MainMenu:prerender()
     end
     --]]
 
-    self:drawTextureScaled(getTexture(FrameworkZ.Config.Options.MainMenuImage), 0, 0, self.width, self.height, self.backgroundImageOpacity, 1, 1, 1)
+    self:drawTextureScaled(getTexture(FrameworkZ.Config:GetOption("MainMenuImage")), 0, 0, self.width, self.height, self.backgroundImageOpacity, 1, 1, 1)
 end
 
-function PFW_MainMenu:update()
+function FrameworkZ.UI.MainMenu:update()
     ISPanel.update(self)
 
     if not self.emitter:isPlaying(currentMainMenuSong) then
-        currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.Options.MainMenuMusic, nil)
+        currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config:GetOption("MainMenuMusic"), nil)
     end
 end
 
-function PFW_MainMenu:new(x, y, width, height, playerObject)
+function FrameworkZ.UI.MainMenu:new(x, y, width, height, playerObject)
 	local o = {}
 
 	o = ISPanel:new(x, y, width, height)
@@ -500,9 +498,9 @@ function PFW_MainMenu:new(x, y, width, height, playerObject)
 	o.borderColor = {r=0, g=0, b=0, a=0}
 	o.moveWithMouse = false
 	o.playerObject = playerObject
-	PFW_MainMenu.instance = o
+	FrameworkZ.UI.MainMenu.instance = o
 
 	return o
 end
 
-return PFW_MainMenu
+return FrameworkZ.UI.MainMenu

@@ -1,9 +1,7 @@
-FrameworkZ = FrameworkZ or {}
-FrameworkZ.UI.TabMenu = ISPanel:derive("fzuiTabMenu")
+FrameworkZ.UI.TabMenu = FrameworkZ.UI.TabMenu or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabMenu, "TabMenu")
 
 local getTexture = getTexture
-local ISButton = ISButton
-local ISPanel = ISPanel
 
 function FrameworkZ.UI.TabMenu:initialise()
     ISPanel.initialise(self)

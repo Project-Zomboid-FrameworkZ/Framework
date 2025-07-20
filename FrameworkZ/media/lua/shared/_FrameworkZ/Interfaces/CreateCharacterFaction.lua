@@ -1,10 +1,7 @@
-FrameworkZ = FrameworkZ or {}
+FrameworkZ.UI.CreateCharacterFaction = FrameworkZ.UI.CreateCharacterFaction or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.CreateCharacterFaction, "CreateCharacterFaction")
 
-require "ISUI/ISPanel"
-
-PFW_CreateCharacterFaction = ISPanel:derive("PFW_CreateCharacterFaction")
-
-function PFW_CreateCharacterFaction:initialise()
+function FrameworkZ.UI.CreateCharacterFaction:initialise()
     ISPanel.initialise(self)
 
     self.uiHelper = FrameworkZ.UI
@@ -75,7 +72,7 @@ function PFW_CreateCharacterFaction:initialise()
     self:addChild(self.factionDescription)
 end
 
-function PFW_CreateCharacterFaction:onFactionSelected(dropdown)
+function FrameworkZ.UI.CreateCharacterFaction:onFactionSelected(dropdown)
     local factionID = dropdown:getOptionData(dropdown.selected)
     local faction = FrameworkZ.Factions:GetFactionByID(factionID)
 
@@ -89,15 +86,15 @@ function PFW_CreateCharacterFaction:onFactionSelected(dropdown)
     end
 end
 
-function PFW_CreateCharacterFaction:render()
+function FrameworkZ.UI.CreateCharacterFaction:render()
     ISPanel.render(self)
 end
 
-function PFW_CreateCharacterFaction:update()
+function FrameworkZ.UI.CreateCharacterFaction:update()
     ISPanel.update(self)
 end
 
-function PFW_CreateCharacterFaction:new(parameters)
+function FrameworkZ.UI.CreateCharacterFaction:new(parameters)
 	local o = {}
 
 	o = ISPanel:new(parameters.x, parameters.y, parameters.width, parameters.height)
@@ -108,9 +105,9 @@ function PFW_CreateCharacterFaction:new(parameters)
 	o.moveWithMouse = false
 	o.playerObject = parameters.playerObject
     o.faction = ""
-	PFW_CreateCharacterFaction.instance = o
+	FrameworkZ.UI.CreateCharacterFaction.instance = o
 
 	return o
 end
 
-return PFW_CreateCharacterFaction
+return FrameworkZ.UI.CreateCharacterFaction

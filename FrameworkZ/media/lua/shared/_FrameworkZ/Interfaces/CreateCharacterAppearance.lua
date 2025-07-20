@@ -1,12 +1,9 @@
-FrameworkZ = FrameworkZ or {}
-
-require "ISUI/ISPanel"
-
-PFW_CreateCharacterAppearance = ISPanel:derive("PFW_CreateCharacterAppearance")
+FrameworkZ.UI.CreateCharacterAppearance = FrameworkZ.UI.CreateCharacterAppearance or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.CreateCharacterAppearance, "CreateCharacterAppearance")
 
 local yOffset = 0
 
-function PFW_CreateCharacterAppearance:initialise()
+function FrameworkZ.UI.CreateCharacterAppearance:initialise()
     ISPanel.initialise(self)
 
     local isFemale = (self.gender == "Female" and true) or (self.gender == "Male" and false)
@@ -53,7 +50,7 @@ function PFW_CreateCharacterAppearance:initialise()
 
     yOffset = yOffset + 45
 
-    self.characterPreview = PFW_CharacterPreview:new(self.width - 200, yOffset, 200, 400)
+    self.characterPreview = FrameworkZ.UI.CharacterPreview:new(self.width - 200, yOffset, 200, 400)
     self.characterPreview:initialise()
     self.characterPreview:setCharacter(getPlayer())
     self.characterPreview:setSurvivorDesc(self.survivor)
@@ -137,7 +134,7 @@ function PFW_CreateCharacterAppearance:initialise()
     end
 end
 
-function PFW_CreateCharacterAppearance:addClothingOption(x, y, height, entryWidth, labelText, clothingLocation, clothingTable)
+function FrameworkZ.UI.CreateCharacterAppearance:addClothingOption(x, y, height, entryWidth, labelText, clothingLocation, clothingTable)
     if not clothingTable then return nil, nil end
 
     local label = ISLabel:new(x - 5, y, height, labelText, 1, 1, 1, 1, UIFont.Large, false)
@@ -168,7 +165,7 @@ function PFW_CreateCharacterAppearance:addClothingOption(x, y, height, entryWidt
     return label, dropdown
 end
 
-function PFW_CreateCharacterAppearance:onHairChanged(dropdown)
+function FrameworkZ.UI.CreateCharacterAppearance:onHairChanged(dropdown)
 	local hair = dropdown:getOptionData(dropdown.selected)
 
 	self.hairType = dropdown.selected - 1
@@ -176,7 +173,7 @@ function PFW_CreateCharacterAppearance:onHairChanged(dropdown)
     self.characterPreview:setSurvivorDesc(self.survivor)
 end
 
-function PFW_CreateCharacterAppearance:onBeardChanged(dropdown)
+function FrameworkZ.UI.CreateCharacterAppearance:onBeardChanged(dropdown)
 	local beard = dropdown:getOptionData(dropdown.selected)
 
 	self.beardType = dropdown.selected - 1
@@ -184,7 +181,7 @@ function PFW_CreateCharacterAppearance:onBeardChanged(dropdown)
     self.characterPreview:setSurvivorDesc(self.survivor)
 end
 
-function PFW_CreateCharacterAppearance:onClothingChanged(dropdown)
+function FrameworkZ.UI.CreateCharacterAppearance:onClothingChanged(dropdown)
     if not dropdown then return end
 
     local dropdownData = dropdown:getOptionData(dropdown.selected)
@@ -201,7 +198,7 @@ function PFW_CreateCharacterAppearance:onClothingChanged(dropdown)
     self.characterPreview:setSurvivorDesc(self.survivor)
 end
 
-function PFW_CreateCharacterAppearance:resetGender(newGender)
+function FrameworkZ.UI.CreateCharacterAppearance:resetGender(newGender)
     if self.survivor and self.gender ~= newGender then
         self.gender = newGender
 
@@ -222,7 +219,7 @@ function PFW_CreateCharacterAppearance:resetGender(newGender)
     end
 end
 
-function PFW_CreateCharacterAppearance:resetHairColor()
+function FrameworkZ.UI.CreateCharacterAppearance:resetHairColor()
     if self.survivor then
         local immutableColor = ImmutableColor.new(self.hairColor.r, self.hairColor.g, self.hairColor.b, 1)
 
@@ -235,7 +232,7 @@ function PFW_CreateCharacterAppearance:resetHairColor()
     end
 end
 
-function PFW_CreateCharacterAppearance:resetHairStyles()
+function FrameworkZ.UI.CreateCharacterAppearance:resetHairStyles()
     if self.survivor then
         local hairStyles = getAllHairStyles(self.survivor:isFemale())
 
@@ -265,7 +262,7 @@ function PFW_CreateCharacterAppearance:resetHairStyles()
     end
 end
 
-function PFW_CreateCharacterAppearance:resetBeardStyles()
+function FrameworkZ.UI.CreateCharacterAppearance:resetBeardStyles()
     if self.survivor then
         local isFemale = (self.gender == "Female" and true) or (self.gender == "Male" and false)
 
@@ -297,22 +294,22 @@ function PFW_CreateCharacterAppearance:resetBeardStyles()
     end
 end
 
-function PFW_CreateCharacterAppearance:resetSkinColor()
+function FrameworkZ.UI.CreateCharacterAppearance:resetSkinColor()
     if self.survivor then
         self.survivor:getHumanVisual():setSkinTextureIndex(self.skinColor)
         self.characterPreview:setSurvivorDesc(self.survivor)
     end
 end
 
-function PFW_CreateCharacterAppearance:render()
+function FrameworkZ.UI.CreateCharacterAppearance:render()
     ISPanel.render(self)
 end
 
-function PFW_CreateCharacterAppearance:update()
+function FrameworkZ.UI.CreateCharacterAppearance:update()
     ISPanel.update(self)
 end
 
-function PFW_CreateCharacterAppearance:new(parameters)
+function FrameworkZ.UI.CreateCharacterAppearance:new(parameters)
 	local o = {}
 
 	o = ISPanel:new(parameters.x, parameters.y, parameters.width, parameters.height)
@@ -326,9 +323,9 @@ function PFW_CreateCharacterAppearance:new(parameters)
     o.gender = parameters.gender
     o.skinColor = parameters.skinColor
     o.hairColor = parameters.hairColor
-	PFW_CreateCharacterAppearance.instance = o
+	FrameworkZ.UI.CreateCharacterAppearance.instance = o
 
 	return o
 end
 
-return PFW_CreateCharacterAppearance
+return FrameworkZ.UI.CreateCharacterAppearance

@@ -133,7 +133,7 @@ end
 function FrameworkZ.Notifications:AddToQueue(message, notificationType, duration, ui)
     if not message then return end
 
-    local notification = PFW_Notification:new(notificationType or FrameworkZ.Notifications.Types.Default, message, duration or 10, getPlayer())
+    local notification = FrameworkZ.UI.Notification:new(notificationType or FrameworkZ.Notifications.Types.Default, message, duration or 10, getPlayer())
 
     if ui then
         notification.parentUI = ui

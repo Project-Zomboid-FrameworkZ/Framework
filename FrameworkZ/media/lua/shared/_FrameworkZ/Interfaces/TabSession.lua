@@ -1,9 +1,10 @@
+FrameworkZ.UI.TabSession = FrameworkZ.UI.TabSession or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabSession, "TabSession")
+
 local PANEL_WIDTH = getCore():getScreenWidth() * 0.25
 local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
-
-FrameworkZ.UI.TabSession = ISPanel:derive("fzuiTabSession")
 
 function FrameworkZ.UI.TabSession:initialise()
     local TITLE_TEXT = "Session Characters"

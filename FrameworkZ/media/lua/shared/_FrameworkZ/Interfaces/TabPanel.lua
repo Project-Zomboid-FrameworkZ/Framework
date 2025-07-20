@@ -1,3 +1,6 @@
+FrameworkZ.UI.TabPanel = FrameworkZ.UI.TabPanel or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabPanel, "TabPanel")
+
 local PANEL_X = 0
 local PANEL_Y = 0
 local PANEL_WIDTH = getCore():getScreenWidth() * 0.2
@@ -5,8 +8,6 @@ local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
 local SLIDE_TIME = 0.25
-
-FrameworkZ.UI.TabPanel = ISPanel:derive("fzuiTabPanel")
 
 function FrameworkZ.UI.TabPanel:initialise()
     local TITLE_TEXT = "Tab Menu"
@@ -116,7 +117,7 @@ function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
     if button.internal == "CLOSE" then
         self:onClose()
     elseif button.internal == "CHARACTERS" then
-        self.characterSelect = PFW_MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.isoPlayer)
+        self.characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.isoPlayer)
         self.characterSelect.backgroundImageOpacity = 0.5
         self.characterSelect.backgroundColor = {r=0, g=0, b=0, a=0}
         self.characterSelect:initialise()

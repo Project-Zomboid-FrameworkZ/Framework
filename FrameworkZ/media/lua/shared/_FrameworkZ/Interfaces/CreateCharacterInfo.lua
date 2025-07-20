@@ -1,8 +1,7 @@
-require "ISUI/ISPanel"
+FrameworkZ.UI.CreateCharacterInfo = FrameworkZ.UI.CreateCharacterInfo or {}
+FrameworkZ.Interfaces:Register(FrameworkZ.UI.CreateCharacterInfo, "CreateCharacterInfo")
 
-PFW_CreateCharacterInfo = ISPanel:derive("PFW_CreateCharacterInfo")
-
-function PFW_CreateCharacterInfo:initialise()
+function FrameworkZ.UI.CreateCharacterInfo:initialise()
     self.warningTurningRed = true
     self.warningStep = 0.02
     self.warningRed = 1
@@ -242,11 +241,11 @@ function PFW_CreateCharacterInfo:initialise()
     self:addChild(self.weightDropdown)--]]
 end
 
-function PFW_CreateCharacterInfo:onGenderChanged(dropdown)
+function FrameworkZ.UI.CreateCharacterInfo:onGenderChanged(dropdown)
     self.gender = dropdown:getOptionText(dropdown.selected)
 end
 
-function PFW_CreateCharacterInfo:onAgeChanged(newValue, slider)
+function FrameworkZ.UI.CreateCharacterInfo:onAgeChanged(newValue, slider)
     self.ageLabel:setName("Age (" .. newValue .. "):")
 
     -- HL2RP abnormal stuff
@@ -263,7 +262,7 @@ function PFW_CreateCharacterInfo:onAgeChanged(newValue, slider)
     --]]
 end
 
-function PFW_CreateCharacterInfo:onHeightChanged(newValue, slider)
+function FrameworkZ.UI.CreateCharacterInfo:onHeightChanged(newValue, slider)
     local feet = math.floor(newValue / 12)
     local inches = newValue % 12
     
@@ -283,7 +282,7 @@ function PFW_CreateCharacterInfo:onHeightChanged(newValue, slider)
     --]]
 end
 
-function PFW_CreateCharacterInfo:onWeightChanged(newValue, slider)
+function FrameworkZ.UI.CreateCharacterInfo:onWeightChanged(newValue, slider)
     self.weightLabel:setName("Weight (" .. newValue .. " lb):")
 
     -- HL2RP abnormal stuff
@@ -300,11 +299,11 @@ function PFW_CreateCharacterInfo:onWeightChanged(newValue, slider)
     --]]
 end
 
-function PFW_CreateCharacterInfo:prerender()
+function FrameworkZ.UI.CreateCharacterInfo:prerender()
     ISPanel.prerender(self)
 end
 
-function PFW_CreateCharacterInfo:update()
+function FrameworkZ.UI.CreateCharacterInfo:update()
     ISPanel.update(self)
 
     -- HL2RP abnormal stuff
@@ -390,7 +389,7 @@ function PFW_CreateCharacterInfo:update()
     end
 end
 
-function PFW_CreateCharacterInfo:new(parameters)
+function FrameworkZ.UI.CreateCharacterInfo:new(parameters)
 	local o = {}
 
 	o = ISPanel:new(parameters.x, parameters.y, parameters.width, parameters.height)
@@ -400,9 +399,9 @@ function PFW_CreateCharacterInfo:new(parameters)
 	o.borderColor = {r=0, g=0, b=0, a=0}
 	o.moveWithMouse = false
 	o.playerObject = parameters.playerObject
-	PFW_CreateCharacterInfo.instance = o
+	FrameworkZ.UI.CreateCharacterInfo.instance = o
 
 	return o
 end
 
-return PFW_CreateCharacterInfo
+return FrameworkZ.UI.CreateCharacterInfo

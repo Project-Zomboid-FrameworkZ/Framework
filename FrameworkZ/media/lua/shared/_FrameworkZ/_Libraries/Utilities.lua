@@ -58,6 +58,27 @@ function FrameworkZ.Utilities:MergeTables(t1, t2)
             t1[k] = v
         end
     end
+
+    -- Handle metatable merging
+    local mt1 = getmetatable(t1)
+    local mt2 = getmetatable(t2)
+
+    if mt2 then
+        if mt1 then
+            -- Both tables have metatables, merge them recursively
+            if type(mt1) == "table" and type(mt2) == "table" then
+                self:MergeTables(mt1, mt2)
+            else
+                -- If metatables aren't tables, use t2's metatable
+                setmetatable(t1, mt2)
+            end
+        else
+            -- Only t2 has a metatable, apply it to t1
+            setmetatable(t1, mt2)
+        end
+    end
+
+    return t1
 end
 
 function FrameworkZ.Utilities:DumpTable(tbl)

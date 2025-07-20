@@ -101,6 +101,10 @@ local unpack = unpack
 
 FrameworkZ = FrameworkZ or {}
 
+--! \brief Contains all of the User Interfaces for FrameworkZ.
+--! \class FrameworkZ.UI
+FrameworkZ.UI = FrameworkZ.UI or {}
+
 --! \brief Foundation for FrameworkZ.
 --! \class FrameworkZ.Foundation
 FrameworkZ.Foundation = {}
@@ -1216,6 +1220,11 @@ function FrameworkZ.Foundation.Events:OnReceiveGlobalModData(key, data)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnReceiveGlobalModData")
 
+function FrameworkZ.Foundation.Events:OnResetLua(reason)
+    self:ExecuteAllHooks("OnResetLua", reason)
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnResetLua")
+
 function FrameworkZ.Foundation.Events:OnServerCommand(module, command, arguments)
     self:ExecuteAllHooks("OnServerCommand", module, command, arguments)
 end
@@ -1280,15 +1289,6 @@ end
 
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
-    --self:IncludeFile("_FrameworkZ/_Libraries/DollarFormats.lua")
-
-
-
-
-
-
-
-
     if isClient() then
         self.Initialized = false
 
@@ -1300,12 +1300,14 @@ function FrameworkZ.Foundation:OnGameStart()
 end
 
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
+    FrameworkZ.Interfaces:Initialize()
+
     local sidebar = ISEquippedItem.instance
     self.fzuiTabMenu = FrameworkZ.UI.TabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
     self.fzuiTabMenu:initialise()
     self.fzuiTabMenu:addToUIManager()
 
-    local ui = PFW_Introduction:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), getPlayer())
+    local ui = FrameworkZ.UI.Introduction:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), getPlayer())
     ui:initialise()
     ui:addToUIManager()
 
@@ -1319,55 +1321,54 @@ FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 
 function FrameworkZ.Foundation:InitializeClient(isoPlayer)
     FrameworkZ.Timers:Simple(FrameworkZ.Config.Options.InitializationDuration, function()
-        self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized)
+        self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized, playerData, charactersData)
             if serverSideInitialized then
-                local isoPlayer2 = data.isoPlayer
-                local username = isoPlayer2:getUsername()
+                local username = isoPlayer:getUsername()
 
                 if not VoiceManager:playerGetMute(username) then
                     VoiceManager:playerSetMute(username)
                 end
 
-                isoPlayer2:clearWornItems()
-                isoPlayer2:getInventory():clear()
+                isoPlayer:clearWornItems()
+                isoPlayer:getInventory():clear()
 
-                local gown = isoPlayer2:getInventory():AddItem("Base.HospitalGown")
-                isoPlayer2:setWornItem(gown:getBodyLocation(), gown)
+                local gown = isoPlayer:getInventory():AddItem("Base.HospitalGown")
+                isoPlayer:setWornItem(gown:getBodyLocation(), gown)
 
-                local slippers = isoPlayer2:getInventory():AddItem("Base.Shoes_Slippers")
+                local slippers = isoPlayer:getInventory():AddItem("Base.Shoes_Slippers")
                 local color = Color.new(1, 1, 1, 1);
                 slippers:setColor(color);
                 slippers:getVisual():setTint(ImmutableColor.new(color));
                 slippers:setCustomColor(true);
-                isoPlayer2:setWornItem(slippers:getBodyLocation(), slippers)
+                isoPlayer:setWornItem(slippers:getBodyLocation(), slippers)
 
-                isoPlayer2:setGodMod(true)
-                isoPlayer2:setInvincible(true)
-                isoPlayer2:setHealth(1.0)
+                isoPlayer:setGodMod(true)
+                isoPlayer:setInvincible(true)
+                isoPlayer:setHealth(1.0)
 
-                local bodyParts = isoPlayer2:getBodyDamage():getBodyParts()
+                local bodyParts = isoPlayer:getBodyDamage():getBodyParts()
                 for i=1, bodyParts:size() do
                     local bP = bodyParts:get(i-1)
                     bP:RestoreToFullHealth();
 
                     if bP:getStiffness() > 0 then
                         bP:setStiffness(0)
-                        isoPlayer2:getFitness():removeStiffnessValue(BodyPartType.ToString(bP:getType()))
+                        isoPlayer:getFitness():removeStiffnessValue(BodyPartType.ToString(bP:getType()))
                     end
                 end
 
-                isoPlayer2:setInvisible(true)
-                isoPlayer2:setGhostMode(true)
-                isoPlayer2:setNoClip(true)
+                isoPlayer:setInvisible(true)
+                isoPlayer:setGhostMode(true)
+                isoPlayer:setNoClip(true)
 
-                isoPlayer2:setX(FrameworkZ.Config.Options.LimboX)
-                isoPlayer2:setY(FrameworkZ.Config.Options.LimboY)
-                isoPlayer2:setZ(FrameworkZ.Config.Options.LimboZ)
-                isoPlayer2:setLx(FrameworkZ.Config.Options.LimboX)
-                isoPlayer2:setLy(FrameworkZ.Config.Options.LimboY)
-                isoPlayer2:setLz(FrameworkZ.Config.Options.LimboZ)
+                isoPlayer:setX(FrameworkZ.Config.Options.LimboX)
+                isoPlayer:setY(FrameworkZ.Config.Options.LimboY)
+                isoPlayer:setZ(FrameworkZ.Config.Options.LimboZ)
+                isoPlayer:setLx(FrameworkZ.Config.Options.LimboX)
+                isoPlayer:setLy(FrameworkZ.Config.Options.LimboY)
+                isoPlayer:setLz(FrameworkZ.Config.Options.LimboZ)
 
-                self:InitializePlayer(isoPlayer2)
+                self:InitializePlayer(isoPlayer, playerData, charactersData)
             end
         end)
     end)
@@ -1380,10 +1381,44 @@ if isServer() then
     end
 end
 
-function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
-    if not isoPlayer then return false end
+function FrameworkZ.Foundation:RestorePlayer(isoPlayer, player, username, playerData, charactersData)
+    if not player then return end
+    if isClient() and (not playerData or not charactersData) then return end
+
+    if isServer() then
+        playerData = self:GetData(isoPlayer, "Players", username)
+        charactersData = self:GetData(isoPlayer, "Characters", username)
+    end
+
+    if playerData then
+        player:RestoreData(playerData)
+
+        if charactersData then
+            player:SetCharacters(charactersData)
+
+            return playerData, charactersData
+        elseif isServer() then
+            local characters = player:GetCharacters()
+            self:SetData(isoPlayer, "Characters", username, characters)
+        end
+
+        return playerData, false
+    elseif isServer() then
+        local saveableData = player:GetSaveableData()
+        local characters = player:GetCharacters()
+
+        self:SetData(isoPlayer, "Players", username, saveableData)
+        self:SetData(isoPlayer, "Characters", username, characters)
+    end
+
+    return false, false
+end
+
+function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, charactersData)
+    if not isoPlayer then return false, nil, nil end
 
     local player = FrameworkZ.Players:Initialize(isoPlayer) if not player then return false end
+    local username = player:GetUsername()
     local options = FrameworkZ.Config.Options
     local x, y, z = options.LimboX, options.LimboY, options.LimboZ
 
@@ -1394,76 +1429,51 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer)
     isoPlayer:setLy(y)
     isoPlayer:setLz(z)
 
+    if isServer() then
+        playerData, charactersData = self:RestorePlayer(isoPlayer, player, username)
+    elseif isClient() then
+        playerData, charactersData = self:RestorePlayer(isoPlayer, player, username, playerData, charactersData)
+    end
+
+    if playerData then
+        print("[FZ] Restored player for '" .. username .. "'.")
+    else
+        print("[FZ] Created new player for '" .. username .. "'.")
+    end
+
+    if charactersData then
+        local charactersRestored = ""
+
+        for k, character in pairs(charactersData) do
+            charactersRestored = "#" .. k .. " " .. charactersRestored .. character.INFO_NAME .. ", "
+        end
+
+        charactersRestored = string.sub(charactersRestored, 1, -3) -- Remove the last comma and space
+
+        print("[FZ] Restored characters for '" .. username .. "': " .. (charactersRestored == "" and "[N/A]" or charactersRestored))
+    else
+        print("[FZ] Created new characters field for '" .. username .. "'.")
+    end
+
     self:ExecuteModuleHooks("InitializeClient", isoPlayer)
     self:ExecuteGamemodeHooks("InitializeClient", isoPlayer)
     self:ExecutePluginHooks("InitializeClient", isoPlayer)
 
     self:ExecuteFrameworkHooks("PostInitializeClient", player)
 
-    return true
-end
-
-if isServer() then
-    function FrameworkZ.Foundation.OnRestorePlayer(data, username)
-        FrameworkZ.Foundation:RestorePlayer(data.isoPlayer, username)
-    end
-
-    function FrameworkZ.Foundation:RestorePlayer(isoPlayer, username)
-        local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return end
-        local playerData = self:GetData(isoPlayer, "Players", username)
-        local charactersData = self:GetData(isoPlayer, "Charaters", username)
-
-        if playerData then
-            player:RestoreData(playerData)
-
-            if charactersData then
-                player:SetCharacters(charactersData)
-
-                return true, true
-            else
-                local characters = player:GetCharacters()
-                self:SetData(isoPlayer, "Characters", username, characters)
-
-                return true, false
-            end
-        else
-            local saveableData = player:GetSaveableData()
-            local characters = player:GetCharacters()
-
-            self:SetData(isoPlayer, "Players", username, saveableData)
-            self:SetData(isoPlayer, "Characters", username, characters)
-        end
-
-        return false, false
-    end
+    return true, playerData, charactersData
 end
 
 function FrameworkZ.Foundation:PostInitializeClient(player)
+    self:ExecuteModuleHooks("PostInitializeClient", player)
+    self:ExecuteGamemodeHooks("PostInitializeClient", player)
+    self:ExecutePluginHooks("PostInitializeClient", player)
+
     if isClient() then
-        local isoPlayer = player:GetIsoPlayer()
-        local username = player:GetUsername()
-
-        self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnRestorePlayer", function(data, playerRestored, charactersRestored)
-            if playerRestored then
-                print("[FZ] Restored player for '" .. username .. "'.")
-            else
-                print("[FZ] Created new player for '" .. username .. "'.")
-            end
-
-            if charactersRestored then
-                print("[FZ] Restored characters for '" .. username .. "'.")
-            else
-                print("[FZ] Created new characters field for '" .. username .. "'.")
-            end
-
-            self:ExecuteModuleHooks("PostInitializeClient", isoPlayer)
-            self:ExecuteGamemodeHooks("PostInitializeClient", isoPlayer)
-            self:ExecutePluginHooks("PostInitializeClient", isoPlayer)
-
-            FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, PFW_Introduction.instance)
-            self.Initialized = true
-        end, username)
+        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, FrameworkZ.UI.Introduction.instance)
     end
+
+    self.Initialized = true
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 
@@ -1531,7 +1541,7 @@ function FrameworkZ.Foundation:GetLocalData(namespace, keys)
 
     if ns then
         if not keys then
-            return ns
+            return ns or "FZ ERROR CODE: 1"
         elseif type(keys) == "string" then
             return ns[keys] or "FZ ERROR CODE: 1"
         elseif type(keys) == "table" then
@@ -1551,7 +1561,7 @@ function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
         if not keys then
             self.Namespaces[namespace] = value
         elseif type(keys) == "string" then
-            ns[keys] = value
+            self.Namespaces[namespace][keys] = value
         elseif type(keys) == "table" then
             value = self:SetNestedValue(ns, keys, value)
         end
@@ -1588,7 +1598,7 @@ function FrameworkZ.Foundation.OnGetData(data, namespace, keys, subscriptionID)
     if isServer() then
         local value = FrameworkZ.Foundation:GetLocalData(namespace, keys)
 
-        if value ~= false and subscriptionID then
+        if value ~= "FZ ERROR CODE: 1" and subscriptionID then
             FrameworkZ.Foundation:Fire(subscriptionID, data, FrameworkZ.Utilities:Pack(namespace, keys, value))
         end
 
@@ -1928,47 +1938,6 @@ function FrameworkZ.Foundation:ProcessSaveableData(object, ignoreList, encodeLis
     return saveableData
 end
 
-local function readRawFile(filename)
-    -- build the path relative to the mod root
-    local modID = "FrameworkZ"
-    local relPath = "media/lua/FrameworkZ/" .. filename
-
-    -- try to open it
-    local reader, err = getModFileReader(modID, relPath, false)
-    if not reader then
-        error(("FileLoader: could not open %q (%s)"):format(relPath, err or "unknown"))
-    end
-
-    -- read all lines
-    local lines = {}
-    while true do
-        local line = reader:readLine()
-        if not line then break end
-        lines[#lines+1] = line
-    end
-    reader:close()
-
-    return table.concat(lines, "\n")
-end
-
--- FrameworkZ.Foundation:IncludeFile("test.lua")
-
-function FrameworkZ.Foundation:IncludeFile(filename, env)
-    local src = readRawFile(filename)
-    local chunk, err = loadstring(src, filename)
-    if not chunk then
-        error(("FileLoader: loadstring error in %q: %s"):format(filename, err))
-    end
-    if env then
-        setfenv(chunk, env)
-    end
-    return chunk()
-end
-
-function FrameworkZ.Foundation:IncludeDirectory(directoryPath)
-    
-end
-
 --[[ Finalization
 
 
@@ -2028,7 +1997,6 @@ function FrameworkZ.Foundation:Initialize()
         --self:Subscribe("FrameworkZ.Foundation.OnInitializeClient", self.OnInitializeClient)
         self:Subscribe("FrameworkZ.Foundation.OnGetData", self.OnGetData)
         self:Subscribe("FrameworkZ.Foundation.OnInitializePlayer", self.OnInitializePlayer)
-        self:Subscribe("FrameworkZ.Foundation.OnRestorePlayer", self.OnRestorePlayer)
         self:Subscribe("FrameworkZ.Foundation.OnSetData", self.OnSetData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveData", self.OnSaveData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveNamespace", self.OnSaveNamespace)
