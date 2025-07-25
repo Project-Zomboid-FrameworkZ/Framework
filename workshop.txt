@@ -1,6 +1,22 @@
 version=1
-id=3529870296
+id=3531332504
 title=FrameworkZ
-description=Join the fun here: https://www.pixelport.community
-tags=Build 41;Multiplayer;Realistic
-visibility=unlisted
+description=[img]https://img.pzframeworkz.net/early-closed-alpha-notice.png[/img]
+description=[img]https://img.pzframeworkz.net/core-features.png[/img]
+description=[img]https://img.pzframeworkz.net/docs-icon.png[/img][img]https://img.pzframeworkz.net/discord-icon.png[/img][img]https://img.pzframeworkz.net/github-icon.png[/img]
+description=[table equalcells=1]
+description=    [tr]
+description=        [th]Documentation[/th]
+description=        [th]Discord Invite[/th]
+description=        [th]Github Repository[/th]
+description=    [/tr]
+description=    [tr]
+description=        [td]https://docs.pzframeworkz.net[/td]
+description=        [td]https://discord.pzframeworkz.net[/td]
+description=        [td]https://github.pzframeworkz.net[/td]
+description=    [/tr]
+description=[/table]
+description=
+description=[b]Created by RJ_RayJay[/b] | [b]MIT License[/b] | [b]Build 41 Compatible[/b]
+description=
+description=Join our Discord community to get started and connect with other server owners!

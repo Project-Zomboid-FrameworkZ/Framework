@@ -1235,6 +1235,8 @@ function FrameworkZ.Foundation.Events:OnServerStarted()
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnServerStarted")
 
+-- The OnTick event is not defined for hook usage because of performance reasons.
+
 --[[ Hook Callbacks
 
 

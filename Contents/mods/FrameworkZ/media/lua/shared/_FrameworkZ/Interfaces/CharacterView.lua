@@ -1,12 +1,12 @@
 FrameworkZ.UI.CharacterView = FrameworkZ.UI.CharacterView or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.CharacterView, "CharacterView")
 
-local FONT_HEIGHT_SMALL = getTextManager():getFontHeight(UIFont.Small)
-local FONT_HEIGHT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
-local FONT_HEIGHT_LARGE = getTextManager():getFontHeight(UIFont.Large)
-
 function FrameworkZ.UI.CharacterView:initialise()
     ISPanel.initialise(self)
+
+    local FONT_HEIGHT_SMALL = getTextManager():getFontHeight(UIFont.Small)
+    local FONT_HEIGHT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
+    local FONT_HEIGHT_LARGE = getTextManager():getFontHeight(UIFont.Large)
 
     if self.characterNameLabel then
         self:removeChild(self.characterNameLabel)

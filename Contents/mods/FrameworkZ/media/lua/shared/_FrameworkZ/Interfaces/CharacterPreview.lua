@@ -1,14 +1,13 @@
 FrameworkZ.UI.CharacterPreview = FrameworkZ.UI.CharacterPreview or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.CharacterPreview, "CharacterPreview")
 
-local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
-local FONT_HGT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
-
 function FrameworkZ.UI.CharacterPreview:initialise()
     ISPanel.initialise(self)
 
     self.avatarBackgroundTexture = getTexture("media/ui/avatarBackground.png")
 
+	local FONT_HGT_MEDIUM = getTextManager():getFontHeight(UIFont.Medium)
+	local FONT_HGT_SMALL = getTextManager():getFontHeight(UIFont.Small)
 	local comboHgt = FONT_HGT_SMALL + 3 * 2
 
 	self.avatarPanel = ISUI3DModel:new(0, 0, self.width, self.height - comboHgt)
