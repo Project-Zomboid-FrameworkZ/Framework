@@ -1,0 +1,28 @@
+-- if true then return end
+
+--! \page Code Examples
+--! \section NetworkingExample Networking Example
+--! This example shows how to use FrameworkZ's networking system.
+--!
+--! \code lua
+--! if isServer() then
+--!     function serverFunction(data)
+--!         if not data.isoPlayer then return end
+--! 
+--!         local getSomeServerVal = "Test"
+--! 
+--!         return getSomeServerVal
+--!     end
+--!     FrameworkZ.Foundation:Subscribe("serverFunction", serverFunction)
+--! end
+--! 
+--! if isClient() then
+--!     function clientFunction(isoPlayer)
+--!         FrameworkZ.Foundation:SendFire(isoPlayer, "serverFunction", function(data, retVal)
+--!             data.isoPlayer:Say(retVal) -- Executes as soon as server responds, player says "Test"
+--!         end)
+--!     end
+--! 
+--!     clientFunction(getPlayer())
+--! end
+--! \endcode

@@ -1,3 +1,4 @@
+-- luacheck: globals isClient UIFont ISButton getTextManager
 -- TODO rename module to something specific for UI steps and whatnot
 
 if not isClient() then return end
@@ -5,7 +6,7 @@ if not isClient() then return end
 FrameworkZ = FrameworkZ or {}
 
 --! \brief User Interfaces module. This module is used to create user interfaces for the game.
---! \class FrameworkZ.UserInterfaces
+--! \module FrameworkZ.UserInterfaces
 FrameworkZ.UserInterfaces = {}
 FrameworkZ.UserInterfaces.__index = FrameworkZ.UserInterfaces
 FrameworkZ.UserInterfaces.List = {}
@@ -35,6 +36,14 @@ function UI:Initialize()
     return FrameworkZ.UserInterfaces:Initialize(self.uniqueID, self)
 end
 
+--! \brief Registers a navigation step between UI menus.
+--! \param fromMenuName Name of the source menu.
+--! \param toMenuName Name of the destination menu.
+--! \param fromMenu Reference to the source menu object.
+--! \param toMenu Reference to the destination menu object.
+--! \param enterToMenuCallback Callback invoked when entering the destination menu.
+--! \param exitToMenuCallback Callback invoked when exiting the destination menu.
+--! \param toMenuParameters Optional parameters passed to the destination menu.
 function UI:RegisterNextStep(fromMenuName, toMenuName, fromMenu, toMenu, enterToMenuCallback, exitToMenuCallback, toMenuParameters)
     local step = {
         fromMenuName = fromMenuName,

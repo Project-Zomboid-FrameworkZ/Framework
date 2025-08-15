@@ -1,14 +1,14 @@
---! \page features Features
+--! \page Features
 --! \section Characters Characters
 --! Characters are the main focus of the game. They are the players that interact with the world. Characters can be given a name, description, faction, age, height, eye color, hair color, etc. They can also be given items and equipment.\n\n
 --! When a player connects to the server, they may create a character and load said character. The character is then saved to the player's data and can be loaded again when the player reconnects. Characters will be saved automatically at predetermined intervals or upon disconnection or when switching characters.\n\n
 --! Characters are not given items in the traditional sense. Instead, they are given items by a unique ID from an item defined in the framework's (or gamemode's or even plugin's) files. This special item definition is then used to create an item instance that is added to the character's inventory. This allows for items to be created dynamically and given to characters. This allows for the same Project Zomboid item to be reused for different purposes.\n\n
 
---! \page global_variables Global Variables
---! \section Characters Characters
---! FrameworkZ.Characters\n
---! See Characters for the module on characters.\n\n
---! FrameworkZ.Characters.List\n
+--! \page Global Variables
+--! \section characters_variables Characters Variables
+--! FrameworkZ.Characters
+--! See Characters for the module on characters.
+--! FrameworkZ.Characters.List
 --! A list of all instanced characters in the game.
 
 local isClient = isClient
@@ -16,414 +16,63 @@ local isClient = isClient
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Characters module for FrameworkZ. Defines and interacts with CHARACTER object.
---! \class FrameworkZ.Characters
+--! \module FrameworkZ.Characters
 FrameworkZ.Characters = {}
 
+--! \brief Constant for pale skin color.
 SKIN_COLOR_PALE = 0
+--! \brief Constant for white skin color.
 SKIN_COLOR_WHITE = 1
+--! \brief Constant for tanned skin color.
 SKIN_COLOR_TANNED = 2
+--! \brief Constant for brown skin color.
 SKIN_COLOR_BROWN = 3
+--! \brief Constant for dark brown skin color.
 SKIN_COLOR_DARK_BROWN = 4
 
+--! \brief Red component for black hair color.
 HAIR_COLOR_BLACK_R = 0
+--! \brief Green component for black hair color.
 HAIR_COLOR_BLACK_G = 0
+--! \brief Blue component for black hair color.
 HAIR_COLOR_BLACK_B = 0
+--! \brief Red component for blonde hair color.
 HAIR_COLOR_BLONDE_R = 0.9
+--! \brief Green component for blonde hair color.
 HAIR_COLOR_BLONDE_G = 0.9
+--! \brief Blue component for blonde hair color.
 HAIR_COLOR_BLONDE_B = 0.6
+--! \brief Red component for brown hair color.
 HAIR_COLOR_BROWN_R = 0.3
+--! \brief Green component for brown hair color.
 HAIR_COLOR_BROWN_G = 0.2
+--! \brief Blue component for brown hair color.
 HAIR_COLOR_BROWN_B = 0.2
+--! \brief Red component for gray hair color.
 HAIR_COLOR_GRAY_R = 0.5
+--! \brief Green component for gray hair color.
 HAIR_COLOR_GRAY_G = 0.5
+--! \brief Blue component for gray hair color.
 HAIR_COLOR_GRAY_B = 0.5
+--! \brief Red component for red hair color.
 HAIR_COLOR_RED_R = 0.9
+--! \brief Green component for red hair color.
 HAIR_COLOR_RED_G = 0.4
+--! \brief Blue component for red hair color.
 HAIR_COLOR_RED_B = 0.1
+--! \brief Red component for white hair color.
 HAIR_COLOR_WHITE_R = 1
+--! \brief Green component for white hair color.
 HAIR_COLOR_WHITE_G = 1
+--! \brief Blue component for white hair color.
 HAIR_COLOR_WHITE_B = 1
 
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_HEAD = "Hat"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_FACE = "Mask"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_EARS = "Ears"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_BACKPACK = "Back"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_GLOVES = "Hands"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_UNDERSHIRT = "Tshirt"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_OVERSHIRT = "Shirt"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_VEST = "TorsoExtraVest"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_BELT = "Belt"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_PANTS = "Pants"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_SOCKS = "Socks"
-
---! \brief Deprecated. To be removed.
-EQUIPMENT_SLOT_SHOES = "Shoes"
-
-FZ_ENUM_CHARACTER_INFO_FACTION = 1
-FZ_ENUM_CHARACTER_INFO_GENDER = 2
-FZ_ENUM_CHARACTER_INFO_NAME = 2
-FZ_ENUM_CHARACTER_INFO_DESCRIPTION = 3
-FZ_ENUM_CHARACTER_INFO_AGE = 4
-FZ_ENUM_CHARACTER_INFO_HEIGHT = 5
-FZ_ENUM_CHARACTER_INFO_WEIGHT = 6
-FZ_ENUM_CHARACTER_INFO_PHYSIQUE = 7
-FZ_ENUM_CHARACTER_INFO_EYE_COLOR = 8
-FZ_ENUM_CHARACTER_INFO_BEARD_COLOR = 9
-FZ_ENUM_CHARACTER_INFO_HAIR_COLOR = 10
-FZ_ENUM_CHARACTER_INFO_SKIN_COLOR = 11
-FZ_ENUM_CHARACTER_INFO_HAIR_STYLE = 12
-FZ_ENUM_CHARACTER_INFO_BEARD_STYLE = 13
-FZ_ENUM_CHARACTER_SLOT_BANDAGE = 15
-FZ_ENUM_CHARACTER_SLOT_WOUND = 16
-FZ_ENUM_CHARACTER_SLOT_BELT_EXTRA = 17
-FZ_ENUM_CHARACTER_SLOT_BELT = 18
-FZ_ENUM_CHARACTER_SLOT_BELLY_BUTTON = 19
-FZ_ENUM_CHARACTER_SLOT_MAKEUP_FULL_FACE = 20
-FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES = 21
-FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES_SHADOW = 22
-FZ_ENUM_CHARACTER_SLOT_MAKEUP_LIPS = 23
-FZ_ENUM_CHARACTER_SLOT_MASK = 24
-FZ_ENUM_CHARACTER_SLOT_MASK_EYES = 25
-FZ_ENUM_CHARACTER_SLOT_MASK_FULL = 26
-FZ_ENUM_CHARACTER_SLOT_UNDERWEAR = 27
-FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_BOTTOM = 28
-FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_TOP = 29
-FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA1 = 30
-FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA2 = 31
-FZ_ENUM_CHARACTER_SLOT_HAT = 32
-FZ_ENUM_CHARACTER_SLOT_FULL_HAT = 33
-FZ_ENUM_CHARACTER_SLOT_EARS = 34
-FZ_ENUM_CHARACTER_SLOT_EAR_TOP = 35
-FZ_ENUM_CHARACTER_SLOT_NOSE = 36
-FZ_ENUM_CHARACTER_SLOT_TORSO1 = 37
-FZ_ENUM_CHARACTER_SLOT_TORSO_LEGS1 = 38
-FZ_ENUM_CHARACTER_SLOT_TANK_TOP = 39
-FZ_ENUM_CHARACTER_SLOT_TSHIRT = 40
-FZ_ENUM_CHARACTER_SLOT_SHORT_SLEEVE_SHIRT = 41
-FZ_ENUM_CHARACTER_SLOT_LEFT_WRIST = 42
-FZ_ENUM_CHARACTER_SLOT_RIGHT_WRIST = 43
-FZ_ENUM_CHARACTER_SLOT_SHIRT = 44
-FZ_ENUM_CHARACTER_SLOT_NECK = 45
-FZ_ENUM_CHARACTER_SLOT_NECKLACE = 46
-FZ_ENUM_CHARACTER_SLOT_NECKLACE_LONG = 47
-FZ_ENUM_CHARACTER_SLOT_RIGHT_MIDDLE_FINGER = 48
-FZ_ENUM_CHARACTER_SLOT_LEFT_MIDDLE_FINGER = 49
-FZ_ENUM_CHARACTER_SLOT_LEFT_RING_FINGER = 50
-FZ_ENUM_CHARACTER_SLOT_RIGHT_RING_FINGER = 51
-FZ_ENUM_CHARACTER_SLOT_HANDS = 52
-FZ_ENUM_CHARACTER_SLOT_HANDS_LEFT = 53
-FZ_ENUM_CHARACTER_SLOT_HANDS_RIGHT = 54
-FZ_ENUM_CHARACTER_SLOT_SOCKS = 55
-FZ_ENUM_CHARACTER_SLOT_LEGS1 = 56
-FZ_ENUM_CHARACTER_SLOT_PANTS = 57
-FZ_ENUM_CHARACTER_SLOT_SKIRT = 58
-FZ_ENUM_CHARACTER_SLOT_LEGS5 = 59
-FZ_ENUM_CHARACTER_SLOT_DRESS = 60
-FZ_ENUM_CHARACTER_SLOT_SWEATER = 61
-FZ_ENUM_CHARACTER_SLOT_SWEATER_HAT = 62
-FZ_ENUM_CHARACTER_SLOT_JACKET = 63
-FZ_ENUM_CHARACTER_SLOT_JACKET_DOWN = 64
-FZ_ENUM_CHARACTER_SLOT_JACKET_BULKY = 65
-FZ_ENUM_CHARACTER_SLOT_JACKET_HAT = 66
-FZ_ENUM_CHARACTER_SLOT_JACKET_HAT_BULKY = 67
-FZ_ENUM_CHARACTER_SLOT_JACKET_SUIT = 68
-FZ_ENUM_CHARACTER_SLOT_FULL_SUIT = 69
-FZ_ENUM_CHARACTER_SLOT_BOILDER_SUIT = 70
-FZ_ENUM_CHARACTER_SLOT_FULL_SUIT_HEAD = 71
-FZ_ENUM_CHARACTER_SLOT_FULL_TOP = 72
-FZ_ENUM_CHARACTER_SLOT_BATH_ROBE = 73
-FZ_ENUM_CHARACTER_SLOT_SHOES = 74
-FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_FRONT = 75
-FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_BACK = 76
-FZ_ENUM_CHARACTER_SLOT_AMMO_STRAP = 77
-FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA = 78
-FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA_VEST = 79
-FZ_ENUM_CHARACTER_SLOT_TAIL = 80
-FZ_ENUM_CHARACTER_SLOT_BACK = 81
-FZ_ENUM_CHARACTER_SLOT_LEFT_EYE = 82
-FZ_ENUM_CHARACTER_SLOT_RIGHT_EYE = 83
-FZ_ENUM_CHARACTER_SLOT_EYES = 84
-FZ_ENUM_CHARACTER_SLOT_SCARF = 85
-FZ_ENUM_CHARACTER_SLOT_ZED_DMG = 86
-
-FZ_SLOT_BANDAGE = "Bandage"
-FZ_SLOT_WOUND = "Wound"
-FZ_SLOT_BELT_EXTRA = "BeltExtra"
-FZ_SLOT_BELT = "Belt"
-FZ_SLOT_BELLY_BUTTON = "BellyButton"
-FZ_SLOT_MAKEUP_FULL_FACE = "MakeUp_FullFace"
-FZ_SLOT_MAKEUP_EYES = "MakeUp_Eyes"
-FZ_SLOT_MAKEUP_EYES_SHADOW = "MakeUp_EyesShadow"
-FZ_SLOT_MAKEUP_LIPS = "MakeUp_Lips"
-FZ_SLOT_MASK = "Mask"
-FZ_SLOT_MASK_EYES = "MaskEyes"
-FZ_SLOT_MASK_FULL = "MaskFull"
-FZ_SLOT_UNDERWEAR = "Underwear"
-FZ_SLOT_UNDERWEAR_BOTTOM = "UnderwearBottom"
-FZ_SLOT_UNDERWEAR_TOP = "UnderwearTop"
-FZ_SLOT_UNDERWEAR_EXTRA1 = "UnderwearExtra1"
-FZ_SLOT_UNDERWEAR_EXTRA2 = "UnderwearExtra2"
-FZ_SLOT_HAT = "Hat"
-FZ_SLOT_FULL_HAT = "FullHat"
-FZ_SLOT_EARS = "Ears"
-FZ_SLOT_EAR_TOP = "EarTop"
-FZ_SLOT_NOSE = "Nose"
-FZ_SLOT_TORSO1 = "Torso1"
-FZ_SLOT_TORSO_LEGS1 = "Torso1Legs1"
-FZ_SLOT_TANK_TOP = "TankTop"
-FZ_SLOT_TSHIRT = "Tshirt"
-FZ_SLOT_SHORT_SLEEVE_SHIRT = "ShortSleeveShirt"
-FZ_SLOT_LEFT_WRIST = "LeftWrist"
-FZ_SLOT_RIGHT_WRIST = "RightWrist"
-FZ_SLOT_SHIRT = "Shirt"
-FZ_SLOT_NECK = "Neck"
-FZ_SLOT_NECKLACE = "Necklace"
-FZ_SLOT_NECKLACE_LONG = "Necklace_Long"
-FZ_SLOT_RIGHT_MIDDLE_FINGER = "Right_MiddleFinger"
-FZ_SLOT_LEFT_MIDDLE_FINGER = "Left_MiddleFinger"
-FZ_SLOT_LEFT_RING_FINGER = "Left_RingFinger"
-FZ_SLOT_RIGHT_RING_FINGER = "Right_RingFinger"
-FZ_SLOT_HANDS = "Hands"
-FZ_SLOT_HANDS_LEFT = "HandsLeft"
-FZ_SLOT_HANDS_RIGHT = "HandsRight"
-FZ_SLOT_SOCKS = "Socks"
-FZ_SLOT_LEGS1 = "Legs1"
-FZ_SLOT_PANTS = "Pants"
-FZ_SLOT_SKIRT = "Skirt"
-FZ_SLOT_LEGS5 = "Legs5"
-FZ_SLOT_DRESS = "Dress"
-FZ_SLOT_SWEATER = "Sweater"
-FZ_SLOT_SWEATER_HAT = "SweaterHat"
-FZ_SLOT_JACKET = "Jacket"
-FZ_SLOT_JACKET_DOWN = "Jacket_Down"
-FZ_SLOT_JACKET_BULKY = "Jacket_Bulky"
-FZ_SLOT_JACKET_HAT = "JacketHat"
-FZ_SLOT_JACKET_HAT_BULKY = "JacketHat_Bulky"
-FZ_SLOT_JACKET_SUIT = "JacketSuit"
-FZ_SLOT_FULL_SUIT = "FullSuit"
-FZ_SLOT_BOILDER_SUIT = "Boilersuit"
-FZ_SLOT_FULL_SUIT_HEAD = "FullSuitHead"
-FZ_SLOT_FULL_TOP = "FullTop"
-FZ_SLOT_BATH_ROBE = "BathRobe"
-FZ_SLOT_SHOES = "Shoes"
-FZ_SLOT_FANNY_PACK_FRONT = "FannyPackFront"
-FZ_SLOT_FANNY_PACK_BACK = "FannyPackBack"
-FZ_SLOT_AMMO_STRAP = "AmmoStrap"
-FZ_SLOT_TORSO_EXTRA = "TorsoExtra"
-FZ_SLOT_TORSO_EXTRA_VEST = "TorsoExtraVest"
-FZ_SLOT_TAIL = "Tail"
-FZ_SLOT_BACK = "Back"
-FZ_SLOT_LEFT_EYE = "LeftEye"
-FZ_SLOT_RIGHT_EYE = "RightEye"
-FZ_SLOT_EYES = "Eyes"
-FZ_SLOT_SCARF = "Scarf"
-FZ_SLOT_ZED_DMG = "ZedDmg"
-
-FrameworkZ.Characters.DefaultData = {
-    [FZ_ENUM_CHARACTER_INFO_FACTION] = "",
-    [FZ_ENUM_CHARACTER_INFO_GENDER] = "",
-    [FZ_ENUM_CHARACTER_INFO_NAME] = "",
-    [FZ_ENUM_CHARACTER_INFO_DESCRIPTION] = "",
-    [FZ_ENUM_CHARACTER_INFO_AGE] = -1,
-    [FZ_ENUM_CHARACTER_INFO_HEIGHT] = -1,
-    [FZ_ENUM_CHARACTER_INFO_WEIGHT] = -1,
-    [FZ_ENUM_CHARACTER_INFO_PHYSIQUE] = "",
-    [FZ_ENUM_CHARACTER_INFO_EYE_COLOR] = "",
-    [FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] = "",
-    [FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] = "",
-    [FZ_ENUM_CHARACTER_INFO_SKIN_COLOR] = "",
-    [FZ_ENUM_CHARACTER_INFO_HAIR_STYLE] = "",
-    [FZ_ENUM_CHARACTER_INFO_BEARD_STYLE] = "",
-    [FZ_ENUM_CHARACTER_SLOT_BANDAGE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_WOUND] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BELT_EXTRA] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BELT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BELLY_BUTTON] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_FULL_FACE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES_SHADOW] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_LIPS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MASK] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MASK_EYES] = {},
-    [FZ_ENUM_CHARACTER_SLOT_MASK_FULL] = {},
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR] = {},
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_BOTTOM] = {},
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_TOP] = {},
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA1] = {},
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA2] = {},
-    [FZ_ENUM_CHARACTER_SLOT_HAT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FULL_HAT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_EARS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_EAR_TOP] = {},
-    [FZ_ENUM_CHARACTER_SLOT_NOSE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TORSO1] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_LEGS1] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TANK_TOP] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TSHIRT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SHORT_SLEEVE_SHIRT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_WRIST] = {},
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_WRIST] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SHIRT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_NECK] = {},
-    [FZ_ENUM_CHARACTER_SLOT_NECKLACE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_NECKLACE_LONG] = {},
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_MIDDLE_FINGER] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_MIDDLE_FINGER] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_RING_FINGER] = {},
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_RING_FINGER] = {},
-    [FZ_ENUM_CHARACTER_SLOT_HANDS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_HANDS_LEFT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_HANDS_RIGHT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SOCKS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEGS1] = {},
-    [FZ_ENUM_CHARACTER_SLOT_PANTS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SKIRT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEGS5] = {},
-    [FZ_ENUM_CHARACTER_SLOT_DRESS] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SWEATER] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SWEATER_HAT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_DOWN] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_BULKY] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_HAT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_HAT_BULKY] = {},
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_SUIT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FULL_SUIT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BOILDER_SUIT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FULL_SUIT_HEAD] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FULL_TOP] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BATH_ROBE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SHOES] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_FRONT] = {},
-    [FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_BACK] = {},
-    [FZ_ENUM_CHARACTER_SLOT_AMMO_STRAP] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA_VEST] = {},
-    [FZ_ENUM_CHARACTER_SLOT_TAIL] = {},
-    [FZ_ENUM_CHARACTER_SLOT_BACK] = {},
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_EYE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_EYE] = {},
-    [FZ_ENUM_CHARACTER_SLOT_EYES] = {},
-    [FZ_ENUM_CHARACTER_SLOT_SCARF] = {},
-    [FZ_ENUM_CHARACTER_SLOT_ZED_DMG] = {}
-}
-
-FrameworkZ.Characters.SlotList = {
-    [FZ_ENUM_CHARACTER_SLOT_BANDAGE] = FZ_SLOT_BANDAGE,
-    [FZ_ENUM_CHARACTER_SLOT_WOUND] = FZ_SLOT_WOUND,
-    [FZ_ENUM_CHARACTER_SLOT_BELT_EXTRA] = FZ_SLOT_BELT_EXTRA,
-    [FZ_ENUM_CHARACTER_SLOT_BELT] = FZ_SLOT_BELT,
-    [FZ_ENUM_CHARACTER_SLOT_BELLY_BUTTON] = FZ_SLOT_BELLY_BUTTON,
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_FULL_FACE] = FZ_SLOT_MAKEUP_FULL_FACE,
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES] = FZ_SLOT_MAKEUP_EYES,
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_EYES_SHADOW] = FZ_SLOT_MAKEUP_EYES_SHADOW,
-    [FZ_ENUM_CHARACTER_SLOT_MAKEUP_LIPS] = FZ_SLOT_MAKEUP_LIPS,
-    [FZ_ENUM_CHARACTER_SLOT_MASK] = FZ_SLOT_MASK,
-    [FZ_ENUM_CHARACTER_SLOT_MASK_EYES] = FZ_SLOT_MASK_EYES,
-    [FZ_ENUM_CHARACTER_SLOT_MASK_FULL] = FZ_SLOT_MASK_FULL,
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR] = FZ_SLOT_UNDERWEAR,
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_BOTTOM] = FZ_SLOT_UNDERWEAR_BOTTOM,
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_TOP] = FZ_SLOT_UNDERWEAR_TOP,
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA1] = FZ_SLOT_UNDERWEAR_EXTRA1,
-    [FZ_ENUM_CHARACTER_SLOT_UNDERWEAR_EXTRA2] = FZ_SLOT_UNDERWEAR_EXTRA2,
-    [FZ_ENUM_CHARACTER_SLOT_HAT] = FZ_SLOT_HAT,
-    [FZ_ENUM_CHARACTER_SLOT_FULL_HAT] = FZ_SLOT_FULL_HAT,
-    [FZ_ENUM_CHARACTER_SLOT_EARS] = FZ_SLOT_EARS,
-    [FZ_ENUM_CHARACTER_SLOT_EAR_TOP] = FZ_SLOT_EAR_TOP,
-    [FZ_ENUM_CHARACTER_SLOT_NOSE] = FZ_SLOT_NOSE,
-    [FZ_ENUM_CHARACTER_SLOT_TORSO1] = FZ_SLOT_TORSO1,
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_LEGS1] = FZ_SLOT_TORSO_LEGS1,
-    [FZ_ENUM_CHARACTER_SLOT_TANK_TOP] = FZ_SLOT_TANK_TOP,
-    [FZ_ENUM_CHARACTER_SLOT_TSHIRT] = FZ_SLOT_TSHIRT,
-    [FZ_ENUM_CHARACTER_SLOT_SHORT_SLEEVE_SHIRT] = FZ_SLOT_SHORT_SLEEVE_SHIRT,
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_WRIST] = FZ_SLOT_LEFT_WRIST,
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_WRIST] = FZ_SLOT_RIGHT_WRIST,
-    [FZ_ENUM_CHARACTER_SLOT_SHIRT] = FZ_SLOT_SHIRT,
-    [FZ_ENUM_CHARACTER_SLOT_NECK] = FZ_SLOT_NECK,
-    [FZ_ENUM_CHARACTER_SLOT_NECKLACE] = FZ_SLOT_NECKLACE,
-    [FZ_ENUM_CHARACTER_SLOT_NECKLACE_LONG] = FZ_SLOT_NECKLACE_LONG,
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_MIDDLE_FINGER] = FZ_SLOT_RIGHT_MIDDLE_FINGER,
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_MIDDLE_FINGER] = FZ_SLOT_LEFT_MIDDLE_FINGER,
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_RING_FINGER] = FZ_SLOT_LEFT_RING_FINGER,
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_RING_FINGER] = FZ_SLOT_RIGHT_RING_FINGER,
-    [FZ_ENUM_CHARACTER_SLOT_HANDS] = FZ_SLOT_HANDS,
-    [FZ_ENUM_CHARACTER_SLOT_HANDS_LEFT] = FZ_SLOT_HANDS_LEFT,
-    [FZ_ENUM_CHARACTER_SLOT_HANDS_RIGHT] = FZ_SLOT_HANDS_RIGHT,
-    [FZ_ENUM_CHARACTER_SLOT_SOCKS] = FZ_SLOT_SOCKS,
-    [FZ_ENUM_CHARACTER_SLOT_LEGS1] = FZ_SLOT_LEGS1,
-    [FZ_ENUM_CHARACTER_SLOT_PANTS] = FZ_SLOT_PANTS,
-    [FZ_ENUM_CHARACTER_SLOT_SKIRT] = FZ_SLOT_SKIRT,
-    [FZ_ENUM_CHARACTER_SLOT_LEGS5] = FZ_SLOT_LEGS5,
-    [FZ_ENUM_CHARACTER_SLOT_DRESS] = FZ_SLOT_DRESS,
-    [FZ_ENUM_CHARACTER_SLOT_SWEATER] = FZ_SLOT_SWEATER,
-    [FZ_ENUM_CHARACTER_SLOT_SWEATER_HAT] = FZ_SLOT_SWEATER_HAT,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET] = FZ_SLOT_JACKET,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_DOWN] = FZ_SLOT_JACKET_DOWN,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_BULKY] = FZ_SLOT_JACKET_BULKY,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_HAT] = FZ_SLOT_JACKET_HAT,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_HAT_BULKY] = FZ_SLOT_JACKET_HAT_BULKY,
-    [FZ_ENUM_CHARACTER_SLOT_JACKET_SUIT] = FZ_SLOT_JACKET_SUIT,
-    [FZ_ENUM_CHARACTER_SLOT_FULL_SUIT] = FZ_SLOT_FULL_SUIT,
-    [FZ_ENUM_CHARACTER_SLOT_BOILDER_SUIT] = FZ_SLOT_BOILDER_SUIT,
-    [FZ_ENUM_CHARACTER_SLOT_FULL_SUIT_HEAD] = FZ_SLOT_FULL_SUIT_HEAD,
-    [FZ_ENUM_CHARACTER_SLOT_FULL_TOP] = FZ_SLOT_FULL_TOP,
-    [FZ_ENUM_CHARACTER_SLOT_BATH_ROBE] = FZ_SLOT_BATH_ROBE,
-    [FZ_ENUM_CHARACTER_SLOT_SHOES] = FZ_SLOT_SHOES,
-    [FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_FRONT] = FZ_SLOT_FANNY_PACK_FRONT,
-    [FZ_ENUM_CHARACTER_SLOT_FANNY_PACK_BACK] = FZ_SLOT_FANNY_PACK_BACK,
-    [FZ_ENUM_CHARACTER_SLOT_AMMO_STRAP] = FZ_SLOT_AMMO_STRAP,
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA] = FZ_SLOT_TORSO_EXTRA,
-    [FZ_ENUM_CHARACTER_SLOT_TORSO_EXTRA_VEST] = FZ_SLOT_TORSO_EXTRA_VEST,
-    [FZ_ENUM_CHARACTER_SLOT_TAIL] = FZ_SLOT_TAIL,
-    [FZ_ENUM_CHARACTER_SLOT_BACK] = FZ_SLOT_BACK,
-    [FZ_ENUM_CHARACTER_SLOT_LEFT_EYE] = FZ_SLOT_LEFT_EYE,
-    [FZ_ENUM_CHARACTER_SLOT_RIGHT_EYE] = FZ_SLOT_RIGHT_EYE,
-    [FZ_ENUM_CHARACTER_SLOT_EYES] = FZ_SLOT_EYES,
-    [FZ_ENUM_CHARACTER_SLOT_SCARF] = FZ_SLOT_SCARF,
-    [FZ_ENUM_CHARACTER_SLOT_ZED_DMG] = FZ_SLOT_ZED_DMG
-}
-
+--! \brief List of all active character instances by username.
 FrameworkZ.Characters.List = {}
 
---! \brief Unique IDs list for characters.
+--! \brief Unique IDs list for characters by UID.
 FrameworkZ.Characters.Cache = {}
 
---! \brief Deprecated. To be removed.
-FrameworkZ.Characters.EquipmentSlots = {
-    EQUIPMENT_SLOT_HEAD,
-    EQUIPMENT_SLOT_FACE,
-    EQUIPMENT_SLOT_EARS,
-    EQUIPMENT_SLOT_BACKPACK,
-    EQUIPMENT_SLOT_GLOVES,
-    EQUIPMENT_SLOT_UNDERSHIRT,
-    EQUIPMENT_SLOT_OVERSHIRT,
-    EQUIPMENT_SLOT_VEST,
-    EQUIPMENT_SLOT_BELT,
-    EQUIPMENT_SLOT_PANTS,
-    EQUIPMENT_SLOT_SOCKS,
-    EQUIPMENT_SLOT_SHOES
-}
 FrameworkZ.Characters = FrameworkZ.Foundation:NewModule(FrameworkZ.Characters, "Characters")
 
 --! \brief Character class for FrameworkZ.
@@ -432,59 +81,23 @@ local CHARACTER = {}
 CHARACTER.__index = CHARACTER
 
 --! \brief Save the character's data from the character object.
---! \param shouldTransmit \boolean (Optional) Whether or not to transmit the character's data to the server.
 --! \return \boolean Whether or not the character was successfully saved.
-function CHARACTER:Save(shouldTransmit)
-    if shouldTransmit == nil then shouldTransmit = true end
+function CHARACTER:Save()
+    local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false end
+    local player = FrameworkZ.Players:GetPlayerByID(isoPlayer:getUsername())
 
-    local player = FrameworkZ.Players:GetPlayerByID(self:GetIsoPlayer():getUsername())
-    local characterData = FrameworkZ.Players:GetCharacterDataByID(self:GetIsoPlayer():getUsername(), self.id)
-
-    if not player or not characterData then return false end
+    if not player then return false end
     FrameworkZ.Players:ResetCharacterSaveInterval()
 
-    -- Save "physical" character inventory
-    local inventory = self:GetIsoPlayer():getInventory():getItems()
-    characterData.INVENTORY_PHYSICAL = {}
-    for i = 0, inventory:size() - 1 do
-        table.insert(characterData.INVENTORY_PHYSICAL, {id = inventory:get(i):getFullType()})
+    -- Use centralized data manager for saving
+    local characterData, saveMessage = FrameworkZ.CharacterDataManager:SaveCharacterData(self)
+    if characterData then
+        print("[FrameworkZ] Character data saved: " .. saveMessage)
+        return FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {isoPlayer:getUsername(), self:GetID()}, characterData)
+    else
+        print("[FrameworkZ] Warning: Failed to save character data: " .. (saveMessage or "Unknown error"))
+        return false
     end
-
-    -- Save logical character inventory
-    characterData.INVENTORY_LOGICAL = self.inventory.items
-
-    -- Save character equipment
-    characterData.EQUIPMENT_SLOT_HEAD = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_HEAD) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_HEAD):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_FACE = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_FACE) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_FACE):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_EARS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_EARS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_EARS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_BACKPACK = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BACKPACK) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BACKPACK):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_GLOVES = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_GLOVES) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_GLOVES):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_UNDERSHIRT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_UNDERSHIRT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_UNDERSHIRT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_OVERSHIRT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_OVERSHIRT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_OVERSHIRT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_VEST = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_VEST) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_VEST):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_BELT = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BELT) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_BELT):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_PANTS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_PANTS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_PANTS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_SOCKS = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SOCKS) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SOCKS):getFullType()} or nil
-    characterData.EQUIPMENT_SLOT_SHOES = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SHOES) and {id = self:GetIsoPlayer():getWornItem(EQUIPMENT_SLOT_SHOES):getFullType()} or nil
-
-    -- Save character position/direction angle
-    characterData.POSITION_X = self:GetIsoPlayer():getX()
-    characterData.POSITION_Y = self:GetIsoPlayer():getY()
-    characterData.POSITION_Z = self:GetIsoPlayer():getZ()
-    characterData.DIRECTION_ANGLE = self:GetIsoPlayer():getDirectionAngle()
-
-    local getStats = self:GetIsoPlayer():getStats()
-    characterData.STAT_HUNGER = getStats:getHunger()
-    characterData.STAT_THIRST = getStats:getThirst()
-    characterData.STAT_FATIGUE = getStats:getFatigue()
-    characterData.STAT_STRESS = getStats:getStress()
-    characterData.STAT_PAIN = getStats:getPain()
-    characterData.STAT_PANIC = getStats:getPanic()
-    characterData.STAT_BOREDOM = getStats:getBoredom()
-    --characterData.STAT_UNHAPPINESS = getStats:getUnhappyness()
-    characterData.STAT_DRUNKENNESS = getStats:getDrunkenness()
-    characterData.STAT_ENDURANCE = getStats:getEndurance()
-    --characterData.STAT_TIREDNESS = getStats:getTiredness()
 
     --[[
     modData.status.health = character:getBodyDamage():getOverallBodyHealth()
@@ -496,11 +109,13 @@ function CHARACTER:Save(shouldTransmit)
     modData.status.sick = character:getBodyDamage():getSicknessLevel()
     --]]
 
-    player.Characters[self.id] = characterData
+    --player.Characters[self.id] = characterData
 
-    if isClient() and shouldTransmit == true then
-        self:GetIsoPlayer():transmitModData()
-    end
+    local characters = player:GetCharacters()
+
+    FrameworkZ.Utilities:MergeTables(characters[self.ID], characterData)
+
+    FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {isoPlayer:getUsername(), self.ID}, characters[self.ID])
 
     return true
 end
@@ -527,74 +142,180 @@ function CHARACTER:InitializeDefaultItems()
     end
 end
 
+--! \brief Get the character's age.
+--! \return \integer The character's age.
 function CHARACTER:GetAge() return self.Age end
+--! \brief Set the character's age.
+--! \param age \integer The age to set.
 function CHARACTER:SetAge(age) self.Age = age end
 
+--! \brief Get the character's beard color.
+--! \return \table The character's beard color as RGB values.
 function CHARACTER:GetBeardColor() return self.BeardColor end
+--! \brief Set the character's beard color.
+--! \param beardColor \table The beard color to set as RGB values.
 function CHARACTER:SetBeardColor(beardColor) self.BeardColor = beardColor end
 
+--! \brief Get the character's beard style.
+--! \return \string The character's beard style.
 function CHARACTER:GetBeardStyle() return self.BeardStyle end
+--! \brief Set the character's beard style.
+--! \param beardStyle \string The beard style to set.
 function CHARACTER:SetBeardStyle(beardStyle) self.BeardStyle = beardStyle end
 
+--! \brief Get the character's description.
+--! \return \string The character's description.
 function CHARACTER:GetDescription() return self.Description end
+--! \brief Set the character's description.
+--! \param description \string The description to set.
 function CHARACTER:SetDescription(description) self.Description = description end
 
+--! \brief Get the character's eye color.
+--! \return \table The character's eye color as RGB values.
 function CHARACTER:GetEyeColor() return self.EyeColor end
+--! \brief Set the character's eye color.
+--! \param eyeColor \table The eye color to set as RGB values.
 function CHARACTER:SetEyeColor(eyeColor) self.EyeColor = eyeColor end
 
+--! \brief Get the character's faction.
+--! \return \string The character's faction ID.
 function CHARACTER:GetFaction() return self.Faction end
+--! \brief Set the character's faction.
+--! \param faction \string The faction ID to set.
 function CHARACTER:SetFaction(faction) self.Faction = faction end
 
+--! \brief Get the character's hair color.
+--! \return \table The character's hair color as RGB values.
 function CHARACTER:GetHairColor() return self.HairColor end
+--! \brief Set the character's hair color.
+--! \param hairColor \table The hair color to set as RGB values.
 function CHARACTER:SetHairColor(hairColor) self.HairColor = hairColor end
 
+--! \brief Get the character's hair style.
+--! \return \string The character's hair style.
 function CHARACTER:GetHairStyle() return self.HairStyle end
+--! \brief Set the character's hair style.
+--! \param hairStyle \string The hair style to set.
 function CHARACTER:SetHairStyle(hairStyle) self.HairStyle = hairStyle end
 
+--! \brief Get the character's height.
+--! \return \number The character's height.
 function CHARACTER:GetHeight() return self.Height end
+--! \brief Set the character's height.
+--! \param height \number The height to set.
 function CHARACTER:SetHeight(height) self.Height = height end
 
+--! \brief Get the character's ID.
+--! \return \integer The character's ID.
 function CHARACTER:GetID() return self.ID end
+--! \brief Set the character's ID.
+--! \param id \integer The ID to set.
 function CHARACTER:SetID(id) self.ID = id end
 
+--! \brief Get the character's inventory object.
+--! \return \table The character's inventory object.
 function CHARACTER:GetInventory() return self.Inventory end
+--! \brief Set the character's inventory object.
+--! \param inventory \table The inventory object to set.
 function CHARACTER:SetInventory(inventory) self.Inventory = inventory end
 
+--! \brief Get the character's inventory ID.
+--! \return \integer The character's inventory ID.
+function CHARACTER:GetInventoryID() return self.InventoryID end
+--! \brief Set the character's inventory ID.
+--! \param inventoryID \integer The inventory ID to set.
+function CHARACTER:SetInventoryID(inventoryID) self.InventoryID = inventoryID end
+
+--! \brief Get the character's IsoPlayer object.
+--! \return \table The character's IsoPlayer object.
 function CHARACTER:GetIsoPlayer() return self.IsoPlayer end
+--! \brief Set the character's IsoPlayer object (read-only).
+--! \param isoPlayer \table The IsoPlayer object (cannot be set after creation).
 function CHARACTER:SetIsoPlayer(isoPlayer) print("Failed to set IsoPlayer object to '" .. tostring(isoPlayer) .. "'. IsoPlayer is read-only and must be set upon object creation.") end
 
+--! \brief Get the character's logical inventory data.
+--! \return \table The character's logical inventory data.
 function CHARACTER:GetLogicalInventory() return self.LogicalInventory end
+--! \brief Set the character's logical inventory data.
+--! \param logicalInventory \table The logical inventory data to set.
 function CHARACTER:SetLogicalInventory(logicalInventory) self.LogicalInventory = logicalInventory end
 
+--! \brief Get the character's name.
+--! \return \string The character's name.
 function CHARACTER:GetName() return self.Name end
+--! \brief Set the character's name.
+--! \param name \string The name to set.
 function CHARACTER:SetName(name) self.Name = name end
 
+--! \brief Get the character's physical inventory data.
+--! \return \table The character's physical inventory data.
 function CHARACTER:GetPhysicalInventory() return self.PhysicalInventory end
+--! \brief Set the character's physical inventory data.
+--! \param physicalInventory \table The physical inventory data to set.
 function CHARACTER:SetPhysicalInventory(physicalInventory) self.PhysicalInventory = physicalInventory end
 
+--! \brief Get the character's physique.
+--! \return \string The character's physique.
 function CHARACTER:GetPhysique() return self.Physique end
+--! \brief Set the character's physique.
+--! \param physique \string The physique to set.
 function CHARACTER:SetPhysique(physique) self.Physique = physique end
 
+--! \brief Get the character's associated player object.
+--! \return \table The character's player object.
 function CHARACTER:GetPlayer() return self.Player end
+--! \brief Set the character's associated player object.
+--! \param player \table The player object to set.
 function CHARACTER:SetPlayer(player) self.Player = player end
 
+--! \brief Get the character's recognition list.
+--! \return \table The character's recognition list.
 function CHARACTER:GetRecognizes() return self.Recognizes end
+--! \brief Set the character's recognition list.
+--! \param recognizes \table The recognition list to set.
 function CHARACTER:SetRecognizes(recognizes) self.Recognizes = recognizes end
 
+--! \brief Get the character's skin color.
+--! \return \integer The character's skin color constant.
 function CHARACTER:GetSkinColor() return self.SkinColor end
+--! \brief Set the character's skin color.
+--! \param skinColor \integer The skin color constant to set.
 function CHARACTER:SetSkinColor(skinColor) self.SkinColor = skinColor end
 
+--! \brief Get the character's unique ID.
+--! \return \string The character's unique ID.
 function CHARACTER:GetUID() return self.UID end
+--! \brief Set the character's unique ID.
+--! \param uid \string The unique ID to set.
 function CHARACTER:SetUID(uid) self.UID = uid end
 
+--! \brief Get the character's username.
+--! \return \string The character's username.
 function CHARACTER:GetUsername() return self.Username end
+--! \brief Set the character's username (read-only).
+--! \param username \string The username (cannot be set after creation).
 function CHARACTER:SetUsername(username) print("Failed to set username to: '" .. username .. "'. Username is read-only and must be set upon object creation.") end
 
+--! \brief Get the character's weight.
+--! \return \number The character's weight.
 function CHARACTER:GetWeight() return self.Weight end
+--! \brief Set the character's weight.
+--! \param weight \number The weight to set.
 function CHARACTER:SetWeight(weight) self.Weight = weight end
 
+--! \brief Get the character's saveable data with filtered properties.
+--! \return \table The character's saveable data.
 function CHARACTER:GetSaveableData()
-    return FrameworkZ.Foundation:ProcessSaveableData(self, {"isoPlayer"}, {"inventory"})
+    local ignoreList = {
+        "IsoPlayer",
+        "Player"
+    }
+
+    local encodeList = {
+        "Inventory"
+    }
+
+    return FrameworkZ.Foundation:ProcessSaveableData(self, ignoreList, encodeList)
 end
 
 --[[ Note: Setup UID on Player object inside of stored Characters at Character
@@ -609,7 +330,7 @@ end
 --]]
 
 --! \brief Give a character items by the specified amount.
---! \param itemID \string The ID of the item to give.
+--! \param uniqueID \string The unique ID of the item to give.
 --! \param amount \integer The amount of the item to give.
 function CHARACTER:GiveItems(uniqueID, amount)
     for i = 1, amount do
@@ -617,6 +338,9 @@ function CHARACTER:GiveItems(uniqueID, amount)
     end
 end
 
+--! \brief Take multiple items from a character's inventory by unique ID.
+--! \param uniqueID \string The unique ID of the items to take.
+--! \param amount \integer The number of items to take.
 function CHARACTER:TakeItems(uniqueID, amount)
     for i = 1, amount do
         self:TakeItem(uniqueID)
@@ -691,6 +415,10 @@ function CHARACTER:IsCombine()
     return false
 end
 
+--! \brief Add a character to the recognition list.
+--! \param character \table The character object to add to recognition.
+--! \param alias \string (Optional) The alias to recognize the character as.
+--! \return \boolean \string Whether the recognition was successfully added and a message.
 function CHARACTER:AddRecognition(character, alias)
     if not character then return false, "Character not supplied in parameters." end
 
@@ -702,6 +430,9 @@ function CHARACTER:AddRecognition(character, alias)
     return false, "Character already exists in recognition list."
 end
 
+--! \brief Get how this character recognizes another character.
+--! \param character \table The character object to get recognition for.
+--! \return \string The name or alias this character recognizes the other as.
 function CHARACTER:GetRecognition(character)
     if not character then return false, "Character not supplied in parameters." end
 
@@ -714,6 +445,9 @@ function CHARACTER:GetRecognition(character)
     end
 end
 
+--! \brief Check if this character recognizes another character.
+--! \param character \table The character object to check recognition for.
+--! \return \boolean Whether this character recognizes the other character.
 function CHARACTER:RecognizesCharacter(character)
     if not character then return false, "Character not supplied in parameters." end
 
@@ -724,34 +458,45 @@ function CHARACTER:RecognizesCharacter(character)
     return false
 end
 
-function CHARACTER:RestoreData()
+--! \brief Used for restoring character data from a table, typically a table gathered through the FZ Data Storage system.
+--! \param characterData \table (Optional) The character data table to restore from.
+function CHARACTER:RestoreData(characterData)
     local player = self:GetPlayer() if not player then return false, "Player not found." end
-    local characterData = player:GetCharacterDataByID(self:GetID()) if not characterData then return false, "Character data not found." end
+    characterData = characterData or player:GetCharacterDataByID(self:GetID()) if not characterData then return false, "Character data not found." end
 
-    self:SetAge(characterData.INFO_AGE)
-    self:SetBeardColor(characterData.INFO_BEARD_COLOR)
-    self:SetBeardStyle(characterData.INFO_BEARD_STYLE)
-    self:SetDescription(characterData.INFO_DESCRIPTION)
-    self:SetEyeColor(characterData.INFO_EYE_COLOR)
-    self:SetFaction(characterData.INFO_FACTION)
-    self:SetHairColor(characterData.INFO_HAIR_COLOR)
-    self:SetHairStyle(characterData.INFO_HAIR_STYLE)
-    self:SetHeight(characterData.INFO_HEIGHT)
-    self:SetID(characterData.META_ID)
-    self:SetLogicalInventory(characterData.INVENTORY_LOGICAL)
-    self:SetName(characterData.INFO_NAME)
-    self:SetPhysique(characterData.INFO_PHYSIQUE)
-    self:SetPhysicalInventory(characterData.INVENTORY_PHYSICAL)
-    self:SetRecognizes(characterData.META_RECOGNIZES or {})
-    self:SetSkinColor(characterData.INFO_SKIN_COLOR)
-    self:SetUID(characterData.META_UID)
-    self:SetWeight(characterData.INFO_WEIGHT)
+    self:SetAge(characterData[FZ_ENUM_CHARACTER_INFO_AGE])
+    self:SetBeardColor(characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR])
+    self:SetBeardStyle(characterData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE])
+    self:SetDescription(characterData[FZ_ENUM_CHARACTER_INFO_DESCRIPTION])
+    self:SetEyeColor(characterData[FZ_ENUM_CHARACTER_INFO_EYE_COLOR])
+    self:SetFaction(characterData[FZ_ENUM_CHARACTER_INFO_FACTION])
+    self:SetHairColor(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR])
+    self:SetHairStyle(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE])
+    self:SetHeight(characterData[FZ_ENUM_CHARACTER_INFO_HEIGHT])
+    self:SetID(characterData[FZ_ENUM_CHARACTER_META_ID])
+    self:SetLogicalInventory(characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL])
+    self:SetName(characterData[FZ_ENUM_CHARACTER_INFO_NAME])
+    self:SetPhysique(characterData[FZ_ENUM_CHARACTER_INFO_PHYSIQUE])
+    self:SetPhysicalInventory(characterData[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL])
+    self:SetRecognizes(characterData[FZ_ENUM_CHARACTER_META_RECOGNIZES] or {})
+    self:SetSkinColor(characterData[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR])
+    self:SetUID(characterData[FZ_ENUM_CHARACTER_META_UID])
+    self:SetWeight(characterData[FZ_ENUM_CHARACTER_INFO_WEIGHT])
+
+    local newInventory = FrameworkZ.Inventories:New(self:GetUsername())
+    local _success, _message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(self:GetIsoPlayer(), newInventory, self:GetLogicalInventory() or nil)
+    self:SetInventory(rebuiltInventory or FrameworkZ.Inventories:New(self:GetUsername()))
+
+    if self:GetInventory() then
+        self:SetInventoryID(self:GetInventory().id)
+        self:GetInventory():Initialize()
+    end
 
     return true, "Character data restored."
 end
 
 --! \brief Initialize a character.
---! \return \string username
+--! \return \boolean \string Whether initialization was successful and a message.
 function CHARACTER:Initialize()
 	if not self:GetIsoPlayer() then return false, "IsoPlayer not set." end
 
@@ -766,10 +511,10 @@ function CHARACTER:Initialize()
 end
 
 --! \brief Create a new character object.
---! \param username \string The player's username as their ID.
+--! \param isoPlayer \table The IsoPlayer object associated with this character.
 --! \param id \integer The character's ID from the player stored data.
---! \param data \table (Optional) The character's data stored on the object.
---! \return \table The new character object.
+--! \return \object|\boolean The new character object or false if the process failed to create a new character object.
+--! \return \string An error message if the process failed.
 function FrameworkZ.Characters:New(isoPlayer, id)
     if not isoPlayer then return false, "IsoPlayer is invalid." end
 
@@ -794,10 +539,10 @@ function FrameworkZ.Characters:New(isoPlayer, id)
 	return object
 end
 
---! \brief Initialize a character.
---! \param username \string The player's username.
---! \param character \table The character's object data.
---! \return \string The username added to the list of characters.
+--! \brief Initialize a character and add it to the system.
+--! \param isoPlayer \table The IsoPlayer object associated with this character.
+--! \param id \integer The character's ID from the player stored data.
+--! \return \table \string The initialized character object or false and an error message.
 function FrameworkZ.Characters:Initialize(isoPlayer, id)
     local character, message = FrameworkZ.Characters:New(isoPlayer, id) if not character then return false, "Could not create new character object, " .. message end
     local username = character:GetUsername()
@@ -815,6 +560,10 @@ function FrameworkZ.Characters:Initialize(isoPlayer, id)
     return character
 end
 
+--! \brief Add a character to the active character list.
+--! \param username \string The player's username.
+--! \param character \table The character object to add.
+--! \return \table \boolean The added character object or false if failed.
 function FrameworkZ.Characters:AddToList(username, character)
     if not username or not character then return false end
 
@@ -822,6 +571,9 @@ function FrameworkZ.Characters:AddToList(username, character)
     return self.List[username]
 end
 
+--! \brief Remove a character from the active character list.
+--! \param username \string The player's username.
+--! \return \boolean Whether the character was successfully removed.
 function FrameworkZ.Characters:RemoveFromList(username)
     if not username then return false end
 
@@ -829,6 +581,10 @@ function FrameworkZ.Characters:RemoveFromList(username)
     return true
 end
 
+--! \brief Add a character to the UID cache.
+--! \param uid \string The character's unique ID.
+--! \param character \table The character object to add.
+--! \return \table \boolean The added character object or false if failed.
 function FrameworkZ.Characters:AddToCache(uid, character)
     if not uid or not character then return false end
 
@@ -836,6 +592,9 @@ function FrameworkZ.Characters:AddToCache(uid, character)
     return self.Cache[uid]
 end
 
+--! \brief Remove a character from the UID cache.
+--! \param uid \string The character's unique ID.
+--! \return \boolean Whether the character was successfully removed.
 function FrameworkZ.Characters:RemoveFromCache(uid)
     if not uid then return false end
 
@@ -852,12 +611,18 @@ function FrameworkZ.Characters:GetCharacterByID(username)
     return character
 end
 
+--! \brief Gets a character by their unique ID.
+--! \param uid \string The character's unique ID.
+--! \return \table The character object from the cache or nil if not found.
 function FrameworkZ.Characters:GetCharacterByUID(uid)
     local character = self.Cache[uid] or nil
 
     return character
 end
 
+--! \brief Gets a character's inventory by their username.
+--! \param username \string The player's username.
+--! \return \table The character's inventory object or nil if not found.
 function FrameworkZ.Characters:GetCharacterInventoryByID(username)
     local character = self:GetCharacterByID(username)
 
@@ -877,34 +642,58 @@ function FrameworkZ.Characters:Save(username)
     local character = self:GetCharacterByID(username)
 
     if character then
-        return character:Save()
+        local ok = character:Save()
+        -- Additionally ensure the characters map is updated in storage to avoid stale cache overwriting on reconnect
+        local player = FrameworkZ.Players:GetPlayerByID(username)
+        if ok and player then
+            local isoPlayer = player:GetIsoPlayer()
+            local charactersMap = player:GetCharacters() or {}
+            local entry = charactersMap[character:GetID()] or {}
+            local savedData, _ = FrameworkZ.CharacterDataManager:SaveCharacterData(character)
+            if savedData then
+                FrameworkZ.Utilities:MergeTables(entry, savedData)
+                charactersMap[character:GetID()] = entry
+                FrameworkZ.Foundation:SetData(isoPlayer, "Characters", username, charactersMap)
+            end
+        end
+        return ok
     end
 
     return false
 end
 
+--! \brief Character pre-load hook. Called before character loading begins.
 function CHARACTER:OnPreLoad()
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", self)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPreLoad")
 
+--! \brief Character load hook. Called during character loading.
 function CHARACTER:OnLoad()
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", self)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
 
+--! \brief Character post-load hook. Called after character loading is complete.
+--! \param firstLoad \boolean Whether this is the first time loading this character.
 function CHARACTER:OnPostLoad(firstLoad)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", self, firstLoad) -- Does not actually call anymore
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
 
+--! \brief Post-load callback function for character initialization.
+--! \param data \table The data containing the IsoPlayer object.
+--! \param characterData \table The character's stored data.
+--! \return \table The initialized character object.
 function FrameworkZ.Characters.PostLoad(data, characterData)
     return FrameworkZ.Characters:OnPostLoad(data.isoPlayer, characterData)
 end
 FrameworkZ.Foundation:Subscribe("FrameworkZ.Characters.PostLoad", FrameworkZ.Characters.PostLoad)
 
 --! \brief Initializes a player's character after loading.
---! \return \boolean Whether or not the post load was successful.
+--! \param isoPlayer \table The IsoPlayer object.
+--! \param characterData \table The character's stored data.
+--! \return \table The initialized character object.
 function FrameworkZ.Characters:OnPostLoad(isoPlayer, characterData)
     local username = isoPlayer:getUsername()
     local player = FrameworkZ.Players:GetPlayerByID(username)
@@ -915,33 +704,47 @@ function FrameworkZ.Characters:OnPostLoad(isoPlayer, characterData)
     character:OnPreLoad()
 
     character.IsoPlayer = isoPlayer
-    character.Name = characterData.INFO_NAME
-    character.Description = characterData.INFO_DESCRIPTION
-    character.Faction = characterData.INFO_FACTION
-    character.Age = characterData.INFO_AGE
-    character.HeightInches = characterData.INFO_HEIGHT
-    character.EyeColor = characterData.INFO_EYE_COLOR
-    character.HairColor = characterData.INFO_HAIR_STYLE
-    character.SkinColor = characterData.INFO_SKIN_COLOR
-    character.Physique = characterData.INFO_PHYSIQUE
-    character.Weight = characterData.INFO_WEIGHT
-    character.Recognizes = {}
+    character:RestoreData(characterData)
 
-    local newInventory = FrameworkZ.Inventories:New(username)
-    local _success, _message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(isoPlayer, newInventory, characterData.INVENTORY_LOGICAL or nil)
-    character.inventory = rebuiltInventory or nil
-
-    if character.inventory then
-        character.inventoryID = character.inventory.id
-        character.inventory:Initialize()
+    -- Use centralized inventory system for restoration
+    local restoreSuccess, restoreMessage = FrameworkZ.Inventories:Restore(character, characterData)
+    if restoreSuccess then
+        print("[FrameworkZ] Character inventory restored: " .. restoreMessage)
+    else
+        print("[FrameworkZ] Warning: Character inventory restoration issues: " .. (restoreMessage or "Unknown error"))
     end
+
+    -- Restore character position and direction
+    if characterData.POSITION_X and characterData.POSITION_Y and characterData.POSITION_Z then
+        isoPlayer:setX(characterData.POSITION_X)
+        isoPlayer:setY(characterData.POSITION_Y)
+        isoPlayer:setZ(characterData.POSITION_Z)
+        print("[FrameworkZ] Character position restored")
+    end
+
+    if characterData.DIRECTION_ANGLE then
+        isoPlayer:setDirectionAngle(characterData.DIRECTION_ANGLE)
+    end
+
+    -- Restore character stats
+    local getStats = isoPlayer:getStats()
+    if characterData.STAT_HUNGER then getStats:setHunger(characterData.STAT_HUNGER) end
+    if characterData.STAT_THIRST then getStats:setThirst(characterData.STAT_THIRST) end
+    if characterData.STAT_FATIGUE then getStats:setFatigue(characterData.STAT_FATIGUE) end
+    if characterData.STAT_STRESS then getStats:setStress(characterData.STAT_STRESS) end
+    if characterData.STAT_PAIN then getStats:setPain(characterData.STAT_PAIN) end
+    if characterData.STAT_PANIC then getStats:setPanic(characterData.STAT_PANIC) end
+    if characterData.STAT_BOREDOM then getStats:setBoredom(characterData.STAT_BOREDOM) end
+    if characterData.STAT_DRUNKENNESS then getStats:setDrunkenness(characterData.STAT_DRUNKENNESS) end
+    if characterData.STAT_ENDURANCE then getStats:setEndurance(characterData.STAT_ENDURANCE) end
+    print("[FrameworkZ] Character stats restored")
 
     character:Initialize()
     character:OnLoad()
 
-    player.loadedCharacter = character
-    self.Cache[characterData.META_UID] = character
-    character:SetUID(characterData.META_UID)
+    player:SetCharacter(character)
+    self.Cache[characterData[FZ_ENUM_CHARACTER_META_UID]] = character
+    character:SetUID(characterData[FZ_ENUM_CHARACTER_META_UID])
 
     return character
 end
@@ -949,9 +752,11 @@ end
 if isClient() then
     local currentSaveTick = 0
 
+    --! \brief Player tick function for handling character auto-save on client.
+    --! \param player \table The player object to process.
     function FrameworkZ.Characters:PlayerTick(player)
         if currentSaveTick >= FrameworkZ.Config.Options.TicksUntilCharacterSave then
-            local success, message = FrameworkZ.Players:Save(player:GetIsoPlayer():getUsername())
+            local success, message = FrameworkZ.Players:Save(player:GetUsername())
 
             if success then
                 if FrameworkZ.Config.Options.ShouldNotifyOnCharacterSave then
@@ -968,6 +773,12 @@ if isClient() then
     end
 end
 
+--! \brief Storage set event handler for character data.
+--! \param isoPlayer \table The IsoPlayer object.
+--! \param command \string The command type.
+--! \param namespace \string The data namespace.
+--! \param keys \string The data keys.
+--! \param value \table The data value.
 function FrameworkZ.Characters:OnStorageSet(isoPlayer, command, namespace, keys, value)
     if namespace == "Characters" then
         if command == "Initialize" then
@@ -982,10 +793,12 @@ function FrameworkZ.Characters:OnStorageSet(isoPlayer, command, namespace, keys,
     end
 end
 
+--! \brief Initialize global mod data for the Characters module.
 function FrameworkZ.Characters:OnInitGlobalModData()
     FrameworkZ.Foundation:RegisterNamespace("Characters")
 end
 
+--! \brief Reference to the CHARACTER metatable for external access.
 FrameworkZ.Characters.MetaObject = CHARACTER
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Characters)

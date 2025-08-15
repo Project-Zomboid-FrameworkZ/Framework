@@ -6,7 +6,7 @@ ISWearClothing = ISWearClothing
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Items module for FrameworkZ. Defines and interacts with ITEM \object.
---! \class FrameworkZ.Items
+--! \module FrameworkZ.Items
 FrameworkZ.Items = {}
 FrameworkZ.Items.__index = FrameworkZ.Items
 
@@ -423,7 +423,7 @@ function FrameworkZ.Items:OnDropItemCallback(parameters)
 end
 
 function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, items)
-    context:clear()
+    --context:clear()
 
     local isoPlayer = getSpecificPlayer(player)
     local menuManager = MenuManager.new(context)

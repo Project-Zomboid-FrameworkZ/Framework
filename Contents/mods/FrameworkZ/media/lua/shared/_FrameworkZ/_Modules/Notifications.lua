@@ -3,7 +3,7 @@ if not isClient() then return end
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Notifications module for FrameworkZ. Queues and sends notifications.
---! \class FrameworkZ.Notifications
+--! \module FrameworkZ.Notifications
 FrameworkZ.Notifications = {}
 FrameworkZ.Notifications.__index = FrameworkZ.Notifications
 FrameworkZ.Notifications.Queue = {}

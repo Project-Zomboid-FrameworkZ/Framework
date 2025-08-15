@@ -1,5 +1,6 @@
 local internalObjects = {}
 
+--! \module FrameworkZ.Security
 FrameworkZ.Security = {}
 FrameworkZ.Security.__index = FrameworkZ.Security
 FrameworkZ.Security.__internalObjects = internalObjects

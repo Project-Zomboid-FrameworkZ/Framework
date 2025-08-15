@@ -1,14 +1,14 @@
 version=1
-id=3531332504
-title=FrameworkZ
-description=[img]https://img.pzframeworkz.net/early-closed-alpha-notice.png[/img]
+id=3535820826
+title=[FZ] FrameworkZ (Early Open Alpha)
+description=[img]https://img.pzframeworkz.net/early-open-alpha-notice.png[/img]
 description=[img]https://img.pzframeworkz.net/core-features.png[/img]
 description=[img]https://img.pzframeworkz.net/docs-icon.png[/img][img]https://img.pzframeworkz.net/discord-icon.png[/img][img]https://img.pzframeworkz.net/github-icon.png[/img]
-description=[table equalcells=1]
+description=[table]
 description=    [tr]
-description=        [th]Documentation[/th]
-description=        [th]Discord Invite[/th]
-description=        [th]Github Repository[/th]
+description=        [th][h3]Documentation[/h3][/th]
+description=        [th][h3]Discord Invite[/h3][/th]
+description=        [th][h3]Github Repository[/h3][/th]
 description=    [/tr]
 description=    [tr]
 description=        [td]https://docs.pzframeworkz.net[/td]
@@ -17,6 +17,8 @@ description=        [td]https://github.pzframeworkz.net[/td]
 description=    [/tr]
 description=[/table]
 description=
-description=[b]Created by RJ_RayJay[/b] | [b]MIT License[/b] | [b]Build 41 Compatible[/b]
+description=[code]Created by RJ_RayJay | MIT Licensed | Build 41 Compatible[/code]
 description=
-description=Join our Discord community to get started and connect with other server owners!
+description=[url=https://ko-fi.com/jonathandroogh][img]https://img.pzframeworkz.net/ko-fi.png[/img][/url]
+tags=Build 41;Framework;Multiplayer
+visibility=public

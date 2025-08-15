@@ -1,9 +1,11 @@
-FrameworkZ.UI.MainMenu = FrameworkZ.UI.MainMenu or {}
+FrameworkZ.UI.MainMenu = FrameworkZ.Interfaces:New("MainMenu", FrameworkZ.UI)
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.MainMenu, "MainMenu")
 
 local mainMenuMusicVolume = 1.0
 local currentMainMenuSong = nil
 local nextLightning = 5
+local mainMenuIsMuted = false
+local mainMenuOriginalVolume = 1.0
 
 function FrameworkZ.UI.MainMenu:initialise()
     
@@ -49,10 +51,13 @@ function FrameworkZ.UI.MainMenu:initialise()
         self.emitter:stopSound(currentMainMenuSong)
     end
 
-    mainMenuMusicVolume = 1.0
+    mainMenuMusicVolume = 0.5
     currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.Options.MainMenuMusic, nil)
+    if currentMainMenuSong then
+        self.emitter:setVolume(currentMainMenuSong, mainMenuMusicVolume)
+    end
 
-    local stepWidth, stepHeight = 500, 600
+    local stepWidth, stepHeight = 600, 700 -- w = 500?
     local stepX, stepY = self.width / 2 - stepWidth / 2, self.height / 2 - stepHeight / 2
     self.MainMenu = self
     self.createCharacterSteps = FrameworkZ.UserInterfaces:New("VanillaCreateCharacter", self)
@@ -103,6 +108,43 @@ function FrameworkZ.UI.MainMenu:initialise()
     self.closeButton.font = UIFont.Large
     self:addChild(self.closeButton)
     --]]
+end
+
+function FrameworkZ.UI.MainMenu:setMainMenuMusicVolume(volume)
+    mainMenuMusicVolume = volume or 0.6
+    
+    -- If volume is 0, we're in muted state - preserve original volume for unmuting
+    if volume == 0 and not mainMenuIsMuted then
+        mainMenuIsMuted = true
+        -- Keep the current mainMenuOriginalVolume if it's already set, otherwise use default
+        if mainMenuOriginalVolume == 1.0 or mainMenuOriginalVolume == 0.5 then
+            mainMenuOriginalVolume = 0.5  -- Default fallback volume
+        end
+    elseif volume > 0 then
+        -- If setting a non-zero volume, update original and unmute
+        mainMenuIsMuted = false
+        mainMenuOriginalVolume = volume
+    end
+    
+    -- Apply volume to currently playing song if any
+    if currentMainMenuSong and self.emitter:isPlaying(currentMainMenuSong) then
+        self.emitter:setVolume(currentMainMenuSong, mainMenuMusicVolume)
+    end
+end
+
+function FrameworkZ.UI.MainMenu:setOriginalVolumeForUnmute(originalVolume)
+    -- This method allows Introduction to pass the original volume before muting
+    if originalVolume and originalVolume > 0 then
+        mainMenuOriginalVolume = originalVolume
+    end
+end
+
+function FrameworkZ.UI.MainMenu:getMainMenuMusicVolume()
+    return mainMenuMusicVolume
+end
+
+function FrameworkZ.UI.MainMenu:getOriginalVolumeForUnmute()
+    return mainMenuOriginalVolume
 end
 
 function FrameworkZ.UI.MainMenu:fadeOutMainMenuMusic()
@@ -285,68 +327,76 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
 
     local hair = appearanceInstance.hairDropdown and appearanceInstance.hairDropdown:getOptionData(appearanceInstance.hairDropdown.selected) or nil
     local beard = appearanceInstance.beardDropdown and appearanceInstance.beardDropdown:getOptionData(appearanceInstance.beardDropdown.selected) or nil
-    local head = appearanceInstance.headDropdown and appearanceInstance.headDropdown:getOptionData(appearanceInstance.headDropdown.selected).itemID or nil
-    local face = appearanceInstance.faceDropdown and appearanceInstance.faceDropdown:getOptionData(appearanceInstance.faceDropdown.selected).itemID or nil
-    local ears = appearanceInstance.earsDropdown and appearanceInstance.earsDropdown:getOptionData(appearanceInstance.earsDropdown.selected).itemID or nil
-    local backpack = appearanceInstance.backpackDropdown and appearanceInstance.backpackDropdown:getOptionData(appearanceInstance.backpackDropdown.selected).itemID or nil
-    local rightHand = nil
-    local rightHandAccessory = nil
-    local leftHand = nil
-    local leftHandAccessory = nil
-    local gloves = appearanceInstance.glovesDropdown and appearanceInstance.glovesDropdown:getOptionData(appearanceInstance.glovesDropdown.selected).itemID or nil
-    local undershirt = appearanceInstance.undershirtDropdown and appearanceInstance.undershirtDropdown:getOptionData(appearanceInstance.undershirtDropdown.selected).itemID or nil
-    local overshirt = appearanceInstance.overshirtDropdown and appearanceInstance.overshirtDropdown:getOptionData(appearanceInstance.overshirtDropdown.selected).itemID or nil
-    local vest = appearanceInstance.vestDropdown and appearanceInstance.vestDropdown:getOptionData(appearanceInstance.vestDropdown.selected).itemID or nil
-    local belt = appearanceInstance.beltDropdown and appearanceInstance.beltDropdown:getOptionData(appearanceInstance.beltDropdown.selected).itemID or nil
-    local pants = appearanceInstance.pantsDropdown and appearanceInstance.pantsDropdown:getOptionData(appearanceInstance.pantsDropdown.selected).itemID or nil
-    local socks = appearanceInstance.socksDropdown and appearanceInstance.socksDropdown:getOptionData(appearanceInstance.socksDropdown.selected).itemID or nil
-    local shoes = appearanceInstance.shoesDropdown and appearanceInstance.shoesDropdown:getOptionData(appearanceInstance.shoesDropdown.selected).itemID or nil
+    
+    -- Handle empty beard for female characters or "None" selections
+    if not beard or beard == "" then
+        beard = "None"
+    end
+    
+    print("[onFinalizeCharacter] Hair: " .. tostring(hair))
+    print("[onFinalizeCharacter] Beard: " .. tostring(beard))
+    
+    -- Get selected clothing from the new grid-based system (now includes color and other data)
+    local selectedClothingWithData = appearanceInstance:getSelectedClothing()
+    print("[onFinalizeCharacter] Selected clothing with data retrieved for character creation:")
+    for location, equipmentData in pairs(selectedClothingWithData) do
+        print("  " .. location .. ": " .. tostring(equipmentData.id) .. " with color and condition data")
+    end
 
-    local characterData = {
-        INFO_FACTION = faction,
-        INFO_GENDER = gender,
-        INFO_NAME = name,
-        INFO_DESCRIPTION = description,
-        INFO_AGE = age,
-        INFO_HEIGHT = height,
-        INFO_WEIGHT = weight,
-        INFO_PHYSIQUE = physique,
-        INFO_EYE_COLOR = eyeColor,
-        INFO_BEARD_COLOR = hairColor,
-        INFO_HAIR_COLOR = hairColor,
-        INFO_SKIN_COLOR = skinColor,
-        INFO_HAIR_STYLE = hair,
-        INFO_BEARD_STYLE = beard,
-        EQUIPMENT_SLOT_HEAD = {id = head},
-        EQUIPMENT_SLOT_FACE = {id = face},
-        EQUIPMENT_SLOT_EARS = {id = ears},
-        EQUIPMENT_SLOT_BACKPACK = {id = backpack},
-        EQUIPMENT_SLOT_GLOVES = {id = gloves},
-        EQUIPMENT_SLOT_UNDERSHIRT = {id = undershirt},
-        EQUIPMENT_SLOT_OVERSHIRT = {id = overshirt},
-        EQUIPMENT_SLOT_VEST = {id = vest},
-        EQUIPMENT_SLOT_BELT = {id = belt},
-        EQUIPMENT_SLOT_PANTS = {id = pants},
-        EQUIPMENT_SLOT_SOCKS = {id = socks},
-        EQUIPMENT_SLOT_SHOES = {id = shoes}
+    -- Prepare creation data for centralized data manager
+    local creationData = {
+        [FZ_ENUM_CHARACTER_INFO_FACTION] = faction,
+        [FZ_ENUM_CHARACTER_INFO_GENDER] = gender,
+        [FZ_ENUM_CHARACTER_INFO_NAME] = name,
+        [FZ_ENUM_CHARACTER_INFO_DESCRIPTION] = description,
+        [FZ_ENUM_CHARACTER_INFO_AGE] = age,
+        [FZ_ENUM_CHARACTER_INFO_HEIGHT] = height,
+        [FZ_ENUM_CHARACTER_INFO_WEIGHT] = weight,
+        [FZ_ENUM_CHARACTER_INFO_PHYSIQUE] = physique,
+        [FZ_ENUM_CHARACTER_INFO_EYE_COLOR] = eyeColor,
+        [FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] = hairColor,
+        [FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] = hairColor,
+        [FZ_ENUM_CHARACTER_INFO_SKIN_COLOR] = skinColor,
+        [FZ_ENUM_CHARACTER_INFO_HAIR_STYLE] = hair,
+        [FZ_ENUM_CHARACTER_INFO_BEARD_STYLE] = beard,
+        selectedClothingWithData = selectedClothingWithData -- Store the clothing data with all properties
     }
+    
+    print("[onFinalizeCharacter] Final creation data:")
+    print("  Hair Style: " .. tostring(creationData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE]))
+    print("  Beard Style: " .. tostring(creationData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]))
+    
+    -- Count clothing items properly (associative array)
+    local clothingCount = 0
+    for k, v in pairs(selectedClothingWithData) do
+        clothingCount = clothingCount + 1
+    end
+    print("  Selected Clothing Items: " .. tostring(clothingCount))
 
     FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, serverCharacterID, serverMessage)
         if serverCharacterID then
-            local clientCharacterID, clientMessage = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), characterData, serverCharacterID)
+            -- Ensure client cache mirrors server-processed structure so preview shows equipment immediately
+            local playerObj = FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername())
+            local processedCreationData, createMsg = FrameworkZ.CharacterDataManager:CreateCharacterData(creationData, playerObj)
+            if not processedCreationData then
+                FrameworkZ.Notifications:AddToQueue("Client-side data processing failed: " .. tostring(createMsg), FrameworkZ.Notifications.Types.Warning, nil, self)
+                processedCreationData = creationData -- Fallback to raw data
+            end
+
+            local clientCharacterID, clientMessage = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), processedCreationData, serverCharacterID)
 
             if clientCharacterID and clientCharacterID == serverCharacterID then
-                FrameworkZ.Notifications:AddToQueue("Successfully created character #" .. clientCharacterID .. ": " .. characterData.INFO_NAME, FrameworkZ.Notifications.Types.Success, nil, self)
+                FrameworkZ.Notifications:AddToQueue("Successfully created character #" .. tostring(clientCharacterID) .. ": " .. processedCreationData[FZ_ENUM_CHARACTER_INFO_NAME], FrameworkZ.Notifications.Types.Success, nil, self)
             elseif clientCharacterID ~= serverCharacterID then
                 FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: Character ID mistmatch.", FrameworkZ.Notifications.Types.Warning, nil, self)
             else
-                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. clientMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
+                FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. tostring(clientMessage), FrameworkZ.Notifications.Types.Warning, nil, self)
             end
         else
-            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. serverMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
+            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. tostring(serverMessage), FrameworkZ.Notifications.Types.Warning, nil, self)
             return false
         end
-    end, self.playerObject:getUsername(), characterData)
+    end, self.playerObject:getUsername(), creationData)
 
     return true
 end
@@ -358,10 +408,15 @@ function FrameworkZ.UI.MainMenu:onEnterLoadCharacterMenu()
         FrameworkZ.Notifications:AddToQueue("Failed to load characters.", FrameworkZ.Notifications.Types.Danger, nil, self)
 
         return false
-    elseif #player:GetCharacters() <= 0 then
-        FrameworkZ.Notifications:AddToQueue("No characters found.", FrameworkZ.Notifications.Types.Warning, nil, self)
-
-        return false
+    else
+        -- Properly count associative character tables (avoid #table on non-sequential indices)
+        local count = 0
+        local chars = player:GetCharacters() or {}
+        for _ in pairs(chars) do count = count + 1 end
+        if count <= 0 then
+            FrameworkZ.Notifications:AddToQueue("No characters found.", FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
     end
 
     self:onExitMainMenu()
@@ -417,7 +472,7 @@ function FrameworkZ.UI.MainMenu:onEnterMainMenuFromLoadCharacterMenu()
 end
 
 function FrameworkZ.UI.MainMenu:onLoadCharacter()
-    local characterID = self.loadCharacterMenu.currentIndex
+    local characterID = self.loadCharacterMenu.characterIDs[self.loadCharacterMenu.currentIndex]
     FrameworkZ.Players:LoadCharacterByID(self.playerObject:getUsername(), characterID)
 
 

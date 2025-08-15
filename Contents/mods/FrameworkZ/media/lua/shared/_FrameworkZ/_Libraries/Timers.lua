@@ -1,7 +1,7 @@
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Timers module for FrameworkZ. Allows for the creation of timers for delaying code executions.
---! \class FrameworkZ.Timers
+--! \library FrameworkZ.Timers
 FrameworkZ.Timers = {}
 --FrameworkZ.Timers.__index = FrameworkZ.Timers
 FrameworkZ.Timers = FrameworkZ.Foundation:NewModule(FrameworkZ.Timers, "Timers")

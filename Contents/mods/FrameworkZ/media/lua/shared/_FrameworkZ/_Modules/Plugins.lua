@@ -1,7 +1,7 @@
 local Events = Events
 
 --! \brief Plugins module for FrameworkZ. Extends the framework with modular plugins.
---! \class FrameworkZ.Plugins
+--! \module FrameworkZ.Plugins
 FrameworkZ.Plugins = {}
 FrameworkZ.Plugins.__index = FrameworkZ.Plugins
 FrameworkZ.Plugins.RegisteredPlugins = {}
@@ -53,7 +53,7 @@ function FrameworkZ.Plugins:RegisterPlugin(plugin, overwrite)
         FrameworkZ.Foundation:RegisterPluginHandler(self.RegisteredPlugins[name])
     else
         FrameworkZ.Foundation:UnregisterPluginHandler(self.RegisteredPlugins[name])
-        self.RegisteredPlugins[name] = mergeTables(self.RegisteredPlugins[name], plugin)
+        self.RegisteredPlugins[name] = FrameworkZ.Utilities:MergeTables(self.RegisteredPlugins[name], plugin)
         FrameworkZ.Foundation:RegisterPluginHandler(self.RegisteredPlugins[name])
     end
 
@@ -92,6 +92,35 @@ function FrameworkZ.Plugins:UnloadPlugin(pluginName)
         self.LoadedPlugins[pluginName] = nil
     end
 end
+
+--[[
+function FrameworkZ.Plugins:RegisterInterface(interfaceName, interfaceTable)
+    if not FrameworkZ.Interfaces.List[interfaceName] then
+        FrameworkZ.Interfaces:Register(interfaceName, interfaceTable)
+    else
+        FrameworkZ.Utilities:MergeTables(FrameworkZ.Interfaces.List[interfaceName], interfaceTable)
+    end
+end
+--]]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --! \brief Register event handlers for a plugin.
 --! \param plugin \table The plugin table containing the functions.

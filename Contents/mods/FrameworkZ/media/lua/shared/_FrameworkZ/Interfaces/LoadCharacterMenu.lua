@@ -7,12 +7,21 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
     local isoPlayer = self.player.isoPlayer
 
     self.currentIndex = 1
-    self.gender = "Male"
-    self.characters = self.player:GetCharacters()
+    
+    -- Convert Characters table to sequential array for proper indexing
+    local allCharacters = self.player:GetCharacters()
+    self.characters = {}
+    self.characterIDs = {}
+    
+    if allCharacters then
+        for characterID, characterData in pairs(allCharacters) do
+            table.insert(self.characters, characterData)
+            table.insert(self.characterIDs, characterID)
+        end
+    end
 
     local transitionButtonHeight = self.height / 2
     local transitionButtonY = self.height / 2 - transitionButtonHeight / 2
-    local isFemale = (self.gender == "Female" and true) or (self.gender == "Male" and false)
 
     local widthLeft = 150
     local heightLeft = 300
@@ -29,8 +38,8 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
     local xRight = self.width - (self.width / 8 + widthLeft)
     local yRight = self.height / 2 - heightLeft / 2
 
-    self.survivor = SurvivorFactory:CreateSurvivor(SurvivorType.Neutral, isFemale)
-    self.survivor:setFemale(isFemale)
+    -- Create a default survivor - gender will be updated when character is set
+    self.survivor = SurvivorFactory:CreateSurvivor(SurvivorType.Neutral, false)
 
     self.nextButton = ISButton:new(self.width - 30, transitionButtonY, 30, transitionButtonHeight, ">", self, FrameworkZ.UI.LoadCharacterMenu.onNext)
     self.nextButton.font = UIFont.Large

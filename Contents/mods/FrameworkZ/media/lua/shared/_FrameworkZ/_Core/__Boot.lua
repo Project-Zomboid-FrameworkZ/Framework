@@ -107,6 +107,8 @@ local function newFrameworkZ()
     return object
 end
 
+--! \brief FrameworkZ core object table. Contains core functionality for FrameworkZ.
+--! \core FrameworkZ
 FrameworkZ = newFrameworkZ()
 FrameworkZ.Initialized = false
 FrameworkZ.Meta.Author = "RJ_RayJay"
@@ -115,8 +117,8 @@ FrameworkZ.Meta.Version = "1.0.0"
 
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
-    SkipIntro = true,
-    Version = "10.8.3",
+    SkipIntro = false,
+    Version = "11.8.3",
     VersionType = "alpha",
 
     IntroFrameworkImage = "media/textures/fz.png",

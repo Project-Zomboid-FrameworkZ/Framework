@@ -26,7 +26,7 @@ function FrameworkZ.UI.CharacterView:initialise()
     self.uiHelper = FrameworkZ.UI
     local descriptionLines = self:getDescriptionLines(self.description)
     local descriptionHeight = FONT_HEIGHT_SMALL * 4
-    local isFemale = (self.character.INFO_GENDER == "Female" and true) or (self.character.INFO_GENDER == "Male" and false)
+    local isFemale = (self.character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female" and true) or (self.character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Male" and false)
     local x = self.uiHelper.GetMiddle(self.width, UIFont.Medium, self.name)
     local y = 0
 
@@ -44,7 +44,7 @@ function FrameworkZ.UI.CharacterView:initialise()
     self.characterPreview:initialise()
     self.characterPreview:removeChild(self.characterPreview.animCombo)
     self.characterPreview:setCharacter(self.isoPlayer)
-    --self.characterPreview:setSurvivorDesc(self.survivor)
+    self.characterPreview:setSurvivorDesc(self.survivor)
     self:updateAppearance()
     self:addChild(self.characterPreview)
 
@@ -92,48 +92,36 @@ function FrameworkZ.UI.CharacterView:updateAppearance()
     local survivor = self.survivor
     local character = self.character
 
-    for k, v in ipairs (FrameworkZ.Characters.EquipmentSlots) do
-        survivor:setWornItem(v, nil)
+    -- Debug: Check if character data exists
+    if not character then
+        print("[CharacterView] Error: No character data provided")
+        return
     end
 
-    local headItem = character.EQUIPMENT_SLOT_HEAD and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_HEAD.id) or nil
-    local faceItem = character.EQUIPMENT_SLOT_FACE and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_FACE.id) or nil
-    local earsItem = character.EQUIPMENT_SLOT_EARS and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_EARS.id) or nil
-    local backpackItem = character.EQUIPMENT_SLOT_BACKPACK and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_BACKPACK.id) or nil
-    local glovesItem = character.EQUIPMENT_SLOT_GLOVES and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_GLOVES.id) or nil
-    local undershirtItem = character.EQUIPMENT_SLOT_UNDERSHIRT and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_UNDERSHIRT.id) or nil
-    local overshirtItem = character.EQUIPMENT_SLOT_OVERSHIRT and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_OVERSHIRT.id) or nil
-    local vestItem = character.EQUIPMENT_SLOT_VEST and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_VEST.id) or nil
-    local beltItem = character.EQUIPMENT_SLOT_BELT and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_BELT.id) or nil
-    local pantsItem = character.EQUIPMENT_SLOT_PANTS and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_PANTS.id) or nil
-    local socksItem = character.EQUIPMENT_SLOT_SOCKS and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_SOCKS.id) or nil
-    local shoesItem = character.EQUIPMENT_SLOT_SHOES and InventoryItemFactory.CreateItem(character.EQUIPMENT_SLOT_SHOES.id) or nil
+    print("[CharacterView] updateAppearance called with character data:")
+    print("[CharacterView] Character name: " .. tostring(character[FZ_ENUM_CHARACTER_INFO_NAME]))
+    print("[CharacterView] Character keys:")
+    for key, value in pairs(character) do
+        if type(value) == "table" and value.id then
+            print("  " .. tostring(key) .. ": equipment item " .. tostring(value.id))
+        elseif type(value) == "table" then
+            print("  " .. tostring(key) .. ": table")
+        else
+            print("  " .. tostring(key) .. ": " .. tostring(value))
+        end
+    end
 
-    survivor:getHumanVisual():setSkinTextureIndex(character.INFO_SKIN_COLOR)
-    survivor:getHumanVisual():setHairModel(character.INFO_HAIR_STYLE)
-    survivor:getHumanVisual():setBeardModel(character.INFO_BEARD_STYLE)
+    -- Use CharacterDataManager to restore appearance
+    local newSurvivor, message = FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, character)
+    if not newSurvivor then
+        print("[CharacterView] Warning: Failed to restore survivor appearance: " .. (message or "Unknown error"))
+    else
+        print("[CharacterView] " .. message)
+        self.survivor = newSurvivor
+    end
 
-    local immutableColor = ImmutableColor.new(character.INFO_HAIR_COLOR.r, character.INFO_HAIR_COLOR.g, character.INFO_HAIR_COLOR.b, 1)
-
-    survivor:getHumanVisual():setHairColor(immutableColor)
-    survivor:getHumanVisual():setBeardColor(immutableColor)
-    survivor:getHumanVisual():setNaturalHairColor(immutableColor)
-    survivor:getHumanVisual():setNaturalBeardColor(immutableColor)
-
-    if headItem then survivor:setWornItem(EQUIPMENT_SLOT_HEAD, headItem) end
-    if faceItem then survivor:setWornItem(EQUIPMENT_SLOT_FACE, faceItem) end
-    if earsItem then survivor:setWornItem(EQUIPMENT_SLOT_EARS, earsItem) end
-    if backpackItem then survivor:setWornItem(EQUIPMENT_SLOT_BACKPACK, backpackItem) end
-    if glovesItem then survivor:setWornItem(EQUIPMENT_SLOT_GLOVES, glovesItem) end
-    if undershirtItem then survivor:setWornItem(EQUIPMENT_SLOT_UNDERSHIRT, undershirtItem) end
-    if overshirtItem then survivor:setWornItem(EQUIPMENT_SLOT_OVERSHIRT, overshirtItem) end
-    if vestItem then survivor:setWornItem(EQUIPMENT_SLOT_VEST, vestItem) end
-    if beltItem then survivor:setWornItem(EQUIPMENT_SLOT_BELT, beltItem) end
-    if pantsItem then survivor:setWornItem(EQUIPMENT_SLOT_PANTS, pantsItem) end
-    if socksItem then survivor:setWornItem(EQUIPMENT_SLOT_SOCKS, socksItem) end
-    if shoesItem then survivor:setWornItem(EQUIPMENT_SLOT_SHOES, shoesItem) end
-
-    self.characterPreview:setSurvivorDesc(survivor)
+    -- Update the character preview
+    self.characterPreview:setSurvivorDesc(newSurvivor)
 end
 
 function FrameworkZ.UI.CharacterView:setCharacter(character)
@@ -149,9 +137,24 @@ function FrameworkZ.UI.CharacterView:setDescription(description)
 end
 
 function FrameworkZ.UI.CharacterView:reinitialize(character)
+    print("[CharacterView] reinitialize called with character:")
+    print("[CharacterView] Character name: " .. tostring(character[FZ_ENUM_CHARACTER_INFO_NAME]))
+    print("[CharacterView] Character has " .. tostring(#character) .. " indexed entries and equipment data:")
+    
+    -- Check for equipment data specifically
+    local equipmentCount = 0
+    for key, value in pairs(character) do
+        if type(value) == "table" and value.id then
+            equipmentCount = equipmentCount + 1
+            print("  Equipment " .. tostring(key) .. ": " .. tostring(value.id))
+        end
+    end
+    print("[CharacterView] Total equipment items found: " .. equipmentCount)
+    
     self:setCharacter(character)
-    self:setName(character.INFO_NAME)
-    self:setDescription(character.INFO_DESCRIPTION)
+    self:setName(character[FZ_ENUM_CHARACTER_INFO_NAME])
+    self:setDescription(character[FZ_ENUM_CHARACTER_INFO_DESCRIPTION])
+
     self:initialise()
 end
 
@@ -161,12 +164,23 @@ function FrameworkZ.UI.CharacterView:getDescriptionLines(description)
     local lineLength = 0
     local words = {}
 
-    for word in string.gmatch(description, "%S+") do
+    -- Handle nil or empty description
+    if not description or description == "" then
+        return {""}
+    end
+
+    -- Trim whitespace and check if anything remains
+    local trimmedDescription = string.gsub(description, "^%s*(.-)%s*$", "%1")
+    if trimmedDescription == "" then
+        return {""}
+    end
+
+    for word in string.gmatch(trimmedDescription, "%S+") do
         table.insert(words, word)
     end
 
     if #words == 0 then
-        return {description}
+        return {""}
     end
 
     for i = 1, #words do

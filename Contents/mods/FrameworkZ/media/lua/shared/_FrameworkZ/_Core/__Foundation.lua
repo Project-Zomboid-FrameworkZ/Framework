@@ -47,12 +47,13 @@
 --! - Discord Server: https://discord.gg/PgNTyva3xk
 --! - Documentation: https://frameworkz.projectzomboid.life/documentation/
 
---! \page global_variables Global Variables
+--! \page Global Variables
 --! \section FrameworkZ FrameworkZ
 --! FrameworkZ
 --! The global table that contains all of the framework.
 --! [table]: /variable_types.html#table "table"
---! \page variable_types Variable Types
+
+--! \page Variable Types
 --! \section string string
 --! A string is a sequence of characters. Strings are used to represent text and are enclosed in double quotes or single quotes.
 --! \section boolean boolean
@@ -92,29 +93,42 @@
 
 --]]
 
+--! \brief Local reference to the global Events table for performance optimization.
 local Events = Events
+
+--! \brief Local reference to the global getPlayer function for performance optimization.
 local getPlayer = getPlayer
+
+--! \brief Local reference to the global isClient function for performance optimization.
 local isClient = isClient
+
+--! \brief Local reference to the global isServer function for performance optimization.
 local isServer = isServer
+
+--! \brief Local reference to the global ModData table for performance optimization.
 local ModData = ModData
+
+--! \brief Local reference to the global unpack function for performance optimization.
 local unpack = unpack
 
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Contains all of the User Interfaces for FrameworkZ.
---! \class FrameworkZ.UI
 FrameworkZ.UI = FrameworkZ.UI or {}
 
---! \brief Foundation for FrameworkZ.
---! \class FrameworkZ.Foundation
+--! \brief Foundational systems for FrameworkZ.
+--! \core FrameworkZ.Foundation
 FrameworkZ.Foundation = {}
 --FrameworkZ.Foundation.__index = FrameworkZ.Foundation
 
+--! \brief Contains all event handling functions for the Foundation system.
 FrameworkZ.Foundation.Events = {}
 
---! \brief Modules for FrameworkZ. Extends the framework with additional functionality.
---! \class FrameworkZ.Foundation.Modules
-FrameworkZ.Foundation.Modules = {}
+--! \brief Version information for the Foundation system.
+FrameworkZ.Foundation.version = "1.0.0"
+
+--! \brief Contains modules for FrameworkZ. Extends the framework with additional functionality.
+FrameworkZ.Foundation.Modules = FrameworkZ.Foundation.Modules or {}
 
 --! \brief Create a new instance of the FrameworkZ framework.
 --! \return \table The new instance of the FrameworkZ framework.
@@ -174,6 +188,7 @@ function FrameworkZ.Foundation:GetVersion()
     return self.version
 end
 
+--! \field Foundation \object The foundational systems for FrameworkZ.
 FrameworkZ.Foundation = FrameworkZ.Foundation.New()
 
 --[[ Networking
@@ -841,6 +856,7 @@ HOOK_CATEGORY_PLUGIN = "plugin"
 --! \brief Categories for generic hooks. HOOK_CATEGORY_GENERIC = "generic"
 HOOK_CATEGORY_GENERIC = "generic"
 
+--! \brief Collection of hook handlers organized by category. Each category contains hooks that can be registered.
 FrameworkZ.Foundation.HookHandlers = {
     framework = {},
     module = {},
@@ -849,6 +865,7 @@ FrameworkZ.Foundation.HookHandlers = {
     generic = {}
 }
 
+--! \brief Collection of registered hook functions organized by category and hook name.
 FrameworkZ.Foundation.RegisteredHooks = {
     framework = {},
     module = {},
@@ -857,11 +874,9 @@ FrameworkZ.Foundation.RegisteredHooks = {
     generic = {}
 }
 
--- NOTE Last documented from here
-
 --! \brief Add a new hook handler to the list.
 --! \param hookName \string The name of the hook handler to add.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:AddHookHandler(hookName, category)
     category = category or HOOK_CATEGORY_GENERIC
     self.HookHandlers[category][hookName] = true
@@ -879,20 +894,18 @@ end
 
 --! \brief Remove a hook handler from the list.
 --! \param hookName \string The name of the hook handler to remove.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:RemoveHookHandler(hookName, category)
     category = category or HOOK_CATEGORY_GENERIC
     self.HookHandlers[category][hookName] = nil
 end
 
 --! \brief Register hook handlers for the framework.
---! \param framework \table The framework table containing the functions.
 function FrameworkZ.Foundation:RegisterFrameworkHandler()
     self:RegisterHandlers(self, HOOK_CATEGORY_FRAMEWORK)
 end
 
 --! \brief Unregister hook handlers for the framework.
---! \param framework \table The framework table containing the functions.
 function FrameworkZ.Foundation:UnregisterFrameworkHandler()
     self:UnregisterHandlers(self, HOOK_CATEGORY_FRAMEWORK)
 end
@@ -910,13 +923,13 @@ function FrameworkZ.Foundation:UnregisterModuleHandler(module)
 end
 
 --! \brief Register hook handlers for the gamemode.
---! \param module \table The module table containing the functions.
+--! \param gamemode \table The gamemode table containing the functions.
 function FrameworkZ.Foundation:RegisterGamemodeHandler(gamemode)
     self:RegisterHandlers(gamemode, HOOK_CATEGORY_GAMEMODE)
 end
 
 --! \brief Unregister hook handlers for the gamemode.
---! \param module \table The module table containing the functions.
+--! \param gamemode \table The gamemode table containing the functions.
 function FrameworkZ.Foundation:UnregisterGamemodeHandler(gamemode)
     self:UnregisterHandlers(gamemode, HOOK_CATEGORY_GAMEMODE)
 end
@@ -933,21 +946,19 @@ function FrameworkZ.Foundation:UnregisterPluginHandler(plugin)
     self:UnregisterHandlers(plugin, HOOK_CATEGORY_PLUGIN)
 end
 
---! \brief Register hook handlers for a plugin.
---! \param plugin \table The plugin table containing the functions.
+--! \brief Register generic hook handlers that don't belong to a specific object.
 function FrameworkZ.Foundation:RegisterGenericHandler()
     self:RegisterHandlers(nil, HOOK_CATEGORY_GENERIC)
 end
 
---! \brief Unregister hook handlers for a plugin.
---! \param plugin \table The plugin table containing the functions.
+--! \brief Unregister generic hook handlers that don't belong to a specific object.
 function FrameworkZ.Foundation:UnregisterGenericHandler()
     self:UnregisterHandlers(nil, HOOK_CATEGORY_GENERIC)
 end
 
 --! \brief Register handlers for a specific category.
---! \param object \table The object containing the functions.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param objectOrHandlers \table The object containing the functions, or nil for generic handlers.
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:RegisterHandlers(objectOrHandlers, category)
     category = category or HOOK_CATEGORY_GENERIC
     if not self.HookHandlers[category] then
@@ -974,8 +985,8 @@ function FrameworkZ.Foundation:RegisterHandlers(objectOrHandlers, category)
 end
 
 --! \brief Unregister handlers for a specific category.
---! \param object \table The object containing the functions.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param objectOrHandlers \table The object containing the functions, or nil for generic handlers.
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:UnregisterHandlers(objectOrHandlers, category)
     category = category or HOOK_CATEGORY_GENERIC
     if not self.HookHandlers[category] then
@@ -1000,9 +1011,9 @@ end
 --! \brief Register a handler for a hook.
 --! \param hookName \string The name of the hook.
 --! \param handler \function The function to call when the hook is executed.
---! \param object \table (Optional) The object containing the function.
---! \param functionName \string (Optional) The name of the function to call.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param object \table? The object containing the function.
+--! \param functionName \string? The name of the function to call.
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:RegisterHandler(hookName, handler, object, functionName, category)
     category = category or HOOK_CATEGORY_GENERIC
     self.RegisteredHooks[category][hookName] = self.RegisteredHooks[category][hookName] or {}
@@ -1029,7 +1040,7 @@ end
 --! \param handler \function The function to unregister.
 --! \param object \table (Optional) The object containing the function.
 --! \param functionName \string (Optional) The name of the function to unregister.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 function FrameworkZ.Foundation:UnregisterHandler(hookName, handler, object, functionName, category)
     category = category or HOOK_CATEGORY_GENERIC
     local hooks = self.RegisteredHooks[category] and self.RegisteredHooks[category][hookName]
@@ -1051,7 +1062,7 @@ end
 --! \brief Execute a given hook by its hook name for its given category.
 --! \note When a function is defined and registered as a hook, sometimes it's as an object. However in the definition it could be as some.func() or some:func() (notice the period and colon between the examples). If the function is defined as some:func() then the object is passed as the first argument. If the function is defined as some.func() then the object is not passed as the first argument, in which case we would also need to define some.func_PassOverHookableObject function which must return \boolean true. This tells the hook system to not supply the object as the first argument if the function is apart of an object in the first place. Generic function hooks do not store an object and so do not have to worry about defining that additional property on its own function.
 --! \param hookName \string The name of the hook.
---! \param category \string The category of the hook (framework, module, plugin, generic).
+--! \param category \string The category of the hook (framework, module, plugin, generic). Defaults to HOOK_CATEGORY_GENERIC if not specified.
 --! \param ... \multiple Additional arguments to pass to the hook functions.
 function FrameworkZ.Foundation:ExecuteHook(hookName, category, ...)
     category = category or HOOK_CATEGORY_GENERIC
@@ -1143,99 +1154,143 @@ end
 
 --]]
 
+--! \brief Daily timer event that executes once per in-game day.
 function FrameworkZ.Foundation.Events:EveryDays()
     self:ExecuteAllHooks("EveryDays")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("EveryDays")
 
--- The LoadGridSquare event is not defined for hook usage because of performance reasons.
+--! \brief The LoadGridSquare event is not defined for hook usage because of performance reasons.
 
+--! \brief Handles client commands received on the server.
+--! \param module \string The module name that sent the command.
+--! \param command \string The command that was sent.
+--! \param isoPlayer \object The player object that sent the command.
+--! \param arguments \table The arguments that were sent with the command.
 function FrameworkZ.Foundation.Events:OnClientCommand(module, command, isoPlayer, arguments)
     self:ExecuteAllHooks("OnClientCommand", module, command, isoPlayer, arguments)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnClientCommand")
 
+--! \brief Called when a player connects to the server.
 function FrameworkZ.Foundation.Events:OnConnected()
     self:ExecuteAllHooks("OnConnected")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnConnected")
 
+--! \brief Called when a new player character is created.
 function FrameworkZ.Foundation.Events:OnCreatePlayer()
     self:ExecuteAllHooks("OnCreatePlayer")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCreatePlayer")
 
+--! \brief Called when a player disconnects from the server.
 function FrameworkZ.Foundation.Events:OnDisconnect()
     self:ExecuteAllHooks("OnDisconnect")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnDisconnect")
 
+--! \brief Called when filling an inventory object's context menu.
+--! \param player \object The player object.
+--! \param context \object The context menu object.
+--! \param items \table The items being examined.
 function FrameworkZ.Foundation.Events:OnFillInventoryObjectContextMenu(player, context, items)
     self:ExecuteAllHooks("OnFillInventoryObjectContextMenu", player, context, items)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnFillInventoryObjectContextMenu")
 
+--! \brief Called when filling a world object's context menu.
+--! \param playerNumber \integer The player number.
+--! \param context \object The context menu object.
+--! \param worldObjects \table The world objects being examined.
+--! \param test \boolean Test parameter.
 function FrameworkZ.Foundation.Events:OnFillWorldObjectContextMenu(playerNumber, context, worldObjects, test)
     self:ExecuteAllHooks("OnFillWorldObjectContextMenu", playerNumber, context, worldObjects, test)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnFillWorldObjectContextMenu")
 
+--! \brief Called when the game starts.
 function FrameworkZ.Foundation.Events:OnGameStart()
     self:ExecuteAllHooks("OnGameStart")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnGameStart")
 
+--! \brief Called when global mod data is initialized.
+--! \param isNewGame \boolean Whether this is a new game or loading an existing one.
 function FrameworkZ.Foundation.Events:OnInitGlobalModData(isNewGame)
     self:ExecuteAllHooks("OnInitGlobalModData", isNewGame)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnInitGlobalModData")
 
+--! \brief Called when a key starts being pressed.
+--! \param key \integer The key code that was pressed.
 function FrameworkZ.Foundation.Events:OnKeyStartPressed(key)
     self:ExecuteAllHooks("OnKeyStartPressed", key)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnKeyStartPressed")
 
+--! \brief Called when entering the main menu.
 function FrameworkZ.Foundation.Events:OnMainMenuEnter()
     self:ExecuteAllHooks("OnMainMenuEnter")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnMainMenuEnter")
 
+--! \brief Called when the left mouse button is pressed down on an object.
+--! \param object \object The object that was clicked.
+--! \param x \integer The X coordinate of the click.
+--! \param y \integer The Y coordinate of the click.
 function FrameworkZ.Foundation.Events:OnObjectLeftMouseButtonDown(object, x, y)
     self:ExecuteAllHooks("OnObjectLeftMouseButtonDown", object, x, y)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnObjectLeftMouseButtonDown")
 
+--! \brief Called when a player dies.
+--! \param player \object The player object that died.
 function FrameworkZ.Foundation.Events:OnPlayerDeath(player)
     self:ExecuteAllHooks("OnPlayerDeath", player)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnPlayerDeath")
 
+--! \brief Called before filling an inventory object's context menu.
+--! \param playerID \integer The player ID.
+--! \param context \object The context menu object.
+--! \param items \table The items being examined.
 function FrameworkZ.Foundation.Events:OnPreFillInventoryObjectContextMenu(playerID, context, items)
     self:ExecuteAllHooks("OnPreFillInventoryObjectContextMenu", playerID, context, items)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnPreFillInventoryObjectContextMenu")
 
+--! \brief Called when global mod data is received.
+--! \param key \string The key of the data received.
+--! \param data \mixed The data that was received.
 function FrameworkZ.Foundation.Events:OnReceiveGlobalModData(key, data)
     self:ExecuteAllHooks("OnReceiveGlobalModData", key, data)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnReceiveGlobalModData")
 
+--! \brief Called when the Lua state is reset.
+--! \param reason \string The reason for the reset.
 function FrameworkZ.Foundation.Events:OnResetLua(reason)
     self:ExecuteAllHooks("OnResetLua", reason)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnResetLua")
 
+--! \brief Handles server commands received on the client.
+--! \param module \string The module name that sent the command.
+--! \param command \string The command that was sent.
+--! \param arguments \table The arguments that were sent with the command.
 function FrameworkZ.Foundation.Events:OnServerCommand(module, command, arguments)
     self:ExecuteAllHooks("OnServerCommand", module, command, arguments)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnServerCommand")
 
+--! \brief Called when the server starts.
 function FrameworkZ.Foundation.Events:OnServerStarted()
     self:ExecuteAllHooks("OnServerStarted")
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnServerStarted")
 
--- The OnTick event is not defined for hook usage because of performance reasons.
+--! \brief The OnTick event is not defined for hook usage because of performance reasons.
 
 --[[ Hook Callbacks
 
@@ -1251,9 +1306,13 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnServerStarted")
 
 --]]
 
+--! \brief Local variable to store the initialization start time.
 local startTime
+
+--! \brief Local counter for server save ticks.
 local serverSaveTick = 0
 
+--! \brief Server tick handler that manages periodic data saving.
 function FrameworkZ.Foundation:ServerTick()
     if serverSaveTick >= FrameworkZ.Config.Options.TicksUntilServerSave then
         self:SaveData()
@@ -1265,6 +1324,7 @@ function FrameworkZ.Foundation:ServerTick()
     end
 end
 
+--! \brief Starts the server tick system that manages timers and periodic operations.
 function FrameworkZ.Foundation:StartServerTick()
     if not isServer() then return end
 
@@ -1283,6 +1343,7 @@ end
 FrameworkZ.Foundation:AddAllHookHandlers("ServerTick")
 FrameworkZ.Foundation:AddAllHookHandlers("ServerTimer")
 
+--! \brief Callback for when the server starts. Initializes server-side tick systems.
 function FrameworkZ.Foundation:OnServerStarted()
     if isServer() then
         self:StartServerTick()
@@ -1301,6 +1362,8 @@ function FrameworkZ.Foundation:OnGameStart()
     end
 end
 
+--! \brief Pre-initialization phase for client setup. Sets up the UI and executes module hooks.
+--! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
     FrameworkZ.Interfaces:Initialize()
 
@@ -1321,6 +1384,8 @@ function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 
+--! \brief Main client initialization function. Sets up player state and communicates with the server.
+--! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:InitializeClient(isoPlayer)
     FrameworkZ.Timers:Simple(FrameworkZ.Config.Options.InitializationDuration, function()
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized, playerData, charactersData)
@@ -1377,12 +1442,22 @@ function FrameworkZ.Foundation:InitializeClient(isoPlayer)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("InitializeClient")
 
+--! \brief Server-side handler for player initialization requests.
+--! \param data \table The data containing the isoPlayer object.
+--! \return \multiple Returns the result of InitializePlayer function.
 if isServer() then
     function FrameworkZ.Foundation.OnInitializePlayer(data)
         return FrameworkZ.Foundation:InitializePlayer(data.isoPlayer)
     end
 end
 
+--! \brief Restores player data from storage or creates new data if none exists.
+--! \param isoPlayer \object The player's ISO object.
+--! \param player \object The framework player object.
+--! \param username \string The player's username.
+--! \param playerData \table (Optional) Existing player data on client-side.
+--! \param charactersData \table (Optional) Existing character data on client-side.
+--! \return \table, \table The player data and character data, or false if new.
 function FrameworkZ.Foundation:RestorePlayer(isoPlayer, player, username, playerData, charactersData)
     if not player then return end
     if isClient() and (not playerData or not charactersData) then return end
@@ -1416,6 +1491,11 @@ function FrameworkZ.Foundation:RestorePlayer(isoPlayer, player, username, player
     return false, false
 end
 
+--! \brief Initializes a player with framework data and sets up their initial state.
+--! \param isoPlayer \object The player's ISO object.
+--! \param playerData \table (Optional) Existing player data for restoration.
+--! \param charactersData \table (Optional) Existing character data for restoration.
+--! \return \boolean, \table, \table Returns success status, player data, and character data.
 function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, charactersData)
     if not isoPlayer then return false, nil, nil end
 
@@ -1447,7 +1527,7 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, character
         local charactersRestored = ""
 
         for k, character in pairs(charactersData) do
-            charactersRestored = "#" .. k .. " " .. charactersRestored .. character.INFO_NAME .. ", "
+            charactersRestored = "#" .. k .. " " .. charactersRestored .. character[FZ_ENUM_CHARACTER_INFO_NAME] .. ", "
         end
 
         charactersRestored = string.sub(charactersRestored, 1, -3) -- Remove the last comma and space
@@ -1466,6 +1546,8 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, character
     return true, playerData, charactersData
 end
 
+--! \brief Post-initialization phase that completes the client setup and shows success notification.
+--! \param player \object The framework player object that has been initialized.
 function FrameworkZ.Foundation:PostInitializeClient(player)
     self:ExecuteModuleHooks("PostInitializeClient", player)
     self:ExecuteGamemodeHooks("PostInitializeClient", player)
@@ -1479,6 +1561,9 @@ function FrameworkZ.Foundation:PostInitializeClient(player)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 
+--! \brief Network callback function for teleporting a player to the limbo area.
+--! \param data \table The data containing the isoPlayer object.
+--! \return \boolean Returns true if successful, false otherwise.
 function FrameworkZ.Foundation.OnTeleportToLimbo(data)
     local isoPlayer = data.isoPlayer
 
@@ -1488,6 +1573,9 @@ function FrameworkZ.Foundation.OnTeleportToLimbo(data)
     return true
 end
 
+--! \brief Teleports a player to the configured limbo location.
+--! \param isoPlayer \object The player object to teleport.
+--! \return \boolean Returns true if successful, false if the player object is invalid.
 function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
     if not isoPlayer then return false end
 
@@ -1503,6 +1591,7 @@ function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
     return true
 end
 
+--! \brief Hook handler registration for PlayerTick events.
 FrameworkZ.Foundation:AddAllHookHandlers("PlayerTick")
 
 
@@ -1520,9 +1609,13 @@ FrameworkZ.Foundation:AddAllHookHandlers("PlayerTick")
 
 --]]
 
--- STORAGE BACKEND
+--! \brief STORAGE BACKEND - The base name used for storage operations.
 FrameworkZ.Foundation.StorageName = "FZ_STORAGE"
+
+--! \brief Collection of registered namespaces for data storage.
 FrameworkZ.Foundation.Namespaces = FrameworkZ.Foundation.Namespaces or {}
+
+--! \brief Queues for batching synchronization operations.
 FrameworkZ.Foundation.SyncQueues = FrameworkZ.Foundation.SyncQueues or {}
 
 --! \brief Registers a storage namespace, e.g., "Players"
@@ -1538,6 +1631,10 @@ function FrameworkZ.Foundation:RegisterNamespace(name)
     end
 end
 
+--! \brief Gets data from local storage using namespace and keys.
+--! \param namespace \string The namespace to retrieve data from.
+--! \param keys \string or \table The key(s) to retrieve. If table, performs nested lookup.
+--! \return \mixed The retrieved data, or an error code if not found.
 function FrameworkZ.Foundation:GetLocalData(namespace, keys)
     local ns = self:GetNamespace(namespace)
 
@@ -1551,11 +1648,16 @@ function FrameworkZ.Foundation:GetLocalData(namespace, keys)
         end
     end
 
-    print("[FZ] ERROR: Failed to get value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+    print("[FZ] WARNING: Failed to get value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
 
     return "FZ ERROR CODE: 1"
 end
 
+--! \brief Sets data in local storage using namespace and keys.
+--! \param namespace \string The namespace to store data in.
+--! \param keys \string or \table The key(s) to set. If table, performs nested assignment.
+--! \param value \mixed The value to store.
+--! \return \boolean Returns true if successful, false otherwise.
 function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
     local ns = self:GetNamespace(namespace)
 
@@ -1576,26 +1678,42 @@ function FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
     return false
 end
 
+--! \brief Client-side callback for saving data.
+--! \param data \table The data containing the isoPlayer object.
 if isClient() then
 
     function FrameworkZ.Foundation.OnSaveData(data)
         FrameworkZ.Foundation:SaveData(data.isoPlayer)
     end
 
+    --! \brief Client-side callback for saving a specific namespace.
+    --! \param data \table The data containing the isoPlayer and namespace.
     function FrameworkZ.Foundation.OnSaveNamespace(data)
         FrameworkZ.Foundation:SaveNamespace(data.isoPlayer, data.namespace)
     end
+
+--! \brief Server-side callback for saving data.
+--! \param data \table The data containing the isoPlayer object.
 elseif isServer() then
 
     function FrameworkZ.Foundation.OnSaveData(data)
         FrameworkZ.Foundation:SaveData(data.isoPlayer)
     end
 
+    --! \brief Server-side callback for saving a specific namespace.
+    --! \param data \table The data containing the isoPlayer object.
+    --! \param namespace \string The namespace to save.
     function FrameworkZ.Foundation.OnSaveNamespace(data, namespace)
         FrameworkZ.Foundation:SaveNamespace(data.isoPlayer, namespace)
     end
 end
 
+--! \brief Network callback for getting data from storage.
+--! \param data \table The request data.
+--! \param namespace \string The namespace to retrieve from.
+--! \param keys \string or \table The key(s) to retrieve.
+--! \param subscriptionID \string (Optional) Subscription ID for callback.
+--! \return \mixed The retrieved value.
 function FrameworkZ.Foundation.OnGetData(data, namespace, keys, subscriptionID)
     if isServer() then
         local value = FrameworkZ.Foundation:GetLocalData(namespace, keys)
@@ -1608,6 +1726,14 @@ function FrameworkZ.Foundation.OnGetData(data, namespace, keys, subscriptionID)
     end
 end
 
+--! \brief Network callback for setting data in storage.
+--! \param data \table The request data.
+--! \param namespace \string The namespace to store in.
+--! \param keys \string or \table The key(s) to set.
+--! \param value \mixed The value to store.
+--! \param subscriptionID \string (Optional) Subscription ID for callback.
+--! \param broadcast \boolean Whether to broadcast the change.
+--! \return \boolean Success status.
 function FrameworkZ.Foundation.OnSetData(data, namespace, keys, value, subscriptionID, broadcast)
     if isServer() then
         if not FrameworkZ.Foundation:SetLocalData(namespace, keys, value) then
@@ -1626,6 +1752,8 @@ function FrameworkZ.Foundation.OnSetData(data, namespace, keys, value, subscript
         return true
     end
 end
+
+--! \brief Hook handlers for storage get and set operations.
 FrameworkZ.Foundation:AddAllHookHandlers("OnStorageGet")
 FrameworkZ.Foundation:AddAllHookHandlers("OnStorageSet")
 
@@ -1641,7 +1769,7 @@ function FrameworkZ.Foundation:GetData(isoPlayer, namespace, keys, subscriptionI
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnGetData", function(data, value)
             if value == "FZ ERROR CODE: 1" then
-                print("[FZ] ERROR: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+                print("[FZ] WARNING: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
                 return
             end
 
@@ -1655,7 +1783,7 @@ function FrameworkZ.Foundation:GetData(isoPlayer, namespace, keys, subscriptionI
         local value = self:GetLocalData(namespace, keys)
 
         if value == "FZ ERROR CODE: 1" then
-            print("[FZ] ERROR: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+            print("[FZ] WARNING: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
             return false
         end
 
@@ -1707,6 +1835,13 @@ function FrameworkZ.Foundation:SetData(isoPlayer, namespace, keys, value, subscr
     end
 end
 
+--! \brief Restores data from storage for client-server synchronization.
+--! \param isoPlayer \object The player object.
+--! \param command \string The command identifier.
+--! \param namespace \string The namespace to restore from.
+--! \param keys \string or \table The key(s) to restore.
+--! \param callback \function Callback function to handle the restored data.
+--! \return \boolean Returns true if successful on server, varies on client.
 function FrameworkZ.Foundation:RestoreData(isoPlayer, command, namespace, keys, callback)
     if isServer() then
         local stored = self:GetLocalData(namespace, keys)
@@ -1749,6 +1884,8 @@ function FrameworkZ.Foundation:RestoreData(isoPlayer, command, namespace, keys, 
     end
 end
 
+--! \brief Saves all namespace data to persistent storage.
+--! \param isoPlayer \object (Optional) The player object. Used on client to send request to server.
 function FrameworkZ.Foundation:SaveData(isoPlayer)
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnSaveData", nil)
@@ -1759,6 +1896,9 @@ function FrameworkZ.Foundation:SaveData(isoPlayer)
     end
 end
 
+--! \brief Saves a specific namespace to persistent storage.
+--! \param isoPlayer \object (Optional) The player object. Used on client to send request to server.
+--! \param namespace \string The namespace to save.
 function FrameworkZ.Foundation:SaveNamespace(isoPlayer, namespace)
     if isClient() then
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnSaveNamespace", nil, namespace)
@@ -1771,7 +1911,9 @@ function FrameworkZ.Foundation:SaveNamespace(isoPlayer, namespace)
     end
 end
 
---! \brief Removes a key from a namespace and broadcasts removal
+--! \brief Removes a key from a namespace and broadcasts removal.
+--! \param namespace \string The namespace to remove from.
+--! \param key \string The key to remove.
 function FrameworkZ.Foundation:RemoveData(namespace, key)
     if isServer() then
         local ns = self.Namespaces[namespace]
@@ -1782,12 +1924,17 @@ function FrameworkZ.Foundation:RemoveData(namespace, key)
     end
 end
 
---! \brief Retrieves the entire namespace table
+--! \brief Retrieves the entire namespace table.
+--! \param namespace \string The namespace to retrieve.
+--! \return \table The namespace table or nil if not found.
 function FrameworkZ.Foundation:GetNamespace(namespace)
     return self.Namespaces[namespace]
 end
 
---! \brief Sends a specific key to a specific player
+--! \brief Sends a specific key to a specific player.
+--! \param isoPlayer \object The player to send the data to.
+--! \param namespace \string The namespace containing the data.
+--! \param key \string The key to send.
 function FrameworkZ.Foundation:SyncToPlayer(isoPlayer, namespace, key)
     self:SendFire(isoPlayer, "FrameworkZ.Storage.OnSync", function(data, success)
         if success and data and data.namespace and data.key and data.value then
@@ -1801,7 +1948,10 @@ function FrameworkZ.Foundation:SyncToPlayer(isoPlayer, namespace, key)
     })
 end
 
---! \brief Broadcasts updated or removed data to all clients
+--! \brief Broadcasts updated or removed data to all clients.
+--! \param namespace \string The namespace containing the data.
+--! \param key \string The key being broadcast.
+--! \param remove \boolean Whether this is a removal operation.
 function FrameworkZ.Foundation:Broadcast(namespace, key, remove)
     local value = self:Get(namespace, key)
 
@@ -1812,7 +1962,9 @@ function FrameworkZ.Foundation:Broadcast(namespace, key, remove)
     })
 end
 
---! \brief Server-side response to client sync request
+--! \brief Server-side response to client sync request.
+--! \param data \table The sync request data containing namespace and key.
+--! \return \table Returns a table with namespace, key, and value if successful.
 function FrameworkZ.Foundation.OnSync(data)
     local namespace, key = data.namespace, data.key
     if not namespace or not key then return false end
@@ -1822,7 +1974,8 @@ function FrameworkZ.Foundation.OnSync(data)
 end
 --FrameworkZ.Foundation:Subscribe("FrameworkZ.Storage.OnSync", FrameworkZ.Foundation.OnSync)
 
---! \brief Client receives sync data from broadcast
+--! \brief Client receives sync data from broadcast.
+--! \param data \table The broadcast data containing namespace, key, and value.
 function FrameworkZ.Foundation.OnSyncBroadcast(data)
     if not data.namespace or not data.key then return end
     FrameworkZ.Foundation.Namespaces[data.namespace] = FrameworkZ.Foundation.Namespaces[data.namespace] or {}
@@ -1830,7 +1983,8 @@ function FrameworkZ.Foundation.OnSyncBroadcast(data)
 end
 --FrameworkZ.Foundation:Subscribe("FrameworkZ.Storage.OnSyncBroadcast", FrameworkZ.Foundation.OnSyncBroadcast)
 
---! \brief Client receives key removal broadcast
+--! \brief Client receives key removal broadcast.
+--! \param data \table The removal data containing namespace and key.
 function FrameworkZ.Foundation.OnRemoveData(data)
     if not data.namespace or not data.key then return end
     local ns = FrameworkZ.Foundation.Namespaces[data.namespace]
@@ -1838,7 +1992,10 @@ function FrameworkZ.Foundation.OnRemoveData(data)
 end
 --FrameworkZ.Foundation:Subscribe("FrameworkZ.Storage.OnRemoveData", FrameworkZ.Foundation.OnRemove)
 
---! \brief Queue a key in a namespace for sync
+--! \brief Queue a key in a namespace for batch synchronization.
+--! \param isoPlayer \object The player to queue sync for.
+--! \param namespace \string The namespace containing the data.
+--! \param key \string The key to sync.
 function FrameworkZ.Foundation:QueueBatchSync(isoPlayer, namespace, key)
     if not isoPlayer then return end
     local username = isoPlayer:getUsername()
@@ -1846,14 +2003,18 @@ function FrameworkZ.Foundation:QueueBatchSync(isoPlayer, namespace, key)
     table.insert(self.SyncQueues[username], { namespace = namespace, key = key })
 end
 
---! \brief Clear the sync queue for a player
+--! \brief Clear the sync queue for a player.
+--! \param isoPlayer \object The player whose queue to clear.
 function FrameworkZ.Foundation:ClearBatchSyncQueue(isoPlayer)
     if isoPlayer and isoPlayer:getUsername() then
         self.SyncQueues[isoPlayer:getUsername()] = nil
     end
 end
 
---! \brief Begin processing the queued keys for a player
+--! \brief Begin processing the queued keys for a player with a timer-based batch system.
+--! \param isoPlayer \object The player to sync data for.
+--! \param interval \number (Optional) The interval between sync operations. Default: 0.1 seconds.
+--! \param onComplete \function (Optional) Callback to call when sync is complete.
 function FrameworkZ.Foundation:StartBatchSync(isoPlayer, interval, onComplete)
     if not isoPlayer then return end
     local username = isoPlayer:getUsername()
@@ -1913,6 +2074,11 @@ function FrameworkZ.Foundation:StartBatchSync(isoPlayer, interval, onComplete)
     self.SyncQueues[username] = nil
 end
 
+--! \brief Processes an object to extract saveable data, filtering out functions and handling nested objects.
+--! \param object \table The object to process for saving.
+--! \param ignoreList \table List of keys to ignore during processing.
+--! \param encodeList \table List of keys that should be encoded using their GetSaveableData method.
+--! \return \table The processed saveable data.
 function FrameworkZ.Foundation:ProcessSaveableData(object, ignoreList, encodeList)
     local saveableData = {}
 
@@ -1954,8 +2120,9 @@ end
 
 -]]
 
---! \brief Initializes the framework foundation.
+--! \brief Initializes the FrameworkZ Foundation system by setting up event handlers and registering them with the Project Zomboid event system.
 --! \note The LoadGridSquare event is not added to the hook system for performance reasons, as it is called very frequently.
+--! \note This function wraps the Project Zomboid Events system to integrate with the FrameworkZ hook system, allowing all foundation events to be processed through the hook mechanism.
 function FrameworkZ.Foundation:Initialize()
     local events = {}
 

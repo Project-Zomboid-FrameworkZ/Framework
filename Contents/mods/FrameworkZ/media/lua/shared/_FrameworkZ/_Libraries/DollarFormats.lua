@@ -1,3 +1,4 @@
+--! \library FrameworkZ.DollarFormats
 FrameworkZ.DollarFormats = {}
 FrameworkZ.DollarFormats.__index = FrameworkZ.DollarFormats
 FrameworkZ.DollarFormats = FrameworkZ.Foundation:NewModule(FrameworkZ.DollarFormats, "DollarFormats")

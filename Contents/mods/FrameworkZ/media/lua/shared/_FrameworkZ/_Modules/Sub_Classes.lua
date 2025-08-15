@@ -1,5 +1,6 @@
 FrameworkZ = FrameworkZ or {}
 
+--! \module FrameworkZ.SubClasses
 FrameworkZ.SubClasses = {}
 FrameworkZ.SubClasses.__index = FrameworkZ.SubClasses
 FrameworkZ.SubClasses.List = {}

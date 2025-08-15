@@ -3,7 +3,7 @@ local select = select
 local unpack = unpack
 
 --! \brief Utility module for FrameworkZ. Contains utility functions and classes.
---! \class FrameworkZ.Utility
+--! \library FrameworkZ.Utilities
 FrameworkZ.Utilities = {}
 FrameworkZ.Utilities.__index = FrameworkZ.Utilities
 FrameworkZ.Utilities = FrameworkZ.Foundation:NewModule(FrameworkZ.Utilities, "Utilities")
@@ -50,32 +50,41 @@ function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies, shouldCopyMe
     return copy
 end
 
-function FrameworkZ.Utilities:MergeTables(t1, t2)
+function FrameworkZ.Utilities:MergeTables(t1, t2, visited)
+    visited = visited or {}
+    if visited[t1] and visited[t2] then
+        return t1
+    end
+    visited[t1] = true
+    visited[t2] = true
+
     for k, v in pairs(t2) do
         if type(v) == "table" and type(t1[k]) == "table" then
-            self:MergeTables(t1[k], v)
+            self:MergeTables(t1[k], v, visited)
         else
             t1[k] = v
         end
     end
 
-    -- Handle metatable merging
+    -- Handle metatable merging (improved logic)
     local mt1 = getmetatable(t1)
     local mt2 = getmetatable(t2)
 
-    if mt2 then
-        if mt1 then
-            -- Both tables have metatables, merge them recursively
-            if type(mt1) == "table" and type(mt2) == "table" then
-                self:MergeTables(mt1, mt2)
-            else
-                -- If metatables aren't tables, use t2's metatable
-                setmetatable(t1, mt2)
-            end
+    if mt1 and mt2 then
+        if type(mt1) == "table" and type(mt2) == "table" then
+            -- Merge both metatables into a new table to preserve both chains
+            local mergedMeta = {}
+            self:MergeTables(mergedMeta, mt1, visited)
+            self:MergeTables(mergedMeta, mt2, visited)
+            setmetatable(t1, mergedMeta)
         else
-            -- Only t2 has a metatable, apply it to t1
+            -- If either metatable isn't a table, prefer t2's metatable
             setmetatable(t1, mt2)
         end
+    elseif mt2 then
+        setmetatable(t1, mt2)
+    elseif mt1 then
+        setmetatable(t1, mt1)
     end
 
     return t1

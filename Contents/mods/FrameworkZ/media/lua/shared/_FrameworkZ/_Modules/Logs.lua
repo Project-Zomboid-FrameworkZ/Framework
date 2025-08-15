@@ -2,7 +2,7 @@ local Events = Events
 local instanceof = instanceof
 
 --! \brief Logs module for FrameworkZ. Logs player actions, system events, errors, warnings, and informational messages.
---! \class FrameworkZ.Logs
+--! \module FrameworkZ.Logs
 FrameworkZ.Logs = {}
 FrameworkZ.Logs.__index = FrameworkZ.Logs
 FrameworkZ.Logs.LogEntries = {}

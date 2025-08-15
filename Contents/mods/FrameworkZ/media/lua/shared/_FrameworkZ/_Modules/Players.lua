@@ -1,8 +1,8 @@
---! \page global_variables Global Variables
+--! \page Global Variables
 --! \section Players Players
---! FrameworkZ.Players\n
---! See Players for the module on players.\n\n
---! FrameworkZ.Players.List\n
+--! FrameworkZ.Players
+--! See Players for the module on players.
+--! FrameworkZ.Players.List
 --! A list of all instanced players in the game.
 
 local getPlayer = getPlayer
@@ -11,7 +11,7 @@ local isClient = isClient
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Players module for FrameworkZ. Defines and interacts with PLAYER object.
---! \class FrameworkZ.Players
+--! \module FrameworkZ.Players
 FrameworkZ.Players = {}
 
 --! \brief List of all instanced players in the game.
@@ -45,24 +45,11 @@ end
 --! \param shouldTransmit \boolean (Optional) Whether or not to transmit the player's data to the server.
 --! \return \boolean Whether or not the player was successfully saved.
 --! \todo Test if localized variable (playerData) maintains referential integrity for transmitModData() to work on it.
-function PLAYER:Save(shouldTransmit)
-    if shouldTransmit == nil then shouldTransmit = true end
+function PLAYER:Save()
+    local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false end
+    local saveablePlayerData = self:GetSaveableData() if not saveablePlayerData then return false end
 
-    if not self:GetIsoPlayer() then return false end
-
-    local playerData = self:GetStoredData()
-
-    if not playerData then return false end
-
-    playerData.role = self.role
-    playerData.maxCharacters = self.maxCharacters
-    playerData.previousCharacter = self.previousCharacter
-    playerData.whitelists = self.whitelists
-    playerData.Characters = self.Characters
-
-    if shouldTransmit then
-        self:GetIsoPlayer():transmitModData()
-    end
+    FrameworkZ.Foundation:SetData(isoPlayer, "Players", self:GetUsername(), saveablePlayerData)
 
     return true
 end
@@ -77,6 +64,10 @@ function PLAYER:Destroy()
 
     if FrameworkZ.Players.List[username] then
         success1, message = FrameworkZ.Players:Save(username)
+    end
+
+    if FrameworkZ.Characters.List[username] then
+        success2, message = FrameworkZ.Characters:Save(username)
     end
 
     if FrameworkZ.Characters.List[username] then
@@ -99,21 +90,21 @@ function PLAYER:InitializeDefaultFactionWhitelists()
 
     for k, v in pairs(factions) do
         if v.isWhitelistedByDefault then
-            self.whitelists[v.id] = true
+            self.Whitelists[v.id] = true
         end
     end
 end
 
 function PLAYER:RestoreData(data)
-    self:SetRole(data.role)
-    self:SetMaxCharacters(data.maxCharacters)
-    self:SetPreviousCharacter(data.previousCharacter)
-    self:SetWhitelists(data.whitelists)
+    self:SetRole(data.Role)
+    self:SetMaxCharacters(data.MaxCharacters)
+    self:SetPreviousCharacter(data.PreviousCharacter)
+    self:SetWhitelists(data.Whitelists)
     self:SetCustomData(data.CustomData)
 end
 
 function PLAYER:GetRole()
-    return self.role
+    return self.Role
 end
 
 function PLAYER:SetRole(role)
@@ -121,7 +112,7 @@ function PLAYER:SetRole(role)
 end
 
 function PLAYER:GetPreviousCharacter()
-    return self.previousCharacter
+    return self.PreviousCharacter
 end
 
 function PLAYER:SetPreviousCharacter(previousCharacter)
@@ -130,7 +121,7 @@ function PLAYER:SetPreviousCharacter(previousCharacter)
         return false
     end
 
-    self.previousCharacter = previousCharacter
+    self.PreviousCharacter = previousCharacter
 
     return true
 end
@@ -150,7 +141,7 @@ function PLAYER:SetMaxCharacters(maxCharacters)
         return false
     end
 
-    self.maxCharacters = maxCharacters
+    self.MaxCharacters = maxCharacters
 
     return true
 end
@@ -174,6 +165,14 @@ function PLAYER:GetCharacter()
     return self.LoadedCharacter
 end
 
+function PLAYER:GetSteamID()
+    return self.SteamID
+end
+
+function PLAYER:SetSteamID(steamID)
+    print("Failed to set SteamID to: '" .. tostring(steamID) .. "'. SteamID is read-only and must be set upon object creation.")
+end
+
 function PLAYER:SetCharacter(character)
     self.LoadedCharacter = character
 end
@@ -186,16 +185,59 @@ function PLAYER:SetCharacters(characters)
     self.Characters = characters
 end
 
-function PLAYER:GetCharacterDataByID(characterID)
-    if not characterID then return false, "Missing character ID." end
-
-    local character = self.Characters[characterID]
-
-    if character then
-        return character, "Successfully retrieved character data."
+function PLAYER:GetCharacterDataByID(characterID, callback)
+    if not characterID then 
+        if callback then callback(false, "Missing character ID.") end
+        return false, "Missing character ID." 
     end
 
-    return false, "Character not found."
+    if isServer() then
+        -- On server, try to get updated data from global mod data synchronously
+        local globalCharacterData = FrameworkZ.Foundation:GetData(self:GetIsoPlayer(), "Characters", {self:GetUsername(), characterID})
+        
+        if globalCharacterData then
+            -- Update local cache with global data
+            self.Characters[characterID] = globalCharacterData
+            if callback then callback(globalCharacterData, "Successfully retrieved character data from global storage.") end
+            return globalCharacterData, "Successfully retrieved character data from global storage."
+        end
+
+        -- Fallback to local data if global data is not available
+        local character = self.Characters[characterID]
+
+        if character then
+            if callback then callback(character, "Successfully retrieved character data from local cache.") end
+            return character, "Successfully retrieved character data from local cache."
+        end
+
+        if callback then callback(false, "Character not found.") end
+        return false, "Character not found."
+    else
+        -- On client, use async GetData with callback
+        FrameworkZ.Foundation:GetData(self:GetIsoPlayer(), "Characters", {self:GetUsername(), characterID}, nil, function(isoPlayer, namespace, keys, value)
+            if value then
+                -- Update local cache with global data
+                self.Characters[characterID] = value
+                if callback then callback(value, "Successfully retrieved character data from global storage.") end
+            else
+                -- Fallback to local data if global data is not available
+                local character = self.Characters[characterID]
+                
+                if character then
+                    if callback then callback(character, "Successfully retrieved character data from local cache.") end
+                else
+                    if callback then callback(false, "Character not found.") end
+                end
+            end
+        end)
+
+        -- On client, return local cache immediately for backwards compatibility
+        local character = self.Characters[characterID]
+        if character then
+            return character, "Successfully retrieved character data from local cache."
+        end
+        return false, "Character not found."
+    end
 end
 
 function PLAYER:GetUsername()
@@ -215,7 +257,13 @@ function PLAYER:SetIsoPlayer(isoPlayer)
 end
 
 function PLAYER:GetSaveableData()
-    return FrameworkZ.Foundation:ProcessSaveableData(self, {"IsoPlayer", "Characters", "LoadedCharacter"})
+    local ignoreList = {
+        "IsoPlayer",
+        "LoadedCharacter",
+        "Characters"
+    }
+
+    return FrameworkZ.Foundation:ProcessSaveableData(self, ignoreList)
 end
 
 --! \brief Gets the stored player mod data table. Used internally. Do not use this unless you know what you are doing. Updating data on the mod data will cause inconsistencies between the mod data and the FrameworkZ player object.
@@ -225,7 +273,7 @@ function PLAYER:GetStoredData()
 end
 
 function PLAYER:GetWhitelists()
-    return self.whitelists
+    return self.Whitelists
 end
 
 function PLAYER:SetWhitelists(whitelists)
@@ -234,7 +282,7 @@ function PLAYER:SetWhitelists(whitelists)
         return false
     end
 
-    self.whitelists = whitelists
+    self.Whitelists = whitelists
 
     return true
 end
@@ -242,8 +290,8 @@ end
 function PLAYER:SetWhitelisted(factionID, whitelisted)
     if not factionID then return false end
 
-    self.whitelists[factionID] = whitelisted
-    self:GetStoredData().whitelists[factionID] = whitelisted
+    self.Whitelists[factionID] = whitelisted
+    self:GetStoredData().Whitelists[factionID] = whitelisted
 
     return true
 end
@@ -251,7 +299,7 @@ end
 function PLAYER:IsWhitelisted(factionID)
     if not factionID then return false end
 
-    return self.whitelists[factionID] or false
+    return self.Whitelists[factionID] or false
 end
 
 --! \brief Plays a sound for the player that only they can hear.
@@ -338,12 +386,12 @@ function FrameworkZ.Players:New(isoPlayer)
     local object = {
         IsoPlayer = isoPlayer,
         Username = isoPlayer:getUsername(),
-        steamID = tostring(isoPlayer:getSteamID()),
-        role = FrameworkZ.Players.Roles.User,
+        SteamID = tostring(isoPlayer:getSteamID()),
+        Role = FrameworkZ.Players.Roles.User,
         LoadedCharacter = nil,
-        maxCharacters = FrameworkZ.Config.Options.DefaultMaxCharacters,
-        previousCharacter = nil,
-        whitelists = {},
+        MaxCharacters = FrameworkZ.Config.Options.DefaultMaxCharacters,
+        PreviousCharacter = nil,
+        Whitelists = {},
         Characters = {},
         CustomData = {}
     }
@@ -367,7 +415,6 @@ end
 function FrameworkZ.Players:StartPlayerTick(player)
     if not isClient() then return end
 
-    -- TODO rename CHAR to PLAYER
     FrameworkZ.Timers:Create("FZ_PLY_TICK", FrameworkZ.Config.Options.PlayerTickInterval, 0, function()
         FrameworkZ.Foundation:ExecuteAllHooks("PlayerTick", player)
     end)
@@ -398,14 +445,25 @@ end
 --! \brief Gets saved character data by their ID.
 --! \param username \string The username of the player.
 --! \param characterID \integer The ID of the character.
+--! \param callback \function (Optional) Callback function for async handling.
 --! \return \table or \boolean The character data or false if the data failed to be retrieved.
-function FrameworkZ.Players:GetCharacterDataByID(username, characterID)
-    if not username then return false, "Missing username." end
-    if not characterID then return false, "Missing character ID." end
+function FrameworkZ.Players:GetCharacterDataByID(username, characterID, callback)
+    if not username then 
+        if callback then callback(false, "Missing username.") end
+        return false, "Missing username." 
+    end
+    if not characterID then 
+        if callback then callback(false, "Missing character ID.") end
+        return false, "Missing character ID." 
+    end
 
-    local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, "Player not found." end
+    local player = FrameworkZ.Players:GetPlayerByID(username) 
+    if not player then 
+        if callback then callback(false, "Player not found.") end
+        return false, "Player not found." 
+    end
 
-    return player:GetCharacterDataByID(characterID)
+    return player:GetCharacterDataByID(characterID, callback)
 end
 
 function FrameworkZ.Players:GetNextCharacterID(username)
@@ -416,7 +474,7 @@ function FrameworkZ.Players:GetNextCharacterID(username)
     if player then
         local nextID = #player.Characters + 1
 
-        if nextID > player.maxCharacters then
+        if nextID > player:GetMaxCharacters() then
             return false, "Max characters reached."
         end
 
@@ -455,7 +513,17 @@ function FrameworkZ.Players.OnCreateCharacter(data, username, characterData)
     if not username then return false, "Username is nil." end
     if not characterData then return false, "Character data is nil." end
 
-    return FrameworkZ.Players:CreateCharacter(username, characterData)
+    -- Get the player object for UID generation
+    local player = FrameworkZ.Players:GetPlayerByID(username)
+    if not player then return false, "Player not found." end
+
+    -- Use centralized data manager for character creation with player context
+    local processedCharacterData, createMessage = FrameworkZ.CharacterDataManager:CreateCharacterData(characterData, player)
+    if not processedCharacterData then
+        return false, "Failed to create character data: " .. (createMessage or "Unknown error")
+    end
+
+    return FrameworkZ.Players:CreateCharacter(username, processedCharacterData)
 end
 FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnCreateCharacter", FrameworkZ.Players.OnCreateCharacter)
 
@@ -470,8 +538,8 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
             FrameworkZ.Players:ResetCharacterSaveInterval()
         end
 
-        characterData.META_ID = characterID and characterID or #player.Characters + 1
-        characterData.META_FIRST_LOAD = true
+        characterData[FZ_ENUM_CHARACTER_META_ID] = characterID and characterID or #player.Characters + 1
+        characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = true
 
         if not characterID then
             table.insert(player.Characters, characterData)
@@ -479,13 +547,13 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
             player.Characters[characterID] = characterData
         end
 
-        characterData.META_UID = player:GenerateUID()
+        characterData[FZ_ENUM_CHARACTER_META_UID] = player:GenerateUID()
 
         if isServer() then
-            FrameworkZ.Foundation:SetData(nil, "Characters", {username, characterData.META_ID}, characterData)
+            FrameworkZ.Foundation:SetData(nil, "Characters", {username, characterData[FZ_ENUM_CHARACTER_META_ID]}, characterData)
         end
 
-        return characterData.META_ID
+        return characterData[FZ_ENUM_CHARACTER_META_ID]
     end
 
     return false, "Player not found."
@@ -561,26 +629,25 @@ function FrameworkZ.Players:SaveCharacter(username, character)
 
     local isoPlayer = player:GetIsoPlayer()
 
-    character.INVENTORY_PHYSICAL = {}
-    local inventory = isoPlayer:getInventory():getItems()
-    for i = 0, inventory:size() - 1 do
-        table.insert(character.INVENTORY_PHYSICAL, {id = inventory:get(i):getFullType()})
+    -- Use centralized inventory system for character saving
+    local characterObj = FrameworkZ.Characters:GetCharacterByID(username)
+    if not characterObj then
+        print("[FrameworkZ] Warning: Could not find character object for inventory saving")
+        return false
     end
 
-    character.INVENTORY_LOGICAL = FrameworkZ.Characters:GetCharacterInventoryByID(username).items
-
-    character.EQUIPMENT_SLOT_HEAD = isoPlayer:getWornItem(EQUIPMENT_SLOT_HEAD) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_HEAD):getFullType()} or nil
-    character.EQUIPMENT_SLOT_FACE = isoPlayer:getWornItem(EQUIPMENT_SLOT_FACE) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_FACE):getFullType()} or nil
-    character.EQUIPMENT_SLOT_EARS = isoPlayer:getWornItem(EQUIPMENT_SLOT_EARS) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_EARS):getFullType()} or nil
-    character.EQUIPMENT_SLOT_BACKPACK = isoPlayer:getWornItem(EQUIPMENT_SLOT_BACKPACK) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_BACKPACK):getFullType()} or nil
-    character.EQUIPMENT_SLOT_GLOVES = isoPlayer:getWornItem(EQUIPMENT_SLOT_GLOVES) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_GLOVES):getFullType()} or nil
-    character.EQUIPMENT_SLOT_UNDERSHIRT = isoPlayer:getWornItem(EQUIPMENT_SLOT_UNDERSHIRT) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_UNDERSHIRT):getFullType()} or nil
-    character.EQUIPMENT_SLOT_OVERSHIRT = isoPlayer:getWornItem(EQUIPMENT_SLOT_OVERSHIRT) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_OVERSHIRT):getFullType()} or nil
-    character.EQUIPMENT_SLOT_VEST = isoPlayer:getWornItem(EQUIPMENT_SLOT_VEST) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_VEST):getFullType()} or nil
-    character.EQUIPMENT_SLOT_BELT = isoPlayer:getWornItem(EQUIPMENT_SLOT_BELT) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_BELT):getFullType()} or nil
-    character.EQUIPMENT_SLOT_PANTS = isoPlayer:getWornItem(EQUIPMENT_SLOT_PANTS) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_PANTS):getFullType()} or nil
-    character.EQUIPMENT_SLOT_SOCKS = isoPlayer:getWornItem(EQUIPMENT_SLOT_SOCKS) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_SOCKS):getFullType()} or nil
-    character.EQUIPMENT_SLOT_SHOES = isoPlayer:getWornItem(EQUIPMENT_SLOT_SHOES) and {id = isoPlayer:getWornItem(EQUIPMENT_SLOT_SHOES):getFullType()} or nil
+    local inventoryData, inventoryMessage = FrameworkZ.Inventories:Save(characterObj)
+    
+    if inventoryData then
+        -- Merge inventory data into character data
+        for key, value in pairs(inventoryData) do
+            character[key] = value
+        end
+        print("[FrameworkZ] Player character inventory saved: " .. inventoryMessage)
+    else
+        print("[FrameworkZ] Warning: Failed to save player character inventory: " .. (inventoryMessage or "Unknown error"))
+        return false
+    end
 
     -- Save character position/direction angle
     character.POSITION_X = isoPlayer:getX()
@@ -627,21 +694,68 @@ function PLAYER:SetModel(characterData)
     if not self:GetIsoPlayer() then return false end
     local isoPlayer = self:GetIsoPlayer()
 
-    local isFemale = characterData.INFO_GENDER == "Female" or not characterData.INFO_GENDER == "Male"
+    -- Debug logging
+    print("[Players.SetModel] Setting model for character: " .. (characterData[FZ_ENUM_CHARACTER_INFO_NAME] or "Unknown"))
+    print("[Players.SetModel] Hair Color: " .. tostring(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]))
+    print("[Players.SetModel] Beard Color: " .. tostring(characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]))
+
+    local isFemale = characterData[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female" or not characterData[FZ_ENUM_CHARACTER_INFO_GENDER] == "Male"
     isoPlayer:setFemale(isFemale)
     isoPlayer:getDescriptor():setFemale(isFemale)
 
-    local hairColor = characterData.INFO_HAIR_COLOR
-    local beardColor = characterData.INFO_BEARD_COLOR
+    -- Get color data with fallbacks from template
+    local template = FrameworkZ.CharacterDataManager.Templates.CharacterData
+    local hairColor = characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] or template[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]
+    local beardColor = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] or template[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]
+    
+    print("[Players.SetModel] Using Hair Color: " .. tostring(hairColor) .. " (type: " .. type(hairColor) .. ")")
+    print("[Players.SetModel] Using Beard Color: " .. tostring(beardColor) .. " (type: " .. type(beardColor) .. ")")
+    
+    if hairColor and type(hairColor) == "table" then
+        print("[Players.SetModel] Hair Color RGB: r=" .. tostring(hairColor.r) .. " g=" .. tostring(hairColor.g) .. " b=" .. tostring(hairColor.b))
+    end
+    
+    if beardColor and type(beardColor) == "table" then
+        print("[Players.SetModel] Beard Color RGB: r=" .. tostring(beardColor.r) .. " g=" .. tostring(beardColor.g) .. " b=" .. tostring(beardColor.b))
+    end
+    
     local visual = isoPlayer:getHumanVisual()
     visual:clear()
-    visual:setBeardColor(ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1))
-    visual:setBeardModel(characterData.INFO_BEARD_STYLE)
-    visual:setHairColor(ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1))
-    visual:setHairModel(characterData.INFO_HAIR_STYLE)
-    visual:setNaturalBeardColor(ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1))
-    visual:setNaturalHairColor(ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1))
-    visual:setSkinTextureIndex(characterData.INFO_SKIN_COLOR)
+    
+    -- Apply beard color and style with null checks
+    if beardColor and beardColor.r and beardColor.g and beardColor.b then
+        visual:setBeardColor(ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1))
+        visual:setNaturalBeardColor(ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1))
+        print("[Players.SetModel] Applied beard color successfully")
+    else
+        print("[Players.SetModel] Warning: Invalid beard color data, skipping beard color")
+    end
+    
+    if characterData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE] then
+        local beardStyle = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]
+        if beardStyle == "" or beardStyle == "None" then
+            visual:setBeardModel("")
+        else
+            visual:setBeardModel(beardStyle)
+        end
+    end
+    
+    -- Apply hair color and style with null checks
+    if hairColor and hairColor.r and hairColor.g and hairColor.b then
+        visual:setHairColor(ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1))
+        visual:setNaturalHairColor(ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1))
+        print("[Players.SetModel] Applied hair color successfully")
+    else
+        print("[Players.SetModel] Warning: Invalid hair color data, skipping hair color")
+    end
+    
+    if characterData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE] then
+        visual:setHairModel(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE])
+    end
+    
+    if characterData[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR] then
+        visual:setSkinTextureIndex(characterData[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR])
+    end
 
     isoPlayer:resetModel()
 end
@@ -675,17 +789,41 @@ end
 function FrameworkZ.Players:OnLoadCharacter(username, characterID)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", username, characterID)
 
+    if isClient() and FrameworkZ.UI.MainMenu.instance and FrameworkZ.UI.MainMenu.instance.loadCharacterForwardButton then
+        FrameworkZ.UI.MainMenu.instance.loadCharacterForwardButton:setEnable(false)
+    end
+
     local player, message = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, message end
+
+    if player:GetCharacter() then
+        player:GetCharacter():Save()
+    end
+
     local character, message2 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID) if not character then return false, message2 end
-    local characterData, message3 = player:GetCharacterDataByID(characterID) if not characterData then return false, message3 end
-    local isoPlayer = player:GetIsoPlayer()
+    
+    -- Handle character data retrieval
+    local function onCharacterDataLoaded(characterData, message3)
+        if not characterData then return false, message3 end
+        
+        local isoPlayer = player:GetIsoPlayer()
 
-    player:SetCharacter(character)
+        player:SetCharacter(character)
 
-    FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
-    FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, characterData)
+        FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
+        FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, characterData)
 
-    return true, "Successfully loaded character."
+        return true, "Successfully loaded character."
+    end
+
+    -- Try synchronous first (for server or cached data)
+    local characterData, message3 = player:GetCharacterDataByID(characterID)
+    if characterData then
+        return onCharacterDataLoaded(characterData, message3)
+    else
+        -- If no immediate data available, use async with callback (client-side)
+        player:GetCharacterDataByID(characterID, onCharacterDataLoaded)
+        return true, "Character loading initiated."
+    end
 end
 
 function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
@@ -694,19 +832,19 @@ function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, cha
     isoPlayer:clearWornItems()
     isoPlayer:getInventory():clear()
 
-    for k, v in pairs(characterData) do
-        if string.match(k, "EQUIPMENT_SLOT_") then
-            if v and v.id then
-                local item = isoPlayer:getInventory():AddItem(v.id)
-                isoPlayer:setWornItem(item:getBodyLocation(), item)
-            end
-        end
+    -- Use centralized data manager for character restoration
+    local restoreSuccess, restoreMessage = FrameworkZ.CharacterDataManager:RestoreCharacterData(character, characterData)
+    if restoreSuccess then
+        print("[FrameworkZ] Character data restored from Players module: " .. restoreMessage)
+    else
+        print("[FrameworkZ] Warning: Character data restoration issues from Players module: " .. (restoreMessage or "Unknown error"))
     end
 
     player:SetModel(characterData)
 
     -- Apply damage/wounds/moodles
 end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPreLoad")
 
 function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, characterData)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", isoPlayer, player, character, characterData)
@@ -716,7 +854,9 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
     end
 
     FrameworkZ.Timers:Simple(2, function()
-        if characterData.META_FIRST_LOAD == true then
+        if characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true then
+            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", character)
+
             local options = FrameworkZ.Config.Options
 
             isoPlayer:setX(options.SpawnX)
@@ -725,7 +865,11 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
             isoPlayer:setLx(options.SpawnX)
             isoPlayer:setLy(options.SpawnY)
             isoPlayer:setLz(options.SpawnZ)
+
+            characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = false
         else
+            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostliminaryLoad", character)
+
             isoPlayer:setX(characterData.POSITION_X)
             isoPlayer:setY(characterData.POSITION_Y)
             isoPlayer:setZ(characterData.POSITION_Z)
@@ -755,10 +899,14 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
                 FrameworkZ.Notifications:AddToQueue("Spawn protection has now been removed.", FrameworkZ.Notifications.Types.Warning)
             end
 
-            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFinishedLoading", isoPlayer, player, character, characterData)
+            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFinishedLoading", player, character, characterData)
         end)
     end)
 end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterFirstLoad")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostliminaryLoad")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterFinishedLoading")
 
 --[[
     Steps:
@@ -911,9 +1059,11 @@ function FrameworkZ.Players:OnStorageSet(isoPlayer, command, namespace, keys, va
 end
 
 function FrameworkZ.Players:OnFillWorldObjectContextMenu(playerNumber, context, worldObjects, test)
+    if true then return end -- Disable our custom context menu for now.
+
     worldObjects = FrameworkZ.Utilities:RemoveContextDuplicates(worldObjects)
 
-    context:clear()
+    --context:clear()
 
     local isoPlayer = getSpecificPlayer(playerNumber)
     local inventory = isoPlayer:getInventory()

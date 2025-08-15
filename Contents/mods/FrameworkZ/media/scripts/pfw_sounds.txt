@@ -8,14 +8,4 @@ module Base {
         category = PFW, loop = false, is3D = true,
         clip { file = media/sound/lightswitch2.wav, distanceMax = 10, reverbFactor = 0.1, volume = 0.5, }
     }
-	
-	sound pfw_thunder3 {
-        category = PFW, loop = false, is3D = true,
-        clip { file = media/sound/thunder3.wav, distanceMax = 10, reverbFactor = 0.1, volume = 0.5, }
-    }
-	
-	sound pfw_thunder4 {
-        category = PFW, loop = false, is3D = true,
-        clip { file = media/sound/thunder4.wav, distanceMax = 10, reverbFactor = 0.1, volume = 0.5, }
-    }
 }

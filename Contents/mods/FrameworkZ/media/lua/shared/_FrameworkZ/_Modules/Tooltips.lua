@@ -1,3 +1,5 @@
+-- luacheck: globals Events getAverageFPS getCell getMouseX getMouseY getSpecificPlayer getSquare getTexture getTextManager getTimestampMs instanceof isClient IsoDirections isoToScreenX isoToScreenY screenToIsoX screenToIsoY getCore getPlayer isServer UIFont -- PZ API
+
 -- TODO also display character info variables (approx. age, height, weight, etc.) alongside physical description
 
 local Events = Events
@@ -20,6 +22,8 @@ local screenToIsoY = screenToIsoY
 
 FrameworkZ = FrameworkZ or {}
 
+--! \brief Manage dynamic on-screen tooltips for player characters with scoring and typewriter effects.
+--! \module FrameworkZ.Tooltips
 FrameworkZ.Tooltips = {}
 
 FrameworkZ.Tooltips.HoveredCharacterData = {
