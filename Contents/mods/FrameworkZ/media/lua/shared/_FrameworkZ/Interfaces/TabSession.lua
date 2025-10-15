@@ -96,8 +96,6 @@ function FrameworkZ.UI.TabSession:getCharacterInfo(character)
 end
 
 function FrameworkZ.UI.TabSession:populatePlayerList()
-    local FONT_BUTTON = UIFont.Title
-    local FONT_FACTION = UIFont.Title
     local FONT_NAME = UIFont.Large
     local FONT_DESCRIPTION = UIFont.Medium
 
@@ -107,9 +105,16 @@ function FrameworkZ.UI.TabSession:populatePlayerList()
     self.playerListPanel:clearChildren()
 
     for faction, players in pairs(self.charactersByFaction) do
-        local factionLabel = ISLabel:new(10, yOffset, 20, faction, 1, 0.84, 0, 1, FONT_FACTION, true)
-        factionLabel:initialise()
-        self.playerListPanel:addChild(factionLabel)
+        local factionLabel = FrameworkZ.Interfaces:CreateLabel({
+            x = 10,
+            y = yOffset,
+            height = 20,
+            text = faction,
+            textColor = {r=1, g=0.84, b=0, a=1},
+            font = FZ_FONT_LARGE,
+            textAlign = "left",
+            parent = self.playerListPanel
+        })
 
         yOffset = yOffset + 30
 
@@ -119,22 +124,43 @@ function FrameworkZ.UI.TabSession:populatePlayerList()
             local truncatedDescription = #player.description > 52 and string.sub(player.description, 1, 52) .. "..." or player.description
             local characterButtonWidthHeight = nameHeight + descriptionHeight
 
-            local characterButton = ISButton:new(xMargin, yOffset, characterButtonWidthHeight, characterButtonWidthHeight, "?", self, FrameworkZ.UI.TabSession.onClickButton)
+            local characterButton = FrameworkZ.Interfaces:CreateButton({
+                x = xMargin,
+                y = yOffset,
+                width = characterButtonWidthHeight,
+                height = characterButtonWidthHeight,
+                title = "?",
+                target = self,
+                onClick = FrameworkZ.UI.TabSession.onClickButton,
+                font = FZ_FONT_TITLE,
+                parent = self.playerListPanel
+            })
             characterButton.internal = "INFO" --player.username
-            characterButton.font = FONT_BUTTON
             characterButton.tooltip = FrameworkZ.Utilities:WordWrapText("Description: " .. player.description, 32, "\n") .. "\nSteam ID: " .. getSteamIDFromUsername(player.username) .. "\nPing: " .. getPlayerFromUsername(player.username):getPing()
-            characterButton:initialise()
-            self.playerListPanel:addChild(characterButton)
 
             local xPadding = characterButton:getWidth() + xMargin * 2
 
-            local characterLabel = ISLabel:new(xPadding, yOffset, nameHeight, player.name, 1, 1, 1, 1, FONT_NAME, true)
-            characterLabel:initialise()
-            self.playerListPanel:addChild(characterLabel)
+            local characterLabel = FrameworkZ.Interfaces:CreateLabel({
+                x = xPadding,
+                y = yOffset,
+                height = nameHeight,
+                text = player.name,
+                textColor = {r=1, g=1, b=1, a=1},
+                font = FZ_FONT_LARGE,
+                textAlign = "left",
+                parent = self.playerListPanel
+            })
 
-            self.bottomDescription = ISLabel:new(xPadding, yOffset + nameHeight, descriptionHeight, truncatedDescription, 0.75, 0.75, 0.75, 1, FONT_DESCRIPTION, true) -- Not the best implementation with self.bottomDescription but it works
-            self.bottomDescription:initialise()
-            self.playerListPanel:addChild(self.bottomDescription)
+            self.bottomDescription = FrameworkZ.Interfaces:CreateLabel({
+                x = xPadding,
+                y = yOffset + nameHeight,
+                height = descriptionHeight,
+                text = truncatedDescription,
+                textColor = {r=0.75, g=0.75, b=0.75, a=1},
+                font = FZ_FONT_MEDIUM,
+                textAlign = "left",
+                parent = self.playerListPanel
+            })
 
             yOffset = yOffset + 45
         end
@@ -151,7 +177,7 @@ function FrameworkZ.UI.TabSession:onClickButton(button, x, y)
     end
 end
 
-function FrameworkZ.UI.TabSession:onClose(button, x, y)
+function FrameworkZ.UI.TabSession:close(button, x, y)
     self:setVisible(false)
     self:removeFromUIManager()
     FrameworkZ.UI.TabSession.instance = nil

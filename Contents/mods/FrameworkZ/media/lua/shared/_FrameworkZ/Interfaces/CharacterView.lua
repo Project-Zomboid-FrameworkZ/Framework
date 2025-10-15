@@ -98,27 +98,11 @@ function FrameworkZ.UI.CharacterView:updateAppearance()
         return
     end
 
-    print("[CharacterView] updateAppearance called with character data:")
-    print("[CharacterView] Character name: " .. tostring(character[FZ_ENUM_CHARACTER_INFO_NAME]))
-    print("[CharacterView] Character keys:")
-    for key, value in pairs(character) do
-        if type(value) == "table" and value.id then
-            print("  " .. tostring(key) .. ": equipment item " .. tostring(value.id))
-        elseif type(value) == "table" then
-            print("  " .. tostring(key) .. ": table")
-        else
-            print("  " .. tostring(key) .. ": " .. tostring(value))
-        end
-    end
+    -- Reduced verbose logging to improve preview performance when cycling
 
     -- Use CharacterDataManager to restore appearance
     local newSurvivor, message = FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, character)
-    if not newSurvivor then
-        print("[CharacterView] Warning: Failed to restore survivor appearance: " .. (message or "Unknown error"))
-    else
-        print("[CharacterView] " .. message)
-        self.survivor = newSurvivor
-    end
+    if newSurvivor then self.survivor = newSurvivor end
 
     -- Update the character preview
     self.characterPreview:setSurvivorDesc(newSurvivor)
@@ -137,25 +121,37 @@ function FrameworkZ.UI.CharacterView:setDescription(description)
 end
 
 function FrameworkZ.UI.CharacterView:reinitialize(character)
-    print("[CharacterView] reinitialize called with character:")
-    print("[CharacterView] Character name: " .. tostring(character[FZ_ENUM_CHARACTER_INFO_NAME]))
-    print("[CharacterView] Character has " .. tostring(#character) .. " indexed entries and equipment data:")
-    
-    -- Check for equipment data specifically
-    local equipmentCount = 0
-    for key, value in pairs(character) do
-        if type(value) == "table" and value.id then
-            equipmentCount = equipmentCount + 1
-            print("  Equipment " .. tostring(key) .. ": " .. tostring(value.id))
-        end
-    end
-    print("[CharacterView] Total equipment items found: " .. equipmentCount)
-    
+    -- Light-weight reinit: reuse existing preview/survivor; update fields and appearance without rebuilding UI
     self:setCharacter(character)
     self:setName(character[FZ_ENUM_CHARACTER_INFO_NAME])
     self:setDescription(character[FZ_ENUM_CHARACTER_INFO_DESCRIPTION])
-
-    self:initialise()
+    if self.characterNameLabel then
+        -- Recenter the name each time, since text width can change per character
+        local nameX = self.uiHelper.GetMiddle(self.width, UIFont.Medium, self.name)
+        self.characterNameLabel:setX(nameX)
+        self.characterNameLabel.name = self.name
+    end
+    -- Update description lines minimally: remove old labels and recreate
+    if self.descriptionLabels then
+        for _, lbl in pairs(self.descriptionLabels) do self:removeChild(lbl) end
+        self.descriptionLabels = {}
+    end
+    local descriptionLines = self:getDescriptionLines(self.description)
+    -- Position description directly under the preview panel
+    local y = (self.characterPreview and (self.characterPreview.y + self.characterPreview.height))
+              or (self.characterNameLabel and (self.characterNameLabel.y + self.characterNameLabel.height + 4))
+              or 0
+    local FONT_HEIGHT_SMALL = getTextManager():getFontHeight(UIFont.Small)
+    for k, v in ipairs(descriptionLines) do
+        local x = self.uiHelper.GetMiddle(self.width, UIFont.Small, v)
+        local descriptionLabel = ISLabel:new(x, y, FONT_HEIGHT_SMALL, v, 1, 1, 1, 0.9, UIFont.Small, true)
+        descriptionLabel:initialise()
+        self:addChild(descriptionLabel)
+        table.insert(self.descriptionLabels, descriptionLabel)
+        if k <= 3 then y = y + descriptionLabel.height else break end
+    end
+    -- Apply appearance
+    self:updateAppearance()
 end
 
 function FrameworkZ.UI.CharacterView:getDescriptionLines(description)

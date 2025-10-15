@@ -1,6 +1,15 @@
 FrameworkZ = FrameworkZ or {}
 FrameworkZ.Enumerations = FrameworkZ.Enumerations or {}
 
+FZ_ALIGN_CENTER = "center"
+FZ_ALIGN_LEFT = "left"
+FZ_ALIGN_RIGHT = "right"
+
+FZ_FONT_TITLE = "Title"
+FZ_FONT_LARGE = "Large"
+FZ_FONT_MEDIUM = "Medium"
+FZ_FONT_SMALL = "Small"
+
 FZ_ENUM_CHARACTER_INFO_AGE = "Age"
 FZ_ENUM_CHARACTER_INFO_BEARD_COLOR = "BeardColor"
 FZ_ENUM_CHARACTER_INFO_BEARD_STYLE = "BeardStyle"

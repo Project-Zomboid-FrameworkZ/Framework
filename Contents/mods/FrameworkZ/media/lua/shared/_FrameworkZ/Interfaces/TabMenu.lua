@@ -8,18 +8,23 @@ function FrameworkZ.UI.TabMenu:initialise()
 
     local buttonWidth = self.fzIconOff:getWidthOrig()
     local buttonHeight = self.fzIconOff:getHeightOrig()
-    self.tabButton = ISButton:new(5, 0, buttonWidth, buttonHeight, "", self, FrameworkZ.UI.TabMenu.onOptionMouseDown)
+    
+    self.tabButton = FrameworkZ.Interfaces:CreateButton({
+        x = 5,
+        y = 0,
+        width = buttonWidth,
+        height = buttonHeight,
+        title = "",
+        target = self,
+        onClick = FrameworkZ.UI.TabMenu.onOptionMouseDown,
+        parent = self
+    })
     self.tabButton:setImage(self.fzIconOff)
     self.tabButton.internal = "TAB_MENU"
-    self.tabButton:initialise()
-    self.tabButton:instantiate()
     self.tabButton:setDisplayBackground(false)
-
     self.tabButton.borderColor = {r=1, g=1, b=1, a=0}
     self.tabButton:ignoreWidthChange()
     self.tabButton:ignoreHeightChange()
-
-    self:addChild(self.tabButton)
 
     self:setHeight(self.tabButton:getBottom())
 end
@@ -27,7 +32,7 @@ end
 function FrameworkZ.UI.TabMenu:onOptionMouseDown(button, x, y)
     if button.internal == "TAB_MENU" then
         if FrameworkZ.UI.TabPanel.instance then
-            FrameworkZ.UI.TabPanel.instance:onClose()
+            FrameworkZ.UI.TabPanel.instance:close()
         else
             local modal = FrameworkZ.UI.TabPanel:new(self.isoPlayer)
             modal:initialise()
@@ -36,7 +41,7 @@ function FrameworkZ.UI.TabMenu:onOptionMouseDown(button, x, y)
     end
 end
 
-function FrameworkZ.UI.TabMenu:onClose()
+function FrameworkZ.UI.TabMenu:close()
     self:setVisible(false)
     self:removeFromUIManager()
 end

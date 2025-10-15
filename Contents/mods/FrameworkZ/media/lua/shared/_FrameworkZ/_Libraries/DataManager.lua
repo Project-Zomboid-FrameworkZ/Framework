@@ -176,7 +176,7 @@ function FrameworkZ.CharacterDataManager:SaveCharacterData(character)
     -- Pull any previously stored data as a fallback so we don't overwrite user-entered fields
     local prevData = nil
     if character.GetData then
-        pcall(function() prevData = character:GetData() end)
+        prevData = character:GetData()
     end
     prevData = prevData or character.data or character.CharacterData or {}
 
@@ -607,8 +607,9 @@ function FrameworkZ.CharacterDataManager:RestoreInventoryData(character, charact
                     end
                 end
                 if item then
-                    self:RestoreItemData(item, itemData)
+                    -- Equip first, then apply visuals to override any equip-time randomization
                     isoPlayer:setWornItem(slotName, item)
+                    self:RestoreItemData(item, itemData)
                     restoredCount = restoredCount + 1
                 end
             end
@@ -630,8 +631,8 @@ function FrameworkZ.CharacterDataManager:RestoreInventoryData(character, charact
                     end
                 end
                 if item then
-                    self:RestoreItemData(item, itemData)
                     isoPlayer:setWornItem(slotName, item)
+                    self:RestoreItemData(item, itemData)
                     legacyRestoredCount = legacyRestoredCount + 1
                 end
             end
@@ -654,10 +655,12 @@ function FrameworkZ.CharacterDataManager:RestoreInventoryData(character, charact
                 if item then isoPlayer:getInventory():AddItem(item) end
             end
             if item then
-                self:RestoreItemData(item, entry)
+                -- Equip first using the item's own body location when available
                 local bodyLoc = item.getBodyLocation and item:getBodyLocation() or slotKey
                 if not isoPlayer:getWornItem(bodyLoc) then
                     isoPlayer:setWornItem(bodyLoc, item)
+                    -- Apply visuals after equip
+                    self:RestoreItemData(item, entry)
                     createdRestoredCount = createdRestoredCount + 1
                 end
             end
@@ -694,10 +697,31 @@ function FrameworkZ.CharacterDataManager:ExtractItemData(item)
     if item.getVisual and type(item.getVisual) == "function" then
         local vis = item:getVisual()
         if vis and vis.getTint then
-            local tint = vis:getTint()
+            -- getTint expects a ClothingItem in current PZ API
+            local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+            local tint = nil
+            if clothingItem then
+                tint = vis:getTint(clothingItem)
+            else
+                -- Fallback (older API)
+                tint = vis:getTint()
+            end
             if tint then
                 itemData.color = { r = tint:getRedFloat(), g = tint:getGreenFloat(), b = tint:getBlueFloat() }
                 colorExtracted = true
+            end
+        end
+        -- Some clothing uses texture choices/skins instead of tintable colors
+        if vis and vis.getTextureChoice and type(vis.getTextureChoice) == "function" then
+            local choice = vis:getTextureChoice()
+            if choice ~= nil then itemData.textureChoice = choice end
+        end
+        if vis and vis.getDecal and type(vis.getDecal) == "function" then
+            -- getDecal expects a ClothingItem; InventoryItem needs conversion
+            local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+            if clothingItem then
+                local decal = vis:getDecal(clothingItem)
+                if decal then itemData.decal = decal end
             end
         end
     end
@@ -808,31 +832,35 @@ function FrameworkZ.CharacterDataManager:RestoreItemData(item, itemData)
         local r = itemData.color.r or 1.0
         local g = itemData.color.g or 1.0
         local b = itemData.color.b or 1.0
-        -- Prefer clothing visual tint path
-        if item.getVisual and type(item.getVisual) == "function" then
-            local vis = item:getVisual()
-            if vis and vis.setTint then
-                local immutableColor = ImmutableColor.new(r, g, b, 1)
-                vis:setTint(immutableColor)
-            end
-        end
-        -- Enable and set custom color when supported
-        if item.setCustomColor then
-            item:setCustomColor(true)
-        end
-        if item.setColor then
-            local ColorObj = Color and Color.new or nil
-            if ColorObj then
-                item:setColor(ColorObj(r, g, b, 1))
+        local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+        local vis = (item.getVisual and item:getVisual()) or nil
+        if clothingItem and clothingItem.getAllowRandomTint and clothingItem:getAllowRandomTint() and vis and vis.setTint and ImmutableColor and ImmutableColor.new then
+            -- Use ImmutableColor for tintable clothing, like base UI
+            vis:setTint(ImmutableColor.new(r, g, b, 1))
+        else
+            -- Fallback to item color for non-tintable items
+            if item.setCustomColor then item:setCustomColor(true) end
+            if item.setColor and Color and Color.new then
+                item:setColor(Color.new(r, g, b, 1))
             elseif item.setColorRed and item.setColorGreen and item.setColorBlue then
-                item:setColorRed(r)
-                item:setColorGreen(g)
-                item:setColorBlue(b)
+                item:setColorRed(r); item:setColorGreen(g); item:setColorBlue(b)
             end
-        elseif item.setColorRed and item.setColorGreen and item.setColorBlue then
-            item:setColorRed(r)
-            item:setColorGreen(g)
-            item:setColorBlue(b)
+        end
+        
+        -- Update inventory icon to reflect the color change
+        if item.synchWithVisual then
+            item:synchWithVisual()
+        end
+    end
+    -- Apply texture choice/decal if present (for items that rely on skins)
+    if item.getVisual and type(item.getVisual) == "function" then
+        local vis = item:getVisual()
+        if itemData.textureChoice ~= nil and vis and vis.setTextureChoice and type(vis.setTextureChoice) == "function" then
+            vis:setTextureChoice(itemData.textureChoice)
+        end
+        if itemData.decal and vis and vis.setDecal and type(vis.setDecal) == "function" then
+            local decalStr = (type(itemData.decal) == "string") and itemData.decal or tostring(itemData.decal)
+            vis:setDecal(decalStr)
         end
     end
     
@@ -974,17 +1002,7 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         return false, "Missing survivor or characterData"
     end
 
-    print("[RestoreSurvivorAppearance] Starting character restoration...")
-    
-    -- Debug: Print all character data keys
-    print("[RestoreSurvivorAppearance] Character data keys:")
-    for key, value in pairs(characterData) do
-        if type(value) == "table" and value.id then
-            print("  " .. tostring(key) .. ": equipment item " .. tostring(value.id))
-        else
-            print("  " .. tostring(key) .. ": " .. tostring(value))
-        end
-    end
+    -- Minimal logging to avoid preview stutter when cycling
 
     -- Clear all worn items first
     if FrameworkZ.Enumerations and FrameworkZ.Enumerations.EquipmentSlots then
@@ -1000,7 +1018,7 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
     local gender = characterData[FZ_ENUM_CHARACTER_INFO_GENDER] or template[FZ_ENUM_CHARACTER_INFO_GENDER]
     local isFemale = (gender == "Female")
     survivor:setFemale(isFemale)
-    print("[RestoreSurvivorAppearance] Set gender: " .. tostring(gender) .. " (isFemale: " .. tostring(isFemale) .. ")")
+    -- (omitted verbose logging)
 
     -- Set skin color
     do
@@ -1008,14 +1026,14 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         local skinColor = (type(rawSkin) == "number") and rawSkin or template[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR]
         if type(skinColor) ~= "number" then skinColor = SKIN_COLOR_WHITE end
         humanVisual:setSkinTextureIndex(skinColor)
-        print("[RestoreSurvivorAppearance] Set skin color index: " .. tostring(skinColor))
+    -- (omitted verbose logging)
     end
 
     -- Set hair
     local hairStyle = characterData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE] or template[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE]
     if hairStyle and hairStyle ~= "" then
         humanVisual:setHairModel(hairStyle)
-        print("[RestoreSurvivorAppearance] Set hair style: " .. tostring(hairStyle))
+    -- (omitted verbose logging)
     end
 
     local hairColor = characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] or template[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]
@@ -1023,14 +1041,14 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         local immutableColor = ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1)
         humanVisual:setHairColor(immutableColor)
         humanVisual:setNaturalHairColor(immutableColor)
-        print("[RestoreSurvivorAppearance] Set hair color: r=" .. hairColor.r .. " g=" .. hairColor.g .. " b=" .. hairColor.b)
+    -- (omitted verbose logging)
     end
 
     -- Set beard
     local beardStyle = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE] or template[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]
     if beardStyle and beardStyle ~= "" and beardStyle ~= "None" then
         humanVisual:setBeardModel(beardStyle)
-        print("[RestoreSurvivorAppearance] Set beard style: " .. tostring(beardStyle))
+    -- (omitted verbose logging)
     end
 
     local beardColor = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] or template[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]
@@ -1038,7 +1056,7 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         local immutableColor = ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1)
         humanVisual:setBeardColor(immutableColor)
         humanVisual:setNaturalBeardColor(immutableColor)
-        print("[RestoreSurvivorAppearance] Set beard color: r=" .. beardColor.r .. " g=" .. beardColor.g .. " b=" .. beardColor.b)
+    -- (omitted verbose logging)
     end
 
     -- Restore equipment - check multiple possible slot enumerations
@@ -1051,22 +1069,16 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         }
     end
     
-    print("[RestoreSurvivorAppearance] Checking equipment slots...")
-    print("[RestoreSurvivorAppearance] Available equipment slots: " .. table.concat(equipmentSlots, ", "))
-    
-    -- Also check what keys actually exist in character data that might be equipment
-    print("[RestoreSurvivorAppearance] Scanning character data for potential equipment keys:")
-    for key, value in pairs(characterData) do
-        if type(value) == "table" and value.id then
-            print("  Found equipment-like entry: " .. tostring(key) .. " = " .. tostring(value.id))
-        end
-    end
+    -- (omitted verbose logging)
     
     local restoredItems = 0
     
     -- Common aliasing between selection keys and survivor slots (defensive)
     local slotAliases = {
+        -- Support multiple casings/labels for the undershirt slot
         Tshirt = {"Tshirt", "TShirt", "Undershirt"},
+        TShirt = {"TShirt", "Tshirt", "Undershirt"},
+        Undershirt = {"Undershirt", "TShirt", "Tshirt"},
         Shirt = {"Shirt", "Overshirt", "Jacket", "FullTop"},
         Pants = {"Pants", "Dress", "Skirt"},
         Hat = {"Hat", "FullHat"},
@@ -1078,16 +1090,41 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
         Back = {"Back"}
     }
 
+    local function mergeColor(primary, fallback)
+        if (not primary or not primary.color) and fallback and fallback.color then
+            primary = primary or {}
+            primary.id = primary.id or fallback.id
+            primary.color = fallback.color
+        end
+        return primary
+    end
+
     local function findEntryForSlot(data, slot)
-        -- exact key first
-        if data[slot] then return slot, data[slot] end
-        -- try aliases if known
-        local aliases = slotAliases[slot]
-        if aliases then
-            for _, alt in ipairs(aliases) do
-                if data[alt] then return alt, data[alt] end
+        -- 1) exact key
+        local entry = data[slot]
+        -- 2) try aliases
+        if not entry then
+            local aliases = slotAliases[slot]
+            if aliases then
+                for _, alt in ipairs(aliases) do
+                    if data[alt] then entry = data[alt]; break end
+                end
             end
         end
+        -- 3) fallback to EQUIPPED_ITEMS (exact and aliases)
+        local eq = data.EQUIPPED_ITEMS
+        if eq then
+            entry = mergeColor(entry, eq[slot])
+            if not entry then
+                local aliases = slotAliases[slot]
+                if aliases then
+                    for _, alt in ipairs(aliases) do
+                        if eq[alt] then entry = eq[alt]; break end
+                    end
+                end
+            end
+        end
+        if entry then return slot, entry end
         return nil, nil
     end
 
@@ -1110,61 +1147,75 @@ function FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, cha
             end
             
             if itemID and itemID ~= "" and itemID ~= "None" then
-                print("[RestoreSurvivorAppearance] Restoring item for slot " .. slotName .. " (key: " .. tostring(actualKey or slotName) .. "): " .. itemID)
+                -- (omitted verbose logging)
                 -- Create the item
                 local item = InventoryItemFactory.CreateItem(itemID)
                 if item then
-                    -- Apply color if available
-                    if itemColor then
-                        local r = itemColor.r or 1.0
-                        local g = itemColor.g or 1.0
-                        local b = itemColor.b or 1.0
-                        local applied = false
-                        -- Prefer visual tint for clothing
-                        if item.getVisual and type(item.getVisual) == "function" then
-                            local vis = item:getVisual()
-                            if vis and vis.setTint then
-                                vis:setTint(ImmutableColor.new(r, g, b, 1))
-                                applied = true
-                                print("[RestoreSurvivorAppearance] Applied visual tint to " .. itemID)
-                            end
-                        end
-                        -- Also set custom color if supported
-                        if item.setCustomColor then
-                            item:setCustomColor(true)
-                        end
-                        if item.setColor then
-                            if Color and Color.new then
-                                item:setColor(Color.new(r, g, b, 1))
-                                applied = true
-                                print("[RestoreSurvivorAppearance] Applied Color to " .. itemID)
-                            end
-                        end
-                        if not applied and item.setColorRed and item.setColorGreen and item.setColorBlue then
-                            item:setColorRed(r)
-                            item:setColorGreen(g)
-                            item:setColorBlue(b)
-                            print("[RestoreSurvivorAppearance] Applied RGB color to " .. itemID)
-                        end
-                    end
-                    
-                    -- Apply condition if available
+                    -- Apply condition if available (pre-equip)
                     if itemCondition and item.setCondition then
                         item:setCondition(itemCondition)
                     end
 
-                    -- Add the item to the survivor's worn items
+                    -- Equip first: some items randomize colors on equip; we'll override immediately after
                     survivor:setWornItem(slotName, item)
+
+                    -- Apply color if available, AFTER equipping to override any equip-time randomization
+                    if itemColor then
+                        local r = itemColor.r or 1.0
+                        local g = itemColor.g or 1.0
+                        local b = itemColor.b or 1.0
+                        local worn = survivor:getWornItem(slotName) or item
+                        if worn then
+                            if worn.setCustomColor then worn:setCustomColor(true) end
+                            if worn.setColor and Color and Color.new then
+                                worn:setColor(Color.new(r, g, b, 1))
+                            elseif worn.setColorRed and worn.setColorGreen and worn.setColorBlue then
+                                worn:setColorRed(r); worn:setColorGreen(g); worn:setColorBlue(b)
+                            end
+                            if worn.getVisual and type(worn.getVisual) == "function" then
+                                local vis = worn:getVisual()
+                                if vis and vis.setTint and ImmutableColor and ImmutableColor.new then
+                                    vis:setTint(ImmutableColor.new(r, g, b, 1))
+                                end
+                            end
+                            
+                            -- Update inventory icon to reflect the color change
+                            if worn.synchWithVisual then
+                                worn:synchWithVisual()
+                            end
+                        end
+                    end
+
+                    -- Apply texture choice/decal if provided in data (handles non-tintable clothing skins)
+                    if type(equipmentEntry) == "table" then
+                        local worn = survivor:getWornItem(slotName)
+                        if worn and worn.getVisual and type(worn.getVisual) == "function" then
+                            local vis = worn:getVisual()
+                            if equipmentEntry.textureChoice ~= nil and vis and vis.setTextureChoice and type(vis.setTextureChoice) == "function" then
+                                vis:setTextureChoice(equipmentEntry.textureChoice)
+                            end
+                            if equipmentEntry.decal and vis and vis.setDecal and type(vis.setDecal) == "function" then
+                                local decStr = (type(equipmentEntry.decal) == "string") and equipmentEntry.decal or tostring(equipmentEntry.decal)
+                                vis:setDecal(decStr)
+                            end
+                            
+                            -- Update inventory icon after texture/decal changes as well
+                            if worn.synchWithVisual then
+                                worn:synchWithVisual()
+                            end
+                        end
+                    end
+
                     restoredItems = restoredItems + 1
-                    print("[RestoreSurvivorAppearance] Successfully equipped " .. itemID .. " to " .. slotName)
+                    -- (omitted verbose logging)
                 else
-                    print("[RestoreSurvivorAppearance] Failed to create item: " .. itemID)
+                    -- (omitted verbose logging)
                 end
             end
         end
     end
     
-    print("[RestoreSurvivorAppearance] Restored " .. restoredItems .. " equipment items")
+    -- (omitted verbose logging)
 
     -- If beard is intentionally None, ensure it's cleared
     local beardStyleFinal = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]

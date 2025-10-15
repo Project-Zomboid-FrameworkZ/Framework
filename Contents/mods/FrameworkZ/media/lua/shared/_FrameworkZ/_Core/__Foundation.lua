@@ -1347,6 +1347,7 @@ FrameworkZ.Foundation:AddAllHookHandlers("ServerTimer")
 function FrameworkZ.Foundation:OnServerStarted()
     if isServer() then
         self:StartServerTick()
+        FrameworkZ.Plugins:Initialize()
     end
 end
 
@@ -1365,6 +1366,7 @@ end
 --! \brief Pre-initialization phase for client setup. Sets up the UI and executes module hooks.
 --! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
+    FrameworkZ.Plugins:Initialize()
     FrameworkZ.Interfaces:Initialize()
 
     local sidebar = ISEquippedItem.instance

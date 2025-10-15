@@ -1,0 +1,11 @@
+--! \page Technical Debt
+--! \section OutstandingIssues Outstanding Issues
+--! This section outlines known issues and areas for improvement within the FrameworkZ codebase.
+--! - Currency Plugin: Refactoring bank account identification from a player's username to a character's UID (unique identification) to ensure bank info is specific to an individual character.
+--! - Module/Code Consolidation (Part 1): Condensing UI Helper, Interfaces, and User Interfaces into a single cohesive module in a sensible manner.
+--! - Code Conversion/Implementation w/ FrameworkZ: Previous mods as follows... Poker, Computer, Roleplay Properties, Gas Pumps, Pool Mini Game, (maybe) Passive Jobs.
+--! - Enumerations: Creating and implementing comprehensive enumerations to be used throughout the framework.
+--! - Themes: Developing and integrating a cohesive theme system for the framework using the primary Interfaces module.
+--! - Refactoring Entities Module: Improving usability and developing an alternative entity management system in a more efficient manner.
+--! - Context Menus: Re-building vanilla context menus in a more organized and user-friendly manner that is not reliant on the default implementation.
+--! - Menu Steps: Improving current implementation for intuitiveness and ease of use in a developer friendly way.

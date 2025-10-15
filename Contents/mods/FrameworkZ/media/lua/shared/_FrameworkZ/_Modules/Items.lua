@@ -1,14 +1,15 @@
-ISEquipWeaponAction = ISEquipWeaponAction
-ISTimedActionQueue = ISTimedActionQueue
-ISUnequipAction = ISUnequipAction
-ISWearClothing = ISWearClothing
+--! \page Features
+--! \section Items Items
+--! Items are an essential piece of gameplay in both Project Zomboid and FrameworkZ. While items aren't necessarily required to roleplay, they provide important mechanics and interactions that enhance the experience.
+--! There are two states an item can be in: Instanced or Non-Instanced. What this means is that a non-instanced item is like a template or blueprint that is used to create actual items in the game world, where they are then considered instanced. In computer terms, imagine that a file is stored on your hard drive (non-instanced), and when you open that file its contents are moved into memory (instanced). A sort of active vs. inactive types of forms.
+--! That said, an item can be instantiated (the process of creating an instance from a non-instanced blueprint).
+--! Another aspect of items are item bases. A base can be defined and inherited from, allowing for the creation of new item types with shared properties and behaviors. This allows code reuse, a self-explained concept where repitious code is defined at a single source and reused by other different elements.
 
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Items module for FrameworkZ. Defines and interacts with ITEM \object.
 --! \module FrameworkZ.Items
 FrameworkZ.Items = {}
-FrameworkZ.Items.__index = FrameworkZ.Items
 
 FZ_EQUIP_TYPE_IDEAL = "Ideal"
 FZ_EQUIP_TYPE_CLOTHING = "Clothing"
@@ -271,7 +272,7 @@ function FrameworkZ.Items:RemoveInstance(instanceID, username)
     end
 
     if instance.owner then
-        player.isoPlayer:getInventory():DoRemoveItem(instance.worldItem)
+        player:GetIsoPlayer():getInventory():DoRemoveItem(instance.worldItem)
     elseif instance.worldItem:getContainer() then
         instance.worldItem:getContainer():removeItemOnServer(instance.worldItem)
         instance.worldItem:getContainer():DoRemoveItem(instance.worldItem)

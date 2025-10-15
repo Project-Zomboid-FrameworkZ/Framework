@@ -2,6 +2,7 @@ FrameworkZ.UI.CreateCharacterInfo = FrameworkZ.UI.CreateCharacterInfo or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.CreateCharacterInfo, "CreateCharacterInfo")
 
 function FrameworkZ.UI.CreateCharacterInfo:initialise()
+    -- State and config
     self.warningTurningRed = true
     self.warningStep = 0.02
     self.warningRed = 1
@@ -9,236 +10,288 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
     self.warningBlue = 1
     self.isAbnormal = false
     self.uiHelper = FrameworkZ.UI
-    local emitter = self.playerObject:getEmitter()
-	local title = "Information"
-    local subtitle = "Enter your character's general info."
-    local xPadding = self.width * 0.2
-    local entryWidth = self.width * 0.7
-    local middleX = self.width / 2 - (xPadding + entryWidth) / 2
-    local entryX = middleX + xPadding
-    local labelX = middleX + xPadding - 5
-    local yOffset = 0
-
     self.nameLimit = 32
-    self.recommendedNameLength = 8
+    self.recommendedNameLength = 16
     self.descriptionLimit = 256
-    self.recommendedDescriptionLength = 24
+    self.recommendedDescriptionLength = 100
 
-    -- 9 fields (1 double height) = 9 * 30 + 75 = 345
+    local title = "Character Information"
+    local subtitle = "Define your character's identity and appearance"
 
-	ISPanel.initialise(self)
+    local yOffset = 15
 
-    yOffset = self.uiHelper.GetHeight(UIFont.Title, title)
-
-    self.title = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Title, title), yOffset, 25, title, 1, 1, 1, 1, UIFont.Title, true)
-    self.title:initialise()
-	self:addChild(self.title)
-
-    yOffset = yOffset + self.uiHelper.GetHeight(UIFont.Large, subtitle)
-
-    self.subtitle = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Large, subtitle), yOffset, 25, subtitle, 1, 1, 1, 1, UIFont.Large, true)
-    self.subtitle:initialise()
-    self:addChild(self.subtitle)
-
+    -- Title and subtitle
+    self.title = FrameworkZ.Interfaces:CreateLabel({
+        x = self.width / 2,
+        y = yOffset,
+        height = 35,
+        text = title,
+        font = FZ_FONT_TITLE,
+        textAlign = FZ_ALIGN_CENTER,
+        theme = "Primary",
+        parent = self
+    })
+    yOffset = yOffset + 50
+    self.subtitle = FrameworkZ.Interfaces:CreateLabel({
+        x = self.width / 2,
+        y = yOffset,
+        height = 25,
+        text = subtitle,
+        font = FZ_FONT_LARGE,
+        textAlign = FZ_ALIGN_CENTER,
+        theme = "Subtle",
+        parent = self
+    })
     yOffset = yOffset + 45
 
-    self.genderLabel = ISLabel:new(labelX, yOffset, 25, "Gender:", 1, 1, 1, 1, UIFont.Large, false)
-    self.genderLabel:initialise()
-    self:addChild(self.genderLabel)
+    -- Content panel
+    local contentPadding = 25
+    local contentWidth = self.width - (contentPadding * 2)
+    local contentHeight = self.height - yOffset - 50
+    self.contentPanel = FrameworkZ.Interfaces:CreatePanel({
+        x = contentPadding, y = yOffset, width = contentWidth, height = contentHeight,
+        variant = FrameworkZ.Themes.CardPanelTheme,
+        parent = self
+    })
 
+    -- Layout metrics
+    local columnPadding = 20
+    local columnGap = 30
+    local leftColumnWidth = (contentWidth - (columnPadding * 2) - columnGap) / 2
+    local rightColumnWidth = leftColumnWidth
+    local labelX = columnPadding
+    local rightLabelX = labelX + leftColumnWidth + columnGap
+    local rightEntryX = rightLabelX + 120
+    local rightEntryWidth = rightColumnWidth - 120
+
+    -- Section headers
+    local sectionY = 15
+    self.basicInfoHeader = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX, y = sectionY, height = 25,
+        text = "▎Basic Information",
+        font = FZ_FONT_LARGE,
+        variant = FrameworkZ.Themes.PrimaryLabelTheme,
+        parent = self.contentPanel
+    })
+    self.physicalHeader = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = sectionY, height = 25,
+        text = "▎Physical Attributes",
+        font = FZ_FONT_LARGE,
+        variant = FrameworkZ.Themes.PrimaryLabelTheme,
+        parent = self.contentPanel
+    })
+
+    local fieldY = sectionY + 35
+    local rightFieldY = fieldY
+
+    -- Gender
+    self.genderLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX, y = fieldY, height = 25,
+        text = "Gender:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    fieldY = fieldY + 25
     self.gender = "Male"
-    self.genderDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25, self, self.onGenderChanged)
-    self.genderDropdown:addOption("Male")
-    self.genderDropdown:addOption("Female")
-    self:addChild(self.genderDropdown)
+    self.genderDropdown = FrameworkZ.Interfaces:CreateCombo({
+        x = labelX, y = fieldY, width = leftColumnWidth, height = 25,
+        target = self, onChange = self.onGenderChanged,
+        options = { "Male", "Female" },
+        parent = self.contentPanel
+    })
+    fieldY = fieldY + 40
 
-    yOffset = yOffset + 30
+    -- Name
+    self.nameLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX, y = fieldY, height = 25,
+        text = "Name:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    fieldY = fieldY + 25
+    self.nameEntry = FrameworkZ.Interfaces:CreateTextEntry({
+        x = labelX, y = fieldY, width = leftColumnWidth, height = 25,
+        text = "",
+        parent = self.contentPanel
+    })
+    self.nameCounter = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX + leftColumnWidth + 5, y = fieldY + 5, height = 15,
+        text = tostring(self.nameLimit),
+        font = FZ_FONT_SMALL,
+        variant = FrameworkZ.Themes.MutedLabelTheme,
+        parent = self.contentPanel
+    })
+    fieldY = fieldY + 40
 
-    self.nameLabel = ISLabel:new(labelX, yOffset, 25, "Name (32):", 1, 1, 1, 1, UIFont.Large, false)
-    self.nameLabel:initialise()
-    self:addChild(self.nameLabel)
+    -- Description
+    self.descriptionLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX, y = fieldY, height = 25,
+        text = "Description:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    fieldY = fieldY + 25
+    local bottomPadding = sectionY + 20  -- Add more padding from bottom edge
+    self.descriptionEntry = FrameworkZ.Interfaces:CreateTextEntry({
+        x = labelX, y = fieldY, width = leftColumnWidth, height = contentHeight - fieldY - bottomPadding,
+        text = "",
+        multiple = true, maxLines = 0,
+        parent = self.contentPanel
+    })
+    self.descriptionCounter = FrameworkZ.Interfaces:CreateLabel({
+        x = labelX + leftColumnWidth + 5, y = fieldY + self.descriptionEntry:getHeight() - 15, height = 15,
+        text = tostring(self.descriptionLimit),
+        font = FZ_FONT_SMALL,
+        variant = FrameworkZ.Themes.MutedLabelTheme,
+        parent = self.contentPanel
+    })
 
-    self.nameEntry = ISTextEntryBox:new("", entryX, yOffset, entryWidth, 25)
-    self.nameEntry.backgroundColor = {r=0, g=0, b=0, a=1.0}
-    self.nameEntry.borderColor = {r=1, g=0, b=0, a=1.0}
-    self.nameEntry:initialise()
-	self.nameEntry:instantiate()
-    self:addChild(self.nameEntry)
+    -- Right column: age
+    self.ageLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Age: 25",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.ageSlider = FrameworkZ.Interfaces:CreateSlider({
+        x = rightLabelX, y = rightFieldY + 25, width = rightColumnWidth, height = 20,
+        target = self, onChange = self.onAgeChanged,
+        min = FrameworkZ.Config.Options.CharacterMinAge or 18,
+        max = FrameworkZ.Config.Options.CharacterMaxAge or 80,
+        step = 1, value = 25,
+        parent = self.contentPanel
+    })
+    rightFieldY = rightFieldY + 65
 
-    yOffset = yOffset + 30
+    -- Height
+    self.heightLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Height: 5'10\"",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.heightSlider = FrameworkZ.Interfaces:CreateSlider({
+        x = rightLabelX, y = rightFieldY + 25, width = rightColumnWidth, height = 20,
+        target = self, onChange = self.onHeightChanged,
+        min = FrameworkZ.Config.Options.CharacterMinHeight or 48,
+        max = FrameworkZ.Config.Options.CharacterMaxHeight or 84,
+        step = 1, value = 70,
+        parent = self.contentPanel
+    })
+    rightFieldY = rightFieldY + 65
 
-    self.descriptionLabel = ISLabel:new(labelX, yOffset, 25, "Description (256):", 1, 1, 1, 1, UIFont.Large, false)
-    self.descriptionLabel:initialise()
-    self:addChild(self.descriptionLabel)
+    -- Weight
+    self.weightLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Weight: 150 lb",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.weightSlider = FrameworkZ.Interfaces:CreateSlider({
+        x = rightLabelX, y = rightFieldY + 25, width = rightColumnWidth, height = 20,
+        target = self, onChange = self.onWeightChanged,
+        min = FrameworkZ.Config.Options.CharacterMinWeight or 90,
+        max = FrameworkZ.Config.Options.CharacterMaxWeight or 300,
+        step = 5, value = 150,
+        parent = self.contentPanel
+    })
+    rightFieldY = rightFieldY + 65
 
-    self.descriptionEntry = ISTextEntryBox:new("", entryX, yOffset, entryWidth, 100)
-    self.descriptionEntry.backgroundColor = {r=0, g=0, b=0, a=1.0}
-    self.descriptionEntry.borderColor = {r=1, g=0, b=0, a=1}
-    self.descriptionEntry:initialise()
-	self.descriptionEntry:instantiate()
-    self.descriptionEntry:setMultipleLine(true)
-	self.descriptionEntry:setMaxLines(0)
-    self:addChild(self.descriptionEntry)
+    -- Physique
+    self.physiqueLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Physique:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.physiqueDropdown = FrameworkZ.Interfaces:CreateCombo({
+        x = rightEntryX, y = rightFieldY, width = rightEntryWidth, height = 25,
+        options = { "Skinny", "Slim", "Average", "Muscular", "Overweight", "Obese" },
+        parent = self.contentPanel
+    })
+    if self.physiqueDropdown and self.physiqueDropdown.select then
+        self.physiqueDropdown:select("Average")
+    end
+    rightFieldY = rightFieldY + 50
 
-    yOffset = yOffset + 110
+    -- Appearance header
+    self.appearanceHeader = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "▎Appearance",
+        font = FZ_FONT_LARGE,
+        variant = FrameworkZ.Themes.PrimaryLabelTheme,
+        parent = self.contentPanel
+    })
+    rightFieldY = rightFieldY + 35
 
-    self.ageLabel = ISLabel:new(labelX, yOffset, 25, "Age (25):", 1, 1, 1, 1, UIFont.Large, false)
-    self.ageLabel:initialise()
-    self:addChild(self.ageLabel)
+    -- Eye color
+    self.eyeColorLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Eye Color:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.eyeColorDropdown = FrameworkZ.Interfaces:CreateCombo({
+        x = rightEntryX, y = rightFieldY, width = rightEntryWidth, height = 25,
+        options = {
+            { text = "Blue", data = { r = 0.2, g = 0.4, b = 0.8 } },
+            { text = "Brown", data = { r = 0.4, g = 0.2, b = 0.1 } },
+            { text = "Gray", data = { r = 0.5, g = 0.5, b = 0.5 } },
+            { text = "Green", data = { r = 0.2, g = 0.6, b = 0.3 } },
+            { text = "Hazel", data = { r = 0.4, g = 0.3, b = 0.2 } },
+        },
+        parent = self.contentPanel
+    })
+    if self.eyeColorDropdown and self.eyeColorDropdown.select then
+        self.eyeColorDropdown:select("Blue")
+    end
+    rightFieldY = rightFieldY + 35
 
-    self.ageSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onAgeChanged)
-    self.ageSlider.currentValue = 25
-    self.ageSlider.minValue = FrameworkZ.Config.Options.CharacterMinAge
-    self.ageSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxAge
-    self.ageSlider.stepValue = 1
-    self:addChild(self.ageSlider)
+    -- Hair color
+    self.hairColorLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Hair Color:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.hairColorDropdown = FrameworkZ.Interfaces:CreateCombo({
+        x = rightEntryX, y = rightFieldY, width = rightEntryWidth, height = 25,
+        options = {
+            { text = "Black",  data = { r = (HAIR_COLOR_BLACK_R or 0.1), g = (HAIR_COLOR_BLACK_G or 0.1), b = (HAIR_COLOR_BLACK_B or 0.1) } },
+            { text = "Blonde", data = { r = (HAIR_COLOR_BLONDE_R or 0.8), g = (HAIR_COLOR_BLONDE_G or 0.7), b = (HAIR_COLOR_BLONDE_B or 0.4) } },
+            { text = "Brown",  data = { r = (HAIR_COLOR_BROWN_R or 0.4), g = (HAIR_COLOR_BROWN_G or 0.2), b = (HAIR_COLOR_BROWN_B or 0.1) } },
+            { text = "Gray",   data = { r = (HAIR_COLOR_GRAY_R or 0.5), g = (HAIR_COLOR_GRAY_G or 0.5), b = (HAIR_COLOR_GRAY_B or 0.5) } },
+            { text = "Red",    data = { r = (HAIR_COLOR_RED_R or 0.7), g = (HAIR_COLOR_RED_G or 0.3), b = (HAIR_COLOR_RED_B or 0.2) } },
+            { text = "White",  data = { r = (HAIR_COLOR_WHITE_R or 0.9), g = (HAIR_COLOR_WHITE_G or 0.9), b = (HAIR_COLOR_WHITE_B or 0.9) } },
+        },
+        parent = self.contentPanel
+    })
+    if self.hairColorDropdown and self.hairColorDropdown.select then
+        self.hairColorDropdown:select("Brown")
+    end
+    rightFieldY = rightFieldY + 35
 
-    --[[self.ageDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.ageDropdown:addOption("18")
-    self.ageDropdown:addOption("19")
-    self.ageDropdown:addOption("20")
-    -- Add more age options as needed
-    self:addChild(self.ageDropdown)--]]
-
-    yOffset = yOffset + 30
-
-    self.heightLabel = ISLabel:new(labelX, yOffset, 25, "Height (5'10\"):", 1, 1, 1, 1, UIFont.Large, false)
-    self.heightLabel:initialise()
-    self:addChild(self.heightLabel)
-
-    self.heightSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onHeightChanged)
-    self.heightSlider.currentValue = 70
-    self.heightSlider.minValue = FrameworkZ.Config.Options.CharacterMinHeight
-    self.heightSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxHeight
-    self.heightSlider.stepValue = 1
-    self:addChild(self.heightSlider)
-
-    --[[self.heightFeetDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.heightFeetDropdown:addOption("5")
-    self.heightFeetDropdown:addOption("6")
-    -- Add more height options as needed
-    self:addChild(self.heightFeetDropdown)--]]
-
-    --[[
-    yOffset = yOffset + 30
-
-    self.heightInchesLabel = ISLabel:new(labelX, yOffset, 25, "Height (10\"):", 1, 1, 1, 1, UIFont.Large, false)
-    self.heightInchesLabel:initialise()
-    self:addChild(self.heightInchesLabel)
-
-    self.heightInchesSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onHeightInchesChanged)
-    self.heightInchesSlider.currentValue = 10
-    self.heightInchesSlider.minValue = 0
-    self.heightInchesSlider.maxValue = 11
-    self.heightInchesSlider.stepValue = 1
-    self:addChild(self.heightInchesSlider)
-    --]]
-
-    --[[self.heightInchesDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.heightInchesDropdown:addOption("0")
-    self.heightInchesDropdown:addOption("1")
-    -- Add more height options as needed
-    self:addChild(self.heightInchesDropdown)--]]
-
-    yOffset = yOffset + 30
-
-    self.weightLabel = ISLabel:new(labelX, yOffset, 25, "Weight (150 lb):", 1, 1, 1, 1, UIFont.Large, false)
-    self.weightLabel:initialise()
-    self:addChild(self.weightLabel)
-
-    self.weightSlider = ISSliderPanel:new(entryX, yOffset, entryWidth, 25, self, self.onWeightChanged)
-    self.weightSlider.currentValue = 150
-    self.weightSlider.minValue = FrameworkZ.Config.Options.CharacterMinWeight
-    self.weightSlider.maxValue = FrameworkZ.Config.Options.CharacterMaxWeight
-    self.weightSlider.stepValue = 5
-    self:addChild(self.weightSlider)
-
-    yOffset = yOffset + 30
-
-    self.physiqueLabel = ISLabel:new(labelX, yOffset, 25, "Physique:", 1, 1, 1, 1, UIFont.Large, false)
-    self.physiqueLabel:initialise()
-    self:addChild(self.physiqueLabel)
-
-    self.physiqueDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.physiqueDropdown:addOption("Skinny")
-    self.physiqueDropdown:addOption("Slim")
-    self.physiqueDropdown:addOption("Average")
-    self.physiqueDropdown:addOption("Muscular")
-    self.physiqueDropdown:addOption("Overweight")
-    self.physiqueDropdown:addOption("Obese")
-    self.physiqueDropdown:initialise()
-    self.physiqueDropdown:select("Average")
-    self:addChild(self.physiqueDropdown)
-
-    yOffset = yOffset + 30
-
-    self.eyeColorLabel = ISLabel:new(labelX, yOffset, 25, "Eye Color:", 1, 1, 1, 1, UIFont.Large, false)
-    self.eyeColorLabel:initialise()
-    self:addChild(self.eyeColorLabel)
-
-    self.eyeColorDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.eyeColorDropdown:addOption("Blue")
-    self.eyeColorDropdown:addOption("Brown")
-    self.eyeColorDropdown:addOption("Gray")
-    self.eyeColorDropdown:addOption("Green")
-    self.eyeColorDropdown:addOption("Heterochromatic")
-    -- Add more eye color options as needed
-    self:addChild(self.eyeColorDropdown)
-
-    yOffset = yOffset + 30
-
-    self.hairColorLabel = ISLabel:new(labelX, yOffset, 25, "Hair Color:", 1, 1, 1, 1, UIFont.Large, false)
-    self.hairColorLabel:initialise()
-    self:addChild(self.hairColorLabel)
-
-    self.hairColorDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.hairColorDropdown:addOptionWithData("Black", {r = HAIR_COLOR_BLACK_R, g = HAIR_COLOR_BLACK_G, b = HAIR_COLOR_BLACK_B})
-    self.hairColorDropdown:addOptionWithData("Blonde", {r = HAIR_COLOR_BLONDE_R, g = HAIR_COLOR_BLONDE_G, b = HAIR_COLOR_BLONDE_B})
-    self.hairColorDropdown:addOptionWithData("Brown", {r = HAIR_COLOR_BROWN_R, g = HAIR_COLOR_BROWN_G, b = HAIR_COLOR_BROWN_B})
-    self.hairColorDropdown:addOptionWithData("Gray", {r = HAIR_COLOR_GRAY_R, g = HAIR_COLOR_GRAY_G, b = HAIR_COLOR_GRAY_B})
-    self.hairColorDropdown:addOptionWithData("Red", {r = HAIR_COLOR_RED_R, g = HAIR_COLOR_RED_G, b = HAIR_COLOR_RED_B})
-    self.hairColorDropdown:addOptionWithData("White", {r = HAIR_COLOR_WHITE_R, g = HAIR_COLOR_WHITE_G, b = HAIR_COLOR_WHITE_B})
-    self:addChild(self.hairColorDropdown)
-
-    yOffset = yOffset + 30
-
-    self.skinColorLabel = ISLabel:new(labelX, yOffset, 25, "Skin Color:", 1, 1, 1, 1, UIFont.Large, false)
-    self.skinColorLabel:initialise()
-    self:addChild(self.skinColorLabel)
-
-    self.skinColorDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.skinColorDropdown:addOptionWithData("Pale", SKIN_COLOR_PALE)
-    self.skinColorDropdown:addOptionWithData("White", SKIN_COLOR_WHITE)
-    self.skinColorDropdown:addOptionWithData("Tanned", SKIN_COLOR_TANNED)
-    self.skinColorDropdown:addOptionWithData("Brown", SKIN_COLOR_BROWN)
-    self.skinColorDropdown:addOptionWithData("Dark Brown", SKIN_COLOR_DARK_BROWN)
-    self:addChild(self.skinColorDropdown)
-
-    yOffset = yOffset + 30
-
-    -- HL2RP abnormal stuff
-    --[[
-    local warningText1 = "Your character would be considered abnormal."
-    local warningText2 = "The Combine will target you."
-
-    self.abnormalLabel1 = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Large, warningText1), yOffset, 50, warningText1, 1, 1, 1, 1, UIFont.Large, true)
-    self.abnormalLabel1:initialise()
-    self.abnormalLabel1:setVisible(false)
-    self:addChild(self.abnormalLabel1)
-
-    yOffset = yOffset + 30
-
-    self.abnormalLabel2 = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Large, warningText2), yOffset, 50, warningText2, 1, 1, 1, 1, UIFont.Large, true)
-    self.abnormalLabel2:initialise()
-    self.abnormalLabel2:setVisible(false)
-    self:addChild(self.abnormalLabel2)
-    --]]
-
-    --[[self.weightDropdown = ISComboBox:new(entryX, yOffset, entryWidth, 25)
-    self.weightDropdown:addOption("0")
-    self.weightDropdown:addOption("25")
-    -- Add more weight options as needed
-    self:addChild(self.weightDropdown)--]]
+    -- Skin color
+    self.skinColorLabel = FrameworkZ.Interfaces:CreateLabel({
+        x = rightLabelX, y = rightFieldY, height = 25,
+        text = "Skin Color:",
+        font = FZ_FONT_MEDIUM,
+        parent = self.contentPanel
+    })
+    self.skinColorDropdown = FrameworkZ.Interfaces:CreateCombo({
+        x = rightEntryX, y = rightFieldY, width = rightEntryWidth, height = 25,
+        options = {
+            { text = "Pale",       data = (SKIN_COLOR_PALE or 0) },
+            { text = "White",      data = (SKIN_COLOR_WHITE or 1) },
+            { text = "Tanned",     data = (SKIN_COLOR_TANNED or 2) },
+            { text = "Brown",      data = (SKIN_COLOR_BROWN or 3) },
+            { text = "Dark Brown", data = (SKIN_COLOR_DARK_BROWN or 4) },
+        },
+        parent = self.contentPanel
+    })
+    if self.skinColorDropdown and self.skinColorDropdown.select then
+        self.skinColorDropdown:select("White")
+    end
 end
 
 function FrameworkZ.UI.CreateCharacterInfo:onGenderChanged(dropdown)
@@ -246,57 +299,160 @@ function FrameworkZ.UI.CreateCharacterInfo:onGenderChanged(dropdown)
 end
 
 function FrameworkZ.UI.CreateCharacterInfo:onAgeChanged(newValue, slider)
-    self.ageLabel:setName("Age (" .. newValue .. "):")
-
-    -- HL2RP abnormal stuff
-    --[[
-    if newValue < 20 or newValue >= 60 then
-        self.isAbnormal = true
-        self.abnormalLabel1:setVisible(true)
-        self.abnormalLabel2:setVisible(true)
+    -- Update the label with the new age value
+    self.ageLabel:setName("Age: " .. newValue)
+    
+    -- Store the current age
+    self.currentAge = newValue
+    
+    -- Optional: Add age-based visual feedback
+    if newValue < 21 then
+        self.ageLabel:setColor(0.8, 0.9, 1)  -- Light blue for young
+    elseif newValue > 65 then
+        self.ageLabel:setColor(0.9, 0.8, 0.6)  -- Light yellow for elderly
     else
-        self.isAbnormal = false
-        self.abnormalLabel1:setVisible(false)
-        self.abnormalLabel2:setVisible(false)
+        self.ageLabel:setColor(0.9, 0.9, 0.9)  -- Normal white
     end
-    --]]
 end
 
 function FrameworkZ.UI.CreateCharacterInfo:onHeightChanged(newValue, slider)
+    -- Convert inches to feet and inches for display
     local feet = math.floor(newValue / 12)
     local inches = newValue % 12
+    local heightText = feet .. "'" .. inches .. "\""
     
-    self.heightLabel:setName("Height (" .. feet .. "' " .. inches .. "\"):")
-
-    -- HL2RP abnormal stuff
-    --[[
-    if newValue < 60 or newValue > 74 then
-        self.isAbnormal = true
-        self.abnormalLabel1:setVisible(true)
-        self.abnormalLabel2:setVisible(true)
+    self.heightLabel:setName("Height: " .. heightText)
+    
+    -- Store the current height in inches
+    self.currentHeight = newValue
+    
+    -- Optional: Add height-based visual feedback
+    if newValue < 60 then
+        self.heightLabel:setColor(0.8, 0.8, 1)  -- Light blue for short
+    elseif newValue > 78 then
+        self.heightLabel:setColor(0.8, 1, 0.8)  -- Light green for tall
     else
-        self.isAbnormal = false
-        self.abnormalLabel1:setVisible(false)
-        self.abnormalLabel2:setVisible(false)
+        self.heightLabel:setColor(0.9, 0.9, 0.9)  -- Normal white
     end
-    --]]
 end
 
 function FrameworkZ.UI.CreateCharacterInfo:onWeightChanged(newValue, slider)
-    self.weightLabel:setName("Weight (" .. newValue .. " lb):")
-
-    -- HL2RP abnormal stuff
-    --[[
-    if newValue < 125 or newValue > 175 then
-        self.isAbnormal = true
-        self.abnormalLabel1:setVisible(true)
-        self.abnormalLabel2:setVisible(true)
-    else
-        self.isAbnormal = false
-        self.abnormalLabel1:setVisible(false)
-        self.abnormalLabel2:setVisible(false)
+    -- Update the label with the new weight value
+    self.weightLabel:setName("Weight: " .. newValue .. " lb")
+    
+    -- Store the current weight
+    self.currentWeight = newValue
+    
+    -- Optional: Add weight-based visual feedback based on physique
+    local selectedPhysique = "Average"
+    if self.physiqueDropdown and self.physiqueDropdown.selected > 0 then
+        selectedPhysique = self.physiqueDropdown:getOptionText(self.physiqueDropdown.selected)
     end
-    --]]
+    
+    -- Adjust color based on weight and physique combination
+    if (selectedPhysique == "Skinny" and newValue > 140) or (selectedPhysique == "Overweight" and newValue < 160) then
+        self.weightLabel:setColor(1, 0.8, 0.6)  -- Light orange for mismatched weight/physique
+    else
+        self.weightLabel:setColor(0.9, 0.9, 0.9)  -- Normal white
+    end
+end
+
+function FrameworkZ.UI.CreateCharacterInfo:validateData()
+    local errors = {}
+    
+    -- Validate name
+    local name = self.nameEntry and self.nameEntry:getText() or ""
+    if not name or string.len(name) == 0 then
+        table.insert(errors, "Name is required")
+    elseif string.len(name) < 3 then
+        table.insert(errors, "Name must be at least 3 characters long")
+    elseif string.len(name) > self.nameLimit then
+        table.insert(errors, "Name is too long (maximum " .. self.nameLimit .. " characters)")
+    end
+    
+    -- Check for invalid characters in name
+    if name:match("[^%w%s%-_'.]") then
+        table.insert(errors, "Name contains invalid characters")
+    end
+    
+    -- Validate description
+    local description = self.descriptionEntry and self.descriptionEntry:getText() or ""
+    if not description or string.len(description) == 0 then
+        table.insert(errors, "Description is required")
+    elseif string.len(description) < 10 then
+        table.insert(errors, "Description must be at least 10 characters long")
+    elseif string.len(description) > self.descriptionLimit then
+        table.insert(errors, "Description is too long (maximum " .. self.descriptionLimit .. " characters)")
+    end
+    
+    -- Validate age
+    local age = self.ageSlider and self.ageSlider.currentValue or 25
+    local minAge = FrameworkZ.Config.Options.CharacterMinAge or 18
+    local maxAge = FrameworkZ.Config.Options.CharacterMaxAge or 80
+    if age < minAge or age > maxAge then
+        table.insert(errors, "Age must be between " .. minAge .. " and " .. maxAge)
+    end
+    
+    -- Validate height
+    local height = self.heightSlider and self.heightSlider.currentValue or 70
+    local minHeight = FrameworkZ.Config.Options.CharacterMinHeight or 48
+    local maxHeight = FrameworkZ.Config.Options.CharacterMaxHeight or 84
+    if height < minHeight or height > maxHeight then
+        table.insert(errors, "Height must be between " .. minHeight .. " and " .. maxHeight .. " inches")
+    end
+    
+    -- Validate weight
+    local weight = self.weightSlider and self.weightSlider.currentValue or 150
+    local minWeight = FrameworkZ.Config.Options.CharacterMinWeight or 90
+    local maxWeight = FrameworkZ.Config.Options.CharacterMaxWeight or 300
+    if weight < minWeight or weight > maxWeight then
+        table.insert(errors, "Weight must be between " .. minWeight .. " and " .. maxWeight .. " pounds")
+    end
+    
+    -- Validate selections
+    if not self.genderDropdown or self.genderDropdown.selected == 0 then
+        table.insert(errors, "Gender must be selected")
+    end
+    
+    if not self.physiqueDropdown or self.physiqueDropdown.selected == 0 then
+        table.insert(errors, "Physique must be selected")
+    end
+    
+    if not self.eyeColorDropdown or self.eyeColorDropdown.selected == 0 then
+        table.insert(errors, "Eye color must be selected")
+    end
+    
+    if not self.hairColorDropdown or self.hairColorDropdown.selected == 0 then
+        table.insert(errors, "Hair color must be selected")
+    end
+    
+    if not self.skinColorDropdown or self.skinColorDropdown.selected == 0 then
+        table.insert(errors, "Skin color must be selected")
+    end
+    
+    return #errors == 0, errors
+end
+
+function FrameworkZ.UI.CreateCharacterInfo:getCharacterData()
+    local data = {}
+    
+    -- Basic information
+    data.gender = self.genderDropdown and self.genderDropdown:getOptionText(self.genderDropdown.selected) or "Male"
+    data.name = self.nameEntry and self.nameEntry:getText() or ""
+    data.description = self.descriptionEntry and self.descriptionEntry:getText() or ""
+    
+    -- Physical attributes
+    data.age = self.ageSlider and self.ageSlider.currentValue or 25
+    data.height = self.heightSlider and self.heightSlider.currentValue or 70
+    data.weight = self.weightSlider and self.weightSlider.currentValue or 150
+    data.physique = self.physiqueDropdown and self.physiqueDropdown:getOptionText(self.physiqueDropdown.selected) or "Average"
+    
+    -- Appearance
+    data.eyeColor = self.eyeColorDropdown and self.eyeColorDropdown:getOptionData(self.eyeColorDropdown.selected) or {r = 0.2, g = 0.4, b = 0.8}
+    data.hairColor = self.hairColorDropdown and self.hairColorDropdown:getOptionData(self.hairColorDropdown.selected) or {r = 0.4, g = 0.2, b = 0.1}
+    data.skinColor = self.skinColorDropdown and self.skinColorDropdown:getOptionData(self.skinColorDropdown.selected) or 1
+    
+    return data
 end
 
 function FrameworkZ.UI.CreateCharacterInfo:prerender()
@@ -305,32 +461,9 @@ end
 
 function FrameworkZ.UI.CreateCharacterInfo:update()
     ISPanel.update(self)
-
-    -- HL2RP abnormal stuff
-    --[[
-    if self.abnormalLabel1 and self.abnormalLabel2 and self.abnormalLabel1:getIsVisible() == true and self.abnormalLabel2:getIsVisible() == true then
-        if self.warningTurningRed == true then
-            if self.warningGreen > 0 or self.warningBlue > 0 then
-                self.warningGreen = self.warningGreen - self.warningStep
-                self.warningBlue = self.warningBlue - self.warningStep
-            else
-                self.warningTurningRed = false
-            end
-        else
-            if self.warningGreen < 1 or self.warningBlue < 1 then
-                self.warningGreen = self.warningGreen + self.warningStep
-                self.warningBlue = self.warningBlue + self.warningStep
-            else
-                self.warningTurningRed = true
-            end
-        end
-
-        self.abnormalLabel1:setColor(self.warningRed, self.warningGreen, self.warningBlue)
-        self.abnormalLabel2:setColor(self.warningRed, self.warningGreen, self.warningBlue)
-    end
-    --]]
-
-    if self.nameLabel and self.nameEntry then
+    
+    -- Enhanced name character counter with color coding
+    if self.nameLabel and self.nameEntry and self.nameCounter then
         local usedCharacters = string.len(self.nameEntry:getText())
         local remainingCharacters = self.nameLimit - usedCharacters
 
@@ -339,27 +472,23 @@ function FrameworkZ.UI.CreateCharacterInfo:update()
             remainingCharacters = 0
         end
 
-        local red, green
-        if usedCharacters >= self.nameLimit then
-            red = 1
-            green = 1
+        self.nameCounter:setName(tostring(remainingCharacters))
+        
+        -- Enhanced color coding for character limits
+        if remainingCharacters == 0 then
+            self.nameCounter:setColor(1, 0.2, 0.2)  -- Red when at limit
+            self.nameEntry.borderColor = {r=1, g=0.2, b=0.2, a=1.0}
+        elseif remainingCharacters < 8 then
+            self.nameCounter:setColor(1, 0.8, 0)  -- Orange when close to limit
+            self.nameEntry.borderColor = {r=1, g=0.8, b=0, a=1.0}
         else
-            if usedCharacters <= self.recommendedNameLength then
-                local ratio = usedCharacters / self.recommendedNameLength
-                red = 1 - ratio
-                green = ratio
-            else
-                local ratio = (usedCharacters - self.recommendedNameLength) / (self.nameLimit - self.recommendedNameLength)
-                red = math.max(0, math.min(1, ratio * 0.5))
-                green = math.max(0, math.min(1, 1 - ratio * 0.5))
-            end
+            self.nameCounter:setColor(0.4, 0.8, 0.4)  -- Green when plenty of space
+            self.nameEntry.borderColor = {r=0.4, g=0.6, b=0.4, a=1.0}
         end
-
-        self.nameLabel:setName("Name (" .. remainingCharacters .. "):")
-        self.nameEntry.borderColor = {r=red, g=green, b=0, a=0.7}
     end
 
-    if self.descriptionLabel and self.descriptionEntry then
+    -- Enhanced description character counter with color coding
+    if self.descriptionLabel and self.descriptionEntry and self.descriptionCounter then
         local usedCharacters = string.len(self.descriptionEntry:getText())
         local remainingCharacters = self.descriptionLimit - usedCharacters
 
@@ -368,24 +497,19 @@ function FrameworkZ.UI.CreateCharacterInfo:update()
             remainingCharacters = 0
         end
 
-        local red, green
-        if usedCharacters >= self.descriptionLimit then
-            red = 1
-            green = 1
+        self.descriptionCounter:setName(tostring(remainingCharacters))
+        
+        -- Enhanced color coding for character limits
+        if remainingCharacters == 0 then
+            self.descriptionCounter:setColor(1, 0.2, 0.2)  -- Red when at limit
+            self.descriptionEntry.borderColor = {r=1, g=0.2, b=0.2, a=1.0}
+        elseif remainingCharacters < 20 then
+            self.descriptionCounter:setColor(1, 0.8, 0)  -- Orange when close to limit
+            self.descriptionEntry.borderColor = {r=1, g=0.8, b=0, a=1.0}
         else
-            if usedCharacters <= self.recommendedDescriptionLength then
-                local ratio = usedCharacters / self.recommendedDescriptionLength
-                red = 1 - ratio
-                green = ratio
-            else
-                local ratio = (usedCharacters - self.recommendedDescriptionLength) / (self.descriptionLimit - self.recommendedDescriptionLength)
-                red = math.max(0, math.min(1, ratio * 0.5))
-                green = math.max(0, math.min(1, 1 - ratio * 0.5))
-            end
+            self.descriptionCounter:setColor(0.4, 0.8, 0.4)  -- Green when plenty of space
+            self.descriptionEntry.borderColor = {r=0.4, g=0.6, b=0.4, a=1.0}
         end
-
-        self.descriptionLabel:setName("Description (" .. remainingCharacters .. "):")
-        self.descriptionEntry.borderColor = {r=red, g=green, b=0, a=0.7}
     end
 end
 
@@ -405,3 +529,4 @@ function FrameworkZ.UI.CreateCharacterInfo:new(parameters)
 end
 
 return FrameworkZ.UI.CreateCharacterInfo
+

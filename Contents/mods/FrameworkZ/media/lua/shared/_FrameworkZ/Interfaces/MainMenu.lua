@@ -76,26 +76,62 @@ function FrameworkZ.UI.MainMenu:initialise()
 
     self.titleY = self.uiHelper.GetHeight(UIFont.Title, title)
 
-    self.title = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Title, title), self.titleY, 25, title, 1, 1, 1, 1, UIFont.Title, true)
-	self:addChild(self.title)
+    self.title = FrameworkZ.Interfaces:CreateLabel({
+        x = self.width / 2,
+        y = self.titleY,
+        height = 25,
+        text = title,
+        font = FZ_FONT_TITLE,
+        textAlign = FZ_ALIGN_CENTER
+    })
+    self:addChild(self.title)
 
-    self.subtitle = ISLabel:new(self.uiHelper.GetMiddle(self.width, UIFont.Large, subtitle), self.titleY + self.uiHelper.GetHeight(UIFont.Large, subtitle), 25, subtitle, 1, 1, 1, 1, UIFont.Large, true)
+    self.subtitle = FrameworkZ.Interfaces:CreateLabel({
+        x = self.width / 2,
+        y = self.titleY + self.uiHelper.GetHeight(UIFont.Large, subtitle),
+        height = 25,
+        text = subtitle,
+        font = FZ_FONT_LARGE,
+        textAlign = FZ_ALIGN_CENTER,
+        theme = "Subtle"
+    })
     self:addChild(self.subtitle)
 
-    self.createCharacterButton = ISButton:new(middleX, middleY - 75, 200, 50, createCharacterLabel, self.createCharacterSteps, self.createCharacterSteps.ShowNextStep)
-    self.createCharacterButton.font = UIFont.Large
+    self.createCharacterButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY - 75, width = 200, height = 50,
+        title = createCharacterLabel,
+        target = self.createCharacterSteps,
+        onClick = self.createCharacterSteps.ShowNextStep,
+        font = FZ_FONT_LARGE
+    })
     self:addChild(self.createCharacterButton)
 
-    self.loadCharacterButton = ISButton:new(middleX, middleY, 200, 50, loadCharacterLabel, self, FrameworkZ.UI.MainMenu.onEnterLoadCharacterMenu)
-    self.loadCharacterButton.font = UIFont.Large
+    self.loadCharacterButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY, width = 200, height = 50,
+        title = loadCharacterLabel,
+        target = self,
+        onClick = FrameworkZ.UI.MainMenu.onEnterLoadCharacterMenu,
+        font = FZ_FONT_LARGE
+    })
     self:addChild(self.loadCharacterButton)
 
-    self.disconnectButton = ISButton:new(middleX, middleY + 75, 200, 50, disconnectLabel, self, FrameworkZ.UI.MainMenu.onDisconnect)
-    self.disconnectButton.font = UIFont.Large
+    self.disconnectButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY + 75, width = 200, height = 50,
+        title = disconnectLabel,
+        target = self,
+        onClick = FrameworkZ.UI.MainMenu.onDisconnect,
+        theme = "Danger",
+        font = FZ_FONT_LARGE
+    })
     self:addChild(self.disconnectButton)
 
-    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, FrameworkZ.UI.MainMenu.onClose)
-    self.closeButton.font = UIFont.Large
+    self.closeButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY + 150, width = 200, height = 50,
+        title = "Close",
+        target = self,
+        onClick = FrameworkZ.UI.MainMenu.onClose,
+        font = FZ_FONT_LARGE
+    })
 
     if not FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
         self.closeButton:setVisible(false)
@@ -208,8 +244,13 @@ function FrameworkZ.UI.MainMenu:showStepControls(menu, backButtonIndex, backButt
         local x = menu:getX()
         local y = menu:getY() + menu.height + 25
 
-        self[backButtonIndex] = ISButton:new(x, y, width, height, backButtonText, self.createCharacterSteps, self.createCharacterSteps.ShowPreviousStep)
-        self[backButtonIndex].font = UIFont.Large
+        self[backButtonIndex] = FrameworkZ.Interfaces:CreateButton({
+            x = x, y = y, width = width, height = height,
+            title = backButtonText,
+            target = self.createCharacterSteps,
+            onClick = self.createCharacterSteps.ShowPreviousStep,
+            font = FZ_FONT_LARGE
+        })
         self:addChild(self[backButtonIndex])
     else
         backButton:setVisible(true)
@@ -221,8 +262,13 @@ function FrameworkZ.UI.MainMenu:showStepControls(menu, backButtonIndex, backButt
         local x = menu:getX() + menu.width - width
         local y = menu:getY() + menu.height + 25
 
-        self[forwardButtonIndex] = ISButton:new(x, y, width, height, forwardButtonText, self.createCharacterSteps, self.createCharacterSteps.ShowNextStep)
-        self[forwardButtonIndex].font = UIFont.Large
+    self[forwardButtonIndex] = FrameworkZ.Interfaces:CreateButton({
+            x = x, y = y, width = width, height = height,
+            title = forwardButtonText,
+            target = self.createCharacterSteps,
+            onClick = self.createCharacterSteps.ShowNextStep,
+            font = FZ_FONT_LARGE
+        })
         self:addChild(self[forwardButtonIndex])
     else
         forwardButton:setVisible(true)
@@ -255,25 +301,16 @@ end
 
 function FrameworkZ.UI.MainMenu:onExitInfoMenu(menu, isForward)
     local infoInstance = FrameworkZ.UI.CreateCharacterInfo.instance
-    local name = infoInstance.nameEntry:getText()
-    local description = infoInstance.descriptionEntry:getText()
-    local warningMessage = ""
-
-    if not name or name == "" then
-        warningMessage = warningMessage .. "Name must be filled in"
-    elseif #name < 8 then
-        warningMessage = warningMessage .. (warningMessage == "" and "" or " and ") .. "Name must be at least 8 characters"
-    end
-
-    if not description or description == "" then
-        warningMessage = warningMessage .. (warningMessage == "" and "" or " and ") .. "Description must be filled in"
-    elseif #description < 24 then
-        warningMessage = warningMessage .. (warningMessage == "" and "" or " and ") .. "Description must be at least 24 characters"
-    end
-
-    if warningMessage ~= "" and isForward then
-        FrameworkZ.Notifications:AddToQueue("Cannot proceed: " .. warningMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
-        return false
+    
+    if isForward then
+        -- Use the enhanced validation system
+        local isValid, errors = infoInstance:validateData()
+        
+        if not isValid then
+            local warningMessage = "Cannot proceed: " .. table.concat(errors, ", ")
+            FrameworkZ.Notifications:AddToQueue(warningMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
     end
 
     self:hideStepControls(self.selectFaction, self.customizeAppearance)
@@ -441,8 +478,13 @@ function FrameworkZ.UI.MainMenu:onEnterLoadCharacterMenu()
         local xReturn = self.loadCharacterMenu:getX()
         local yReturn = self.loadCharacterMenu:getY() + self.loadCharacterMenu.height + 25
 
-        self.loadCharacterBackButton = ISButton:new(xReturn, yReturn, widthReturn, heightReturn, "< Main Menu", self, self.onEnterMainMenuFromLoadCharacterMenu)
-        self.loadCharacterBackButton.font = UIFont.Large
+        self.loadCharacterBackButton = FrameworkZ.Interfaces:CreateButton({
+            x = xReturn, y = yReturn, width = widthReturn, height = heightReturn,
+            title = "< Main Menu",
+            target = self,
+            onClick = self.onEnterMainMenuFromLoadCharacterMenu,
+            font = FZ_FONT_LARGE
+        })
         self:addChild(self.loadCharacterBackButton)
     else
         self.loadCharacterBackButton:setVisible(true)
@@ -454,8 +496,14 @@ function FrameworkZ.UI.MainMenu:onEnterLoadCharacterMenu()
         local xLoad = self.loadCharacterMenu:getX() + self.loadCharacterMenu.width - widthLoad
         local yLoad = self.loadCharacterMenu:getY() + self.loadCharacterMenu.height + 25
 
-        self.loadCharacterForwardButton = ISButton:new(xLoad, yLoad, widthLoad, heightLoad, "Load Character >", self, self.onLoadCharacter)
-        self.loadCharacterForwardButton.font = UIFont.Large
+        self.loadCharacterForwardButton = FrameworkZ.Interfaces:CreateButton({
+            x = xLoad, y = yLoad, width = widthLoad, height = heightLoad,
+            title = "Load Character >",
+            target = self,
+            onClick = self.onLoadCharacter,
+            theme = "Primary",
+            font = FZ_FONT_LARGE
+        })
         self:addChild(self.loadCharacterForwardButton)
     else
         self.loadCharacterForwardButton:setVisible(true)

@@ -1,3 +1,8 @@
+--! \page Features
+--! \section Players Players
+--! Players are the entities that connect to the game server. Each player can have multiple characters and can switch between said characters at any time. Players can also be assigned roles and permissions within the game.
+--! Now it's important to distinguish between players characters, imagine the player as the thing controlling the character. The "person" vs the "avatar" where the avatar is the in-game representation of the player and what/whom they're roleplaying as.
+
 --! \page Global Variables
 --! \section Players Players
 --! FrameworkZ.Players

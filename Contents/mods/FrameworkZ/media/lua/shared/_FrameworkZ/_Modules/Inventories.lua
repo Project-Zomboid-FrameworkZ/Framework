@@ -1,3 +1,8 @@
+--! \page Features
+--! \section Inventories Inventories
+--! Inventories are used to store items for characters, containers, vehicles, and other entities. Each inventory can hold multiple items, and each item can have its own unique properties and data.
+--! An inventory object is broken down into two key elements: The logical inventory, and the "physical" inventory. A logical inventory is composed of items that are directly implemented with FrameworkZ. Whereas a physical inventory is composed of regular Project Zomboid items. These two distinctions were made to provide better organization and management of items within the game considering that not all items would be implemented into FrameworkZ.
+
 --! \page Global Variables
 --! \section Inventories Inventories
 --! FrameworkZ.Inventories
@@ -12,7 +17,6 @@ FrameworkZ = FrameworkZ or {}
 --! \brief The Inventories module for FrameworkZ. Defines and interacts with INVENTORY object.
 --! \module FrameworkZ.Inventories
 FrameworkZ.Inventories = {}
-FrameworkZ.Inventories.__index = FrameworkZ.Inventories
 FrameworkZ.Inventories.List = {}
 FrameworkZ.Inventories.Types = {
     Character = "Character",
@@ -469,68 +473,45 @@ local function safeGetWornItem(isoPlayer, slot)
     local actualSlot = slot
     
     -- Try different slot name variations if needed
-    local success, result = pcall(function()
-        return isoPlayer:getWornItem(actualSlot)
-    end)
-    
-    if success then
-        return result
-    else
-        -- Try alternative slot names for compatibility
-        local alternativeSlots = {
-            ["TorsoExtraVest"] = "TorsoExtra",
-            ["TorsoExtra"] = "TorsoExtraVest"
-        }
-        
-        if alternativeSlots[slot] then
-            local altSuccess, altResult = pcall(function()
-                return isoPlayer:getWornItem(alternativeSlots[slot])
-            end)
-            if altSuccess then
-                return altResult
-            end
-        end
-        
-        return nil
+    local result = nil
+    if isoPlayer.getWornItem then
+        result = isoPlayer:getWornItem(actualSlot)
     end
+    if result then return result end
+    -- Try alternative slot names for compatibility
+    local alternativeSlots = {
+        ["TorsoExtraVest"] = "TorsoExtra",
+        ["TorsoExtra"] = "TorsoExtraVest"
+    }
+    if alternativeSlots[slot] and isoPlayer.getWornItem then
+        return isoPlayer:getWornItem(alternativeSlots[slot])
+    end
+    return nil
 end
 
 -- Helper function to safely set worn item with error handling
 local function safeSetWornItem(isoPlayer, slot, item)
     if not isoPlayer or not slot or not item then return false end
     
-    local success, result = pcall(function()
-        -- For items with specific body locations, use that
-        if item:getBodyLocation() then
-            isoPlayer:setWornItem(item:getBodyLocation(), item)
-        else
-            -- Otherwise use the slot name
-            isoPlayer:setWornItem(slot, item)
-        end
+    -- For items with specific body locations, prefer that
+    if item.getBodyLocation and item:getBodyLocation() and isoPlayer.setWornItem then
+        isoPlayer:setWornItem(item:getBodyLocation(), item)
         return true
-    end)
-    
-    if success then
-        return result
-    else
-        -- Try alternative slot names for compatibility
-        local alternativeSlots = {
-            ["TorsoExtraVest"] = "TorsoExtra",
-            ["TorsoExtra"] = "TorsoExtraVest"
-        }
-        
-        if alternativeSlots[slot] then
-            local altSuccess, altResult = pcall(function()
-                isoPlayer:setWornItem(alternativeSlots[slot], item)
-                return true
-            end)
-            if altSuccess then
-                return altResult
-            end
-        end
-        
-        return false
     end
+    if isoPlayer.setWornItem then
+        isoPlayer:setWornItem(slot, item)
+        return true
+    end
+    -- Try alternative slot names for compatibility
+    local alternativeSlots = {
+        ["TorsoExtraVest"] = "TorsoExtra",
+        ["TorsoExtra"] = "TorsoExtraVest"
+    }
+    if alternativeSlots[slot] and isoPlayer.setWornItem then
+        isoPlayer:setWornItem(alternativeSlots[slot], item)
+        return true
+    end
+    return false
 end
 FrameworkZ.Inventories = FrameworkZ.Foundation:NewModule(FrameworkZ.Inventories, "Inventories")
 
@@ -1104,9 +1085,37 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
     end
     
     if characterData then
+        -- Aliases to tolerate differing keys (e.g., Tshirt vs TShirt)
+        local aliases = {
+            Tshirt = {"Tshirt","TShirt","Undershirt"},
+            Shirt = {"Shirt","Overshirt","Jacket","FullTop"},
+            Hat = {"Hat","FullHat"},
+            Mask = {"Mask","MaskFull","MaskEyes"},
+        }
+        local function getSlotDataFor(enumKey)
+            -- 1) Exact key
+            local data = characterData[enumKey]
+            if data then return data end
+            -- 2) From EQUIPPED_ITEMS by the same enum key
+            if characterData.EQUIPPED_ITEMS and characterData.EQUIPPED_ITEMS[enumKey] then
+                return characterData.EQUIPPED_ITEMS[enumKey]
+            end
+            -- 3) Try aliases
+            local list = aliases[enumKey]
+            if list then
+                for _, alt in ipairs(list) do
+                    if characterData[alt] then return characterData[alt] end
+                    if characterData.EQUIPPED_ITEMS and characterData.EQUIPPED_ITEMS[alt] then
+                        return characterData.EQUIPPED_ITEMS[alt]
+                    end
+                end
+            end
+            return nil
+        end
+
         -- Apply colors to equipped items using resolved SlotLookup mapping
         for slotEnum, slotName in pairs(self.SlotLookup) do
-            local slotData = characterData[slotEnum]
+            local slotData = getSlotDataFor(slotEnum)
             if slotName and slotData and slotData.color then
                 local wornItem = isoPlayer:getWornItem(slotName)
                 if wornItem and wornItem.getVisual and type(wornItem.getVisual) == "function" then

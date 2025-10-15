@@ -20,26 +20,46 @@ function FrameworkZ.UI.CharacterPreview:initialise()
 	self.avatarPanel:setDoRandomExtAnimations(true)
     self.avatarPanel:reportEvent(self.defaultAnimation and self.defaultAnimation or "EventWalk")
 
-	self.turnLeftButton = ISButton:new(self.avatarPanel.x, self.avatarPanel:getBottom()-15, 15, 15, "", self, self.onTurnChar)
+	self.turnLeftButton = FrameworkZ.Interfaces:CreateButton({
+		x = self.avatarPanel.x,
+		y = self.avatarPanel:getBottom()-15,
+		width = 15,
+		height = 15,
+		title = "",
+		target = self,
+		onClick = self.onTurnChar,
+		parent = self
+	})
 	self.turnLeftButton.internal = "TURNCHARACTERLEFT"
-	self.turnLeftButton:initialise()
-	self.turnLeftButton:instantiate()
 	self.turnLeftButton:setImage(getTexture("media/ui/ArrowLeft.png"))
-	self:addChild(self.turnLeftButton)
 
-	self.turnRightButton = ISButton:new(self.avatarPanel:getRight()-15, self.avatarPanel:getBottom()-15, 15, 15, "", self, self.onTurnChar)
+	self.turnRightButton = FrameworkZ.Interfaces:CreateButton({
+		x = self.avatarPanel:getRight()-15,
+		y = self.avatarPanel:getBottom()-15,
+		width = 15,
+		height = 15,
+		title = "",
+		target = self,
+		onClick = self.onTurnChar,
+		parent = self
+	})
 	self.turnRightButton.internal = "TURNCHARACTERRIGHT"
-	self.turnRightButton:initialise()
-	self.turnRightButton:instantiate()
 	self.turnRightButton:setImage(getTexture("media/ui/ArrowRight.png"))
-	self:addChild(self.turnRightButton)
 
-	self.animCombo = ISComboBox:new(0, self.avatarPanel:getBottom() + 2, self.width, comboHgt, self, self.onAnimSelected)
-	self.animCombo:initialise()
-	self:addChild(self.animCombo)
-	self.animCombo:addOptionWithData(getText("IGUI_anim_Walk"), "EventWalk")
-	self.animCombo:addOptionWithData(getText("IGUI_anim_Idle"), "EventIdle")
-	self.animCombo:addOptionWithData(getText("IGUI_anim_Run"), "EventRun")
+	self.animCombo = FrameworkZ.Interfaces:CreateCombo({
+		x = 0,
+		y = self.avatarPanel:getBottom() + 2,
+		width = self.width,
+		height = comboHgt,
+		target = self,
+		onChange = self.onAnimSelected,
+		options = {
+			{text = getText("IGUI_anim_Walk"), data = "EventWalk"},
+			{text = getText("IGUI_anim_Idle"), data = "EventIdle"},
+			{text = getText("IGUI_anim_Run"), data = "EventRun"}
+		},
+		parent = self
+	})
 	self.animCombo.selected = 1
 end
 

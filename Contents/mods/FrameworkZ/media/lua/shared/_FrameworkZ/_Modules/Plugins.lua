@@ -47,17 +47,20 @@ end
 --! \param metadata \table Optional metadata for the plugin.
 function FrameworkZ.Plugins:RegisterPlugin(plugin, overwrite)
     local name = plugin.Meta.Name
+    print("[FrameworkZ.Plugins] RegisterPlugin() called for: " .. tostring(name))
 
     if not self.RegisteredPlugins[name] or overwrite then
         self.RegisteredPlugins[name] = plugin
         FrameworkZ.Foundation:RegisterPluginHandler(self.RegisteredPlugins[name])
+        print("[FrameworkZ.Plugins] Plugin registered successfully: " .. tostring(name))
     else
         FrameworkZ.Foundation:UnregisterPluginHandler(self.RegisteredPlugins[name])
         self.RegisteredPlugins[name] = FrameworkZ.Utilities:MergeTables(self.RegisteredPlugins[name], plugin)
         FrameworkZ.Foundation:RegisterPluginHandler(self.RegisteredPlugins[name])
+        print("[FrameworkZ.Plugins] Plugin merged with existing: " .. tostring(name))
     end
 
-    self:LoadPlugin(name)
+    --self:LoadPlugin(name)
 end
 
 function FrameworkZ.Plugins:GetPlugin(pluginName)
@@ -67,15 +70,42 @@ end
 --! \brief Load a registered plugin.
 --! \param pluginName \string The name of the plugin to load.
 function FrameworkZ.Plugins:LoadPlugin(pluginName)
+    print("[FrameworkZ.Plugins] LoadPlugin() called for: " .. tostring(pluginName))
     local plugin = self.RegisteredPlugins[pluginName]
     if plugin and not self.LoadedPlugins[pluginName] then
+        print("[FrameworkZ.Plugins] Plugin found and not already loaded: " .. tostring(pluginName))
         if plugin.Initialize then
+            print("[FrameworkZ.Plugins] Calling Initialize() for plugin: " .. tostring(pluginName))
             plugin:Initialize()
+        else
+            print("[FrameworkZ.Plugins] Plugin has no Initialize method: " .. tostring(pluginName))
         end
 
         self.LoadedPlugins[pluginName] = plugin
+        print("[FrameworkZ.Plugins] Plugin loaded successfully: " .. tostring(pluginName))
         --self:RegisterPluginEventHandlers(plugin)
+    else
+        if not plugin then
+            print("[FrameworkZ.Plugins] Plugin not found in RegisteredPlugins: " .. tostring(pluginName))
+        elseif self.LoadedPlugins[pluginName] then
+            print("[FrameworkZ.Plugins] Plugin already loaded: " .. tostring(pluginName))
+        end
     end
+end
+
+--! \brief Load all registered plugins.
+function FrameworkZ.Plugins:LoadAllPlugins()
+    print("[FrameworkZ.Plugins] LoadAllPlugins() called")
+    for pluginName, plugin in pairs(self.RegisteredPlugins) do
+        print("[FrameworkZ.Plugins] Processing plugin: " .. tostring(pluginName))
+        if not self.LoadedPlugins[pluginName] then
+            print("[FrameworkZ.Plugins] Loading plugin: " .. tostring(pluginName))
+            self:LoadPlugin(pluginName)
+        else
+            print("[FrameworkZ.Plugins] Plugin already loaded: " .. tostring(pluginName))
+        end
+    end
+    print("[FrameworkZ.Plugins] LoadAllPlugins() completed")
 end
 
 --! \brief Unload a loaded plugin.
@@ -218,3 +248,29 @@ function FrameworkZ.Plugins:ExecuteCommand(commandName, ...)
         print("Command not found:", commandName)
     end
 end
+
+--! \brief Initialize the Plugins module - loads all registered plugins.
+function FrameworkZ.Plugins:Initialize()
+    print("[FrameworkZ.Plugins] Initialize() called")
+    
+    if self.RegisteredPlugins then
+        for pluginName, plugin in pairs(self.RegisteredPlugins) do
+            print("[FrameworkZ.Plugins] Found registered plugin: " .. tostring(pluginName))
+        end
+    end
+    
+    self:LoadAllPlugins()
+    print("[FrameworkZ.Plugins] Initialized and loaded all plugins")
+end
+
+--[[
+-- Auto-initialize plugins when the module loads
+if Events then
+    Events.OnGameBoot.Add(function()
+        FrameworkZ.Plugins:Initialize()
+    end)
+else
+    -- Fallback if Events is not available yet
+    FrameworkZ.Plugins:Initialize()
+end
+--]]

@@ -76,22 +76,43 @@ function FrameworkZ.UI.MusicControls:initialise()
     local buttonSpacing = 10
     
     -- Mute/Unmute button
-    self.muteButton = ISButton:new(10, currentY, buttonWidth, 20, "Mute All", self, self.onMuteToggle)
-    self.muteButton:initialise()
-    self.muteButton.backgroundColor = {r=0.3, g=0.2, b=0.2, a=0.8}
-    self:addChild(self.muteButton)
+    self.muteButton = FrameworkZ.Interfaces:CreateButton({
+        x = 10,
+        y = currentY,
+        width = buttonWidth,
+        height = 20,
+        title = "Mute All",
+        target = self,
+        onClick = self.onMuteToggle,
+        backgroundColor = {r=0.3, g=0.2, b=0.2, a=0.8},
+        parent = self
+    })
     
     -- Test intro music button
-    self.testIntroButton = ISButton:new(10 + buttonWidth + buttonSpacing, currentY, buttonWidth, 20, "Test Intro", self, self.onTestIntro)
-    self.testIntroButton:initialise()
-    self.testIntroButton.backgroundColor = {r=0.2, g=0.3, b=0.2, a=0.8}
-    self:addChild(self.testIntroButton)
+    self.testIntroButton = FrameworkZ.Interfaces:CreateButton({
+        x = 10 + buttonWidth + buttonSpacing,
+        y = currentY,
+        width = buttonWidth,
+        height = 20,
+        title = "Test Intro",
+        target = self,
+        onClick = self.onTestIntro,
+        backgroundColor = {r=0.2, g=0.3, b=0.2, a=0.8},
+        parent = self
+    })
     
     -- Close button
-    self.closeButton = ISButton:new(10 + (buttonWidth + buttonSpacing) * 2, currentY, buttonWidth, 20, "Close", self, self.onClose)
-    self.closeButton:initialise()
-    self.closeButton.backgroundColor = {r=0.2, g=0.2, b=0.3, a=0.8}
-    self:addChild(self.closeButton)
+    self.closeButton = FrameworkZ.Interfaces:CreateButton({
+        x = 10 + (buttonWidth + buttonSpacing) * 2,
+        y = currentY,
+        width = buttonWidth,
+        height = 20,
+        title = "Close",
+        target = self,
+        onClick = self.onClose,
+        backgroundColor = {r=0.2, g=0.2, b=0.3, a=0.8},
+        parent = self
+    })
     
     -- Store instance reference
     FrameworkZ.UI.MusicControls.instance = self

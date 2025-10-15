@@ -103,11 +103,11 @@ function FrameworkZ.UI.TabPanel:update()
     ISPanel.update(self)
 end
 
-function FrameworkZ.UI.TabPanel:onClose()
+function FrameworkZ.UI.TabPanel:close()
     FrameworkZ.Timers:Remove("TabPanelSlideOut")
 
     if FrameworkZ.UI.TabSession.instance then
-        FrameworkZ.UI.TabSession.instance:onClose()
+        FrameworkZ.UI.TabSession.instance:close()
     end
 
     self:slideIn()
@@ -115,7 +115,7 @@ end
 
 function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
     if button.internal == "CLOSE" then
-        self:onClose()
+        self:close()
     elseif button.internal == "CHARACTERS" then
         self.characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.isoPlayer)
         self.characterSelect.backgroundImageOpacity = 0.5
@@ -123,20 +123,24 @@ function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
         self.characterSelect:initialise()
         self.characterSelect:addToUIManager()
 
-        self:onClose()
+        self:close()
     elseif button.internal == "MY_CHARACTER" then
         print("Opening My Character Menu")
     elseif button.internal == "SESSION" then
         if FrameworkZ.UI.TabSession.instance then
-            FrameworkZ.UI.TabSession.instance:setVisible(false)
-            FrameworkZ.UI.TabSession.instance:removeFromUIManager()
-            FrameworkZ.UI.TabSession.instance = nil
-        else
+            FrameworkZ.UI.TabSession.instance:close()
+        elseif FrameworkZ.UI.TabMenu.instance then
+            if FrameworkZ.UI.TabPanel.instance.currentPanel then
+                FrameworkZ.UI.TabPanel.instance.currentPanel:close()
+            end
+
             local session = FrameworkZ.UI.TabSession:new(self.isoPlayer)
 
             if session then
                 session:initialise()
                 session:addToUIManager()
+
+                FrameworkZ.UI.TabPanel.instance.currentPanel = session
             end
         end
     elseif button.internal == "DIRECTORY" then
@@ -149,8 +153,8 @@ end
 FrameworkZ.UI.TabPanel.buttons = {
     {text = "CHARACTERS", internal = "CHARACTERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {text = "MY CHARACTER", internal = "MY_CHARACTER", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect}
 }
 

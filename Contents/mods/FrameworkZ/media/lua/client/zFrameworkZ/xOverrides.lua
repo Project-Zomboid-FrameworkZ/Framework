@@ -113,7 +113,10 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
         yOffset = yOffset + lineSpace + 5
 
         local yTextureOffset = textureHeight + 10
-        objTooltip:DrawTextureScaled(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, 0.75)
+        
+        -- Get item color and apply to texture using utility function
+        local r, g, b, a = FrameworkZ.Utilities:GetItemColor(item)
+        objTooltip:DrawTextureScaledColor(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, r, g, b, 0.75)
 
         local description = FrameworkZ.Overrides.WordWrapText(itemDescription)
 
@@ -136,7 +139,10 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
         yOffset = yOffset + lineSpace + 5
 
         local yTextureOffset = textureHeight + 10
-        objTooltip:DrawTextureScaled(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, 0.75)
+        
+        -- Get item color and apply to texture using utility function
+        local r, g, b, a = FrameworkZ.Utilities:GetItemColor(item)
+        objTooltip:DrawTextureScaledColor(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, r, g, b, 0.75)
 
         --[[
         local description = FrameworkZ.Overrides.WordWrapText(item:getDescription())

@@ -13,47 +13,59 @@ function FrameworkZ.UI.Introduction:createMusicControls()
     local panelHeight = 75  -- Increased height to accommodate bottom padding
     local margin = 20
     
-    self.musicControlsPanel = ISPanel:new(margin, self.height - panelHeight - margin, panelWidth, panelHeight)
-    self.musicControlsPanel.backgroundColor = {r=0.1, g=0.1, b=0.1, a=0.8}
-    self.musicControlsPanel.borderColor = {r=0.4, g=0.4, b=0.4, a=0.9}
-    self.musicControlsPanel:initialise()
+	self.musicControlsPanel = FrameworkZ.Interfaces:CreatePanel({
+		x = margin, y = self.height - panelHeight - margin, width = panelWidth, height = panelHeight,
+	})
     self:addChild(self.musicControlsPanel)
     
     local currentY = 5
     
-    -- Title
-    self.musicTitle = ISLabel:new(10, currentY, 15, "Music Volume", 1, 1, 1, 1, UIFont.Small, true)
-    self.musicTitle:initialise()
-    self.musicControlsPanel:addChild(self.musicTitle)
+	-- Title
+	self.musicTitle = FrameworkZ.Interfaces:CreateLabel({
+		x = 10, y = currentY, height = 15,
+		text = "Music Volume",
+		font = FZ_FONT_SMALL,
+		textAlign = FZ_ALIGN_LEFT,
+		parent = self.musicControlsPanel
+	})
+	self.musicControlsPanel:addChild(self.musicTitle)
     
     currentY = currentY + 20
     
     -- Music Volume Slider
-    self.volumeLabel = ISLabel:new(10, currentY, 12, "Volume:", 0.9, 0.9, 0.9, 1, UIFont.Small, true)
-    self.volumeLabel:initialise()
-    self.musicControlsPanel:addChild(self.volumeLabel)
+	self.volumeLabel = FrameworkZ.Interfaces:CreateLabel({
+		x = 10, y = currentY, height = 12,
+		text = "Volume:",
+		font = FZ_FONT_SMALL,
+		textAlign = FZ_ALIGN_LEFT,
+		parent = self.musicControlsPanel
+	})
     
-    self.volumeSlider = ISSliderPanel:new(55, currentY, 150, 12, self, self.onVolumeChanged)
-	self.volumeSlider.currentValue = musicVolume
-    self.volumeSlider.minValue = 0
-    self.volumeSlider.maxValue = 1
-    self.volumeSlider.stepValue = 0.01
-    self.volumeSlider:initialise()
-    self.musicControlsPanel:addChild(self.volumeSlider)
+	self.volumeSlider = FrameworkZ.Interfaces:CreateSlider({
+		x = 55, y = currentY, width = 150, height = 12,
+		target = self, onChange = self.onVolumeChanged,
+		min = 0, max = 1, step = 0.01, value = musicVolume,
+		parent = self.musicControlsPanel
+	})
     
     -- Volume percentage display
-    self.volumePercent = ISLabel:new(210, currentY, 12, tostring(math.floor(musicVolume * 100)) .. "%", 0.7, 0.7, 0.7, 1, UIFont.Small, true)
-    self.volumePercent:initialise()
-    self.musicControlsPanel:addChild(self.volumePercent)
+	self.volumePercent = FrameworkZ.Interfaces:CreateLabel({
+		x = 210, y = currentY, height = 12,
+		text = tostring(math.floor(musicVolume * 100)) .. "%",
+		font = FZ_FONT_SMALL,
+		parent = self.musicControlsPanel
+	})
     
     currentY = currentY + 20  -- Reduced spacing before mute button
     
     -- Mute button
-    self.muteButton = ISButton:new(10, currentY, 80, 18, "Mute", self, self.onMuteToggle)
-    self.muteButton:initialise()
-    self.muteButton.backgroundColor = {r=0.3, g=0.2, b=0.2, a=0.8}
-    self.muteButton.font = UIFont.Small
-    self.musicControlsPanel:addChild(self.muteButton)
+	self.muteButton = FrameworkZ.Interfaces:CreateButton({
+		x = 10, y = currentY, width = 80, height = 18,
+		title = "Mute",
+		target = self, onClick = self.onMuteToggle,
+		font = FZ_FONT_SMALL,
+		parent = self.musicControlsPanel
+	})
     
     -- Bottom padding is now included in the panel height (5px bottom margin like top)
 end
@@ -150,9 +162,18 @@ function FrameworkZ.UI.Introduction:initialise()
 
 	ISPanel.initialise(self)
 
-    self.initializing = ISLabel:new(self.width / 2, (self.height - getTextManager():MeasureStringY(UIFont.Large, "Initializing")) / 2, 25, "Initializing", 1, 1, 1, 1, UIFont.Large, true)
-	self.initializing.center = true
-	self:addChild(self.initializing)
+	local tm = getTextManager and getTextManager()
+	local large = (UIFont and UIFont.Large) or FZ_FONT_LARGE
+	local initY = (self.height - (tm and tm:MeasureStringY(large, "Initializing") or 25)) / 2
+	self.initializing = FrameworkZ.Interfaces:CreateLabel({
+		x = self.width / 2,
+		y = initY,
+		height = 25,
+		text = "Initializing",
+		font = FZ_FONT_LARGE,
+		textAlign = FZ_ALIGN_CENTER,
+		parent = self
+	})
 
     -- Add music controls in bottom-left corner during initialization
     self:createMusicControls()
@@ -391,3 +412,4 @@ function FrameworkZ.UI.Introduction:new(x, y, width, height, playerObject)
 end
 
 return FrameworkZ.UI.Introduction
+

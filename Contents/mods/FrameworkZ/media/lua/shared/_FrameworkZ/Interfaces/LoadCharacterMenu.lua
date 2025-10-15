@@ -8,16 +8,12 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
 
     self.currentIndex = 1
     
-    -- Convert Characters table to sequential array for proper indexing
-    local allCharacters = self.player:GetCharacters()
-    self.characters = {}
-    self.characterIDs = {}
-    
-    if allCharacters then
-        for characterID, characterData in pairs(allCharacters) do
-            table.insert(self.characters, characterData)
-            table.insert(self.characterIDs, characterID)
-        end
+    -- Build initial character arrays
+    self:refreshCharacterList(false)
+
+    print("[LoadCharacterMenu] Found characters: " .. tostring(#self.characters))
+    for i,id in ipairs(self.characterIDs) do
+        print("  ["..i.."] id="..tostring(id))
     end
 
     local transitionButtonHeight = self.height / 2
@@ -41,19 +37,31 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
     -- Create a default survivor - gender will be updated when character is set
     self.survivor = SurvivorFactory:CreateSurvivor(SurvivorType.Neutral, false)
 
-    self.nextButton = ISButton:new(self.width - 30, transitionButtonY, 30, transitionButtonHeight, ">", self, FrameworkZ.UI.LoadCharacterMenu.onNext)
-    self.nextButton.font = UIFont.Large
+    self.nextButton = FrameworkZ.Interfaces:CreateButton({
+        x = self.width - 30,
+        y = transitionButtonY,
+        width = 30,
+        height = transitionButtonHeight,
+        title = ">",
+        target = self,
+        onClick = FrameworkZ.UI.LoadCharacterMenu.onNext,
+        font = FZ_FONT_LARGE,
+        parent = self
+    })
     self.nextButton.internal = "NEXT"
-    self.nextButton:initialise()
-    self.nextButton:instantiate()
-    self:addChild(self.nextButton)
 
-    self.previousButton = ISButton:new(0, transitionButtonY, 30, transitionButtonHeight, "<", self, FrameworkZ.UI.LoadCharacterMenu.onPrevious)
-    self.previousButton.font = UIFont.Large
+    self.previousButton = FrameworkZ.Interfaces:CreateButton({
+        x = 0,
+        y = transitionButtonY,
+        width = 30,
+        height = transitionButtonHeight,
+        title = "<",
+        target = self,
+        onClick = FrameworkZ.UI.LoadCharacterMenu.onPrevious,
+        font = FZ_FONT_LARGE,
+        parent = self
+    })
     self.previousButton.internal = "PREVIOUS"
-    self.previousButton:initialise()
-    self.previousButton:instantiate()
-    self:addChild(self.previousButton)
 
     self.leftCharacter = FrameworkZ.UI.CharacterView:new(xLeft, yLeft, widthLeft, heightLeft, isoPlayer, self.characters[1], "", "", IsoDirections.SW)
     self.leftCharacter:setVisible(false)
@@ -70,7 +78,9 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
     self.rightCharacter:initialise()
     self:addChild(self.rightCharacter)
 
-    if not self.player.previousCharacter then
+    local prevSel = self.player.previousCharacter
+    -- Map previous selection: it may be an ID or an index
+    if not prevSel then
         if #self.characters == 1 then
             self.selectedCharacter:setCharacter(self.characters[1])
             self.selectedCharacter:reinitialize(self.characters[1])
@@ -86,12 +96,16 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
             self.rightCharacter:setVisible(true)
         end
     else
-        for i = 1, #self.characters do
-            if i == self.player.previousCharacter then
-                self.currentIndex = i
-                break
-            end
+        -- Try to find by ID first
+        local foundIndex = nil
+        for i, id in ipairs(self.characterIDs) do
+            if tostring(id) == tostring(prevSel) then foundIndex = i; break end
         end
+        -- Fallback: if prevSel is a number inside range, treat as index
+        if not foundIndex and type(prevSel) == "number" and prevSel >= 1 and prevSel <= #self.characters then
+            foundIndex = prevSel
+        end
+        if foundIndex then self.currentIndex = foundIndex end
 
         if #self.characters == 1 then
             self.selectedCharacter:setCharacter(self.characters[self.currentIndex])
@@ -136,32 +150,118 @@ function FrameworkZ.UI.LoadCharacterMenu:initialise()
     --]]
 end
 
+-- Rebuild character arrays from the player object; optionally keep current selection by ID
+function FrameworkZ.UI.LoadCharacterMenu:refreshCharacterList(keepSelection)
+    if not self.player or not self.player.GetCharacters then return end
+    local allCharacters = self.player:GetCharacters() or {}
+
+    local prevSelectedID = keepSelection and (self.characterIDs and self.characterIDs[self.currentIndex]) or nil
+
+    self.characters = {}
+    self.characterIDs = {}
+    local ids = {}
+    for id, _ in pairs(allCharacters) do table.insert(ids, id) end
+    table.sort(ids, function(a,b)
+        local na, nb = tonumber(a), tonumber(b)
+        if na and nb then return na < nb end
+        if na and not nb then return true end
+        if nb and not na then return false end
+        return tostring(a) < tostring(b)
+    end)
+    for _, id in ipairs(ids) do
+        table.insert(self.characterIDs, id)
+        table.insert(self.characters, allCharacters[id])
+    end
+
+    -- Track count/signature to detect changes during prerender
+    self._lastCharCount = #self.characters
+    self._lastCharSig = table.concat(self.characterIDs, "|")
+
+    -- Preserve selection if requested
+    if keepSelection and prevSelectedID then
+        local foundIndex
+        for i, id in ipairs(self.characterIDs) do
+            if tostring(id) == tostring(prevSelectedID) then foundIndex = i; break end
+        end
+        if foundIndex then self.currentIndex = foundIndex end
+    end
+end
+
+-- Detect character list changes while menu is open and refresh previews
+function FrameworkZ.UI.LoadCharacterMenu:prerender()
+    ISPanel.prerender(self)
+    if not self.player or not self.player.GetCharacters then return end
+    local chars = self.player:GetCharacters() or {}
+    local count = 0; for _ in pairs(chars) do count = count + 1 end
+    if (self._lastCharCount ~= count) then
+        local oldSelectedID = self.characterIDs and self.characterIDs[self.currentIndex]
+        self:refreshCharacterList(true)
+        -- After refresh, update visible previews
+        if #self.characters >= 1 then
+            self.selectedCharacter:setCharacter(self.characters[self.currentIndex])
+            self.selectedCharacter:reinitialize(self.characters[self.currentIndex])
+            self.selectedCharacter:setVisible(true)
+        end
+        if self.currentIndex > 1 and self.characters[self.currentIndex - 1] then
+            self.leftCharacter:setCharacter(self.characters[self.currentIndex - 1])
+            self.leftCharacter:reinitialize(self.characters[self.currentIndex - 1])
+            self.leftCharacter:setVisible(true)
+        else
+            self.leftCharacter:setVisible(false)
+        end
+        if self.currentIndex < #self.characters and self.characters[self.currentIndex + 1] then
+            self.rightCharacter:setCharacter(self.characters[self.currentIndex + 1])
+            self.rightCharacter:reinitialize(self.characters[self.currentIndex + 1])
+            self.rightCharacter:setVisible(true)
+        else
+            self.rightCharacter:setVisible(false)
+        end
+    end
+end
+
 function FrameworkZ.UI.LoadCharacterMenu:onNext()
+    if #self.characters < 2 then return end
     self.currentIndex = math.min(self.currentIndex + 1, #self.characters)
     self:updateCharacterPreview()
 end
 
 function FrameworkZ.UI.LoadCharacterMenu:onPrevious()
+    if #self.characters < 2 then return end
     self.currentIndex = math.max(self.currentIndex - 1, 1)
     self:updateCharacterPreview()
 end
 
 function FrameworkZ.UI.LoadCharacterMenu:updateCharacterPreview()
-    self.selectedCharacter:setCharacter(self.characters[self.currentIndex])
-    self.selectedCharacter:reinitialize(self.characters[self.currentIndex])
+    if #self.characters == 0 then
+        self.selectedCharacter:setVisible(false)
+        self.leftCharacter:setVisible(false)
+        self.rightCharacter:setVisible(false)
+        return
+    end
+
+    local current = self.characters[self.currentIndex] or self.characters[1]
+    self.currentIndex = self.currentIndex or 1
+    self.selectedCharacter:setCharacter(current)
+    self.selectedCharacter:reinitialize(current)
     self.selectedCharacter:setVisible(true)
 
     if self.currentIndex > 1 then
-        self.leftCharacter:setCharacter(self.characters[self.currentIndex - 1])
-        self.leftCharacter:reinitialize(self.characters[self.currentIndex - 1])
+        local leftChar = self.characters[self.currentIndex - 1]
+        if leftChar then
+            self.leftCharacter:setCharacter(leftChar)
+            self.leftCharacter:reinitialize(leftChar)
+        end
         self.leftCharacter:setVisible(true)
     else
         self.leftCharacter:setVisible(false)
     end
 
     if self.currentIndex < #self.characters then
-        self.rightCharacter:setCharacter(self.characters[self.currentIndex + 1])
-        self.rightCharacter:reinitialize(self.characters[self.currentIndex + 1])
+        local rightChar = self.characters[self.currentIndex + 1]
+        if rightChar then
+            self.rightCharacter:setCharacter(rightChar)
+            self.rightCharacter:reinitialize(rightChar)
+        end
         self.rightCharacter:setVisible(true)
     else
         self.rightCharacter:setVisible(false)
@@ -190,3 +290,4 @@ function FrameworkZ.UI.LoadCharacterMenu:new(x, y, width, height, player)
 end
 
 return FrameworkZ.UI.LoadCharacterMenu
+

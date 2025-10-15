@@ -4,10 +4,28 @@ local instanceof = instanceof
 --! \brief Logs module for FrameworkZ. Logs player actions, system events, errors, warnings, and informational messages.
 --! \module FrameworkZ.Logs
 FrameworkZ.Logs = {}
-FrameworkZ.Logs.__index = FrameworkZ.Logs
 FrameworkZ.Logs.LogEntries = {}
-FrameworkZ.Logs.MaxEntries = 1000  -- Maximum number of log entries to load
-FrameworkZ.Logs.LogDirectory = "FrameworkZ_Logs/"  -- Directory to store log files
+FrameworkZ.Logs.MaxEntries = 1000
+FrameworkZ.Logs.RootDirectory = "FrameworkZ_Logs"
+FrameworkZ.Logs.LogDirectories = { -- /.cache/Lua/FrameworkZ_Logs/[date: YYYY-MM]/[date: DD_#]/
+    AdminLogs = { -- /AdminLogs/[username]/
+        "Audit", -- Bans, kicks, mutes, etc.
+        "ItemSpawns",
+    },
+    PlayerLogs = { -- /PlayerLogs/[username]/
+        "Actions", -- Enter/exit vehicle, grab/place/drop item, etc.
+        "Chat", -- Everything entered into chat and who heard message
+        "Commands", -- Commands entered into chat
+        "Damage", -- Kills, deaths, and damage received/dealt
+        "Locations" -- x, y, z coordinates logged every minute for player
+    },
+    SystemLogs = { -- /SystemLogs/
+        "Events",
+        "Errors",
+        "Warnings",
+        "Info"
+    }
+}
 
 -- Define log types
 FrameworkZ.Logs.LogTypes = {
@@ -33,6 +51,28 @@ FrameworkZ.Logs.LogTypes = {
     WARNING = "Warning",
     INFO = "Info"
 }
+FrameworkZ.Logs = FrameworkZ.Foundation:NewModule(FrameworkZ.Logs, "Logs")
+
+function FrameworkZ.Logs:Initialize()
+    local separator = getFileSeparator()
+    local path = self:GetRootDirectory() .. separator .. "README.txt"
+    local writer = getFileWriter(path, true, true)
+
+    if writer then
+        writer:write("FrameworkZ Logs\r\n")
+        writer:write("================\r\n")
+        writer:write("This directory contains log files for FrameworkZ.\r\n")
+        writer:write("Log files are organized by date and log type.\r\n")
+        writer:write("Each log file contains a history of events for a specific player or the system.\r\n")
+        writer:write("================\r\n")
+        
+        writer:close()
+    end
+end
+
+function FrameworkZ.Logs:GetRootDirectory()
+    return self.RootDirectory
+end
 
 --! \brief Add a log entry.
 --! \param logType \string The type of log (e.g., "PlayerAction", "SystemEvent").

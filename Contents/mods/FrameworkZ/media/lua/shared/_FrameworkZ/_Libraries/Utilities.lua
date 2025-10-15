@@ -373,3 +373,53 @@ function FrameworkZ.Utilities:TrimString(str, maxLength, addEllipsis)
         return string.sub(str, 1, maxLength)
     end
 end
+
+--! \brief Extracts color information from a Project Zomboid item.
+--! \param item \object The InventoryItem to extract color from.
+--! \return \number r Red component (0.0-1.0)
+--! \return \number g Green component (0.0-1.0) 
+--! \return \number b Blue component (0.0-1.0)
+--! \return \number a Alpha component (0.0-1.0)
+function FrameworkZ.Utilities:GetItemColor(item)
+    local r, g, b, a = 1, 1, 1, 1  -- Default to white
+    
+    if not item then
+        return r, g, b, a
+    end
+    
+    -- Try to get color from visual first (for tintable clothing)
+    if item.getVisual and type(item.getVisual) == "function" then
+        local vis = item:getVisual()
+        if vis and vis.getTint then
+            local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+            local tint = nil
+            if clothingItem then
+                tint = vis:getTint(clothingItem)
+            else
+                -- Fallback for older API
+                tint = vis:getTint()
+            end
+            if tint then
+                r = tint:getRedFloat()
+                g = tint:getGreenFloat()
+                b = tint:getBlueFloat()
+                a = 1
+                return r, g, b, a
+            end
+        end
+    end
+    
+    -- Fallback to item color (for non-tintable items)
+    if item.getColor then
+        local color = item:getColor()
+        if color then
+            r = color:getRedFloat()
+            g = color:getGreenFloat()
+            b = color:getBlueFloat()
+            a = 1
+            return r, g, b, a
+        end
+    end
+    
+    return r, g, b, a
+end
