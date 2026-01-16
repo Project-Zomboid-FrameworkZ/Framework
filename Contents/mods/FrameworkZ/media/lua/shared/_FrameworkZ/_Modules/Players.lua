@@ -47,49 +47,83 @@ function PLAYER:Initialize()
 end
 
 --! \brief Saves the player's data.
---! \param shouldTransmit \boolean (Optional) Whether or not to transmit the player's data to the server.
---! \return \boolean Whether or not the player was successfully saved.
+--! \param callback \function? Optional callback(success, message) invoked after server save confirmation.
+--! \return \boolean Whether or not the player save was initiated.
 --! \todo Test if localized variable (playerData) maintains referential integrity for transmitModData() to work on it.
-function PLAYER:Save()
-    local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false end
-    local saveablePlayerData = self:GetSaveableData() if not saveablePlayerData then return false end
+function PLAYER:Save(callback)
+    local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "Missing Iso Player." end
+    local saveablePlayerData = self:GetSaveableData() if not saveablePlayerData then return false, "Missing Saveable Player Data." end
 
-    FrameworkZ.Foundation:SetData(isoPlayer, "Players", self:GetUsername(), saveablePlayerData)
+    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.Save", callback, self:GetUsername(), saveablePlayerData)
 
     return true
 end
 
 --! \brief Destroys the player object.
 --! \return \mixed of \boolean Whether or not the player was successfully destroyed and \string The message on success or failure.
-function PLAYER:Destroy()
-    if not self:GetIsoPlayer() then return false, "Critical save fail: Iso Player is nil." end
+function PLAYER:Destroy(callback)
+    if not self:GetIsoPlayer() then 
+        if callback then callback(false, "Critical save fail: Iso Player is nil.") end
+        return false, "Critical save fail: Iso Player is nil." 
+    end
 
     local username = self:GetUsername()
-    local success1, success2, message
+    local isoPlayer = self:GetIsoPlayer()
+    local saveablePlayerData = self:GetSaveableData()
 
-    if FrameworkZ.Players.List[username] then
-        success1, message = FrameworkZ.Players:Save(username)
+    -- Capture the most up-to-date character data on the client before the socket drops
+    local saveableCharacterData = nil
+    local loadedCharacter = self:GetCharacter() or FrameworkZ.Characters:GetCharacterByID(username)
+
+    if loadedCharacter then
+        loadedCharacter:Sync()
+        saveableCharacterData = loadedCharacter:GetSaveableData()
     end
 
-    if FrameworkZ.Characters.List[username] then
-        success2, message = FrameworkZ.Characters:Save(username)
+    -- Remove auto-save timer when destroying character
+    if isClient() and FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
+        FrameworkZ.Timers:Remove("FZ_CharacterSaveInterval")
+        print("[FrameworkZ] Auto-save timer removed during character destroy")
     end
 
-    if FrameworkZ.Characters.List[username] then
-        FrameworkZ.Characters.List[username] = nil
-    end
+    -- Save player and character data, then cleanup and call callback
+    if FrameworkZ.Players.List[username] or FrameworkZ.Characters.List[username] then
+        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.Destroy", function(data, success)
+            local message1, message2
+            
+            if success then
+                print("[FrameworkZ] Player and character data saved successfully before destroy")
+            else
+                print("[FrameworkZ] Warning: Save failed during destroy")
+                message1 = "Save failed"
+            end
 
-    if FrameworkZ.Players.List[username] then
-        FrameworkZ.Players.List[username] = nil
-    end
+            -- Cleanup lists
+            if FrameworkZ.Characters.List[username] then
+                FrameworkZ.Characters.List[username] = nil
+            end
 
-    if success1 and success2 then
-        return true, message
-    end
+            if FrameworkZ.Players.List[username] then
+                FrameworkZ.Players.List[username] = nil
+            end
 
-    return false, message
+            -- Call user callback if provided
+            if callback then
+                callback(success, message1 or message2 or "Player destroyed")
+            end
+        end, username, saveablePlayerData, saveableCharacterData)
+    else
+        -- No data to save, just call callback
+        if callback then
+            callback(true, "No player or character data to save")
+        end
+    end
+    
+    return true, "Player destroy initiated"
 end
 
+--! \brief Initialize default faction whitelists for the player based on faction settings.
+--! \details Automatically whitelists the player for all factions that have isWhitelistedByDefault set to true.
 function PLAYER:InitializeDefaultFactionWhitelists()
     local factions = FrameworkZ.Factions.List
 
@@ -100,6 +134,8 @@ function PLAYER:InitializeDefaultFactionWhitelists()
     end
 end
 
+--! \brief Restore player data from saved data table.
+--! \param data table The saved player data containing Role, MaxCharacters, PreviousCharacter, Whitelists, and CustomData.
 function PLAYER:RestoreData(data)
     self:SetRole(data.Role)
     self:SetMaxCharacters(data.MaxCharacters)
@@ -108,18 +144,27 @@ function PLAYER:RestoreData(data)
     self:SetCustomData(data.CustomData)
 end
 
+--! \brief Get the player's role.
+--! \return string The player's current role (User, Operator, Moderator, Admin, Super_Admin, or Owner).
 function PLAYER:GetRole()
     return self.Role
 end
 
+--! \brief Set the player's role.
+--! \param role string The role to set (read-only, cannot be changed after creation).
 function PLAYER:SetRole(role)
     print("Failed to set Role to: '" .. tostring(role) .. "'. Role is read-only and must be set upon object creation.")
 end
 
+--! \brief Get the player's previous character ID.
+--! \return number The ID of the character the player last played.
 function PLAYER:GetPreviousCharacter()
     return self.PreviousCharacter
 end
 
+--! \brief Set the player's previous character ID.
+--! \param previousCharacter number The character ID to set as previous character.
+--! \return boolean|nil True if set successfully, false if invalid input.
 function PLAYER:SetPreviousCharacter(previousCharacter)
     if not previousCharacter or type(previousCharacter) ~= "number" then
         print("Failed to set Previous Character to: '" .. tostring(previousCharacter) .. "'. Previous Character must be a number.")
@@ -131,10 +176,15 @@ function PLAYER:SetPreviousCharacter(previousCharacter)
     return true
 end
 
+--! \brief Get the maximum number of characters the player can create.
+--! \return number The maximum character limit for this player.
 function PLAYER:GetMaxCharacters()
     return self.maxCharacters
 end
 
+--! \brief Set the maximum number of characters the player can create.
+--! \param maxCharacters number The maximum character limit (must be at least 1).
+--! \return boolean|nil True if set successfully, false if invalid input.
 function PLAYER:SetMaxCharacters(maxCharacters)
     if not maxCharacters or type(maxCharacters) ~= "number" then
         print("Failed to set Max Characters to: '" .. tostring(maxCharacters) .. "'. Max Characters must be a number.")
@@ -151,10 +201,15 @@ function PLAYER:SetMaxCharacters(maxCharacters)
     return true
 end
 
+--! \brief Get the player's custom data table.
+--! \return table The custom data table for storing additional player information.
 function PLAYER:GetCustomData()
     return self.CustomData
 end
 
+--! \brief Set the player's custom data table.
+--! \param customData table The custom data table to store.
+--! \return boolean|nil True if set successfully, false if invalid input.
 function PLAYER:SetCustomData(customData)
     if not customData or type(customData) ~= "table" then
         print("Failed to set Custom Data to: '" .. tostring(customData) .. "'. Custom Data must be a table.")
@@ -166,30 +221,47 @@ function PLAYER:SetCustomData(customData)
     return true
 end
 
+--! \brief Get the player's currently loaded character.
+--! \return CHARACTER|nil The currently loaded character object or nil if no character is loaded.
 function PLAYER:GetCharacter()
     return self.LoadedCharacter
 end
 
+--! \brief Get the player's Steam ID.
+--! \return string The player's Steam ID.
 function PLAYER:GetSteamID()
     return self.SteamID
 end
 
+--! \brief Set the player's Steam ID.
+--! \param steamID string The Steam ID (read-only, cannot be changed after creation).
 function PLAYER:SetSteamID(steamID)
     print("Failed to set SteamID to: '" .. tostring(steamID) .. "'. SteamID is read-only and must be set upon object creation.")
 end
 
+--! \brief Set the player's currently loaded character.
+--! \param character CHARACTER The character object to set as the loaded character.
 function PLAYER:SetCharacter(character)
     self.LoadedCharacter = character
 end
 
+--! \brief Get all characters owned by this player.
+--! \return table Table of character data indexed by character ID.
 function PLAYER:GetCharacters()
     return self.Characters
 end
 
+--! \brief Set the characters table for this player.
+--! \param characters table Table of character data indexed by character ID.
 function PLAYER:SetCharacters(characters)
     self.Characters = characters
 end
 
+--! \brief Get character data by character ID with optional async callback.
+--! \param characterID number The ID of the character to retrieve.
+--! \param callback function? Optional callback function(data, message) for async retrieval.
+--! \return table|boolean Character data table or false if not found.
+--! \return string Message describing success or failure.
 function PLAYER:GetCharacterDataByID(characterID, callback)
     if not characterID then 
         if callback then callback(false, "Missing character ID.") end
@@ -217,7 +289,7 @@ function PLAYER:GetCharacterDataByID(characterID, callback)
 
         if callback then callback(false, "Character not found.") end
         return false, "Character not found."
-    else
+    elseif isClient() then
         -- On client, use async GetData with callback
         FrameworkZ.Foundation:GetData(self:GetIsoPlayer(), "Characters", {self:GetUsername(), characterID}, nil, function(isoPlayer, namespace, keys, value)
             if value then
@@ -245,22 +317,33 @@ function PLAYER:GetCharacterDataByID(characterID, callback)
     end
 end
 
+--! \brief Get the player's username.
+--! \return string The player's username.
 function PLAYER:GetUsername()
     return self.Username
 end
 
+--! \brief Set the player's username.
+--! \param username string The username (read-only, cannot be changed after creation).
 function PLAYER:SetUsername(username)
     print("Failed to set Username to: '" .. tostring(username) .. "'. Username is read-only and must be set upon object creation.")
 end
 
+--! \brief Get the player's IsoPlayer object.
+--! \return IsoPlayer The Project Zomboid IsoPlayer object associated with this player.
 function PLAYER:GetIsoPlayer()
     return self.IsoPlayer
 end
 
+--! \brief Set the player's IsoPlayer object.
+--! \param isoPlayer IsoPlayer The IsoPlayer object (read-only, cannot be changed after creation).
 function PLAYER:SetIsoPlayer(isoPlayer)
     print("Failed to set IsoPlayer to: '" .. tostring(isoPlayer) .. "'. IsoPlayer is read-only and must be set upon object creation.")
 end
 
+--! \brief Get player data suitable for saving/serialization.
+--! \details Filters out non-saveable properties like IsoPlayer, LoadedCharacter, and Characters.
+--! \return table Filtered player data table ready for saving.
 function PLAYER:GetSaveableData()
     local ignoreList = {
         "IsoPlayer",
@@ -271,16 +354,22 @@ function PLAYER:GetSaveableData()
     return FrameworkZ.Foundation:ProcessSaveableData(self, ignoreList)
 end
 
---! \brief Gets the stored player mod data table. Used internally. Do not use this unless you know what you are doing. Updating data on the mod data will cause inconsistencies between the mod data and the FrameworkZ player object.
---! \return \table The stored player mod data table.
+--! \brief Get the stored player mod data table.
+--! \details WARNING: Internal use only. Direct modification will cause inconsistencies between mod data and the FrameworkZ player object.
+--! \return table The raw FZ_PLY mod data table stored on the IsoPlayer.
 function PLAYER:GetStoredData()
     return self.IsoPlayer:getModData()["FZ_PLY"]
 end
 
+--! \brief Get the player's faction whitelists.
+--! \return table Table mapping faction IDs to whitelist status (true/false).
 function PLAYER:GetWhitelists()
     return self.Whitelists
 end
 
+--! \brief Set the player's faction whitelists table.
+--! \param whitelists table Table mapping faction IDs to whitelist status.
+--! \return boolean|nil True if set successfully, false if invalid input.
 function PLAYER:SetWhitelists(whitelists)
     if not whitelists or type(whitelists) ~= "table" then
         print("Failed to set Whitelists to: '" .. tostring(whitelists) .. "'. Whitelists must be a table.")
@@ -292,6 +381,10 @@ function PLAYER:SetWhitelists(whitelists)
     return true
 end
 
+--! \brief Set the player's whitelist status for a specific faction.
+--! \param factionID string The faction ID to update whitelist status for.
+--! \param whitelisted boolean Whether the player is whitelisted for this faction.
+--! \return boolean|nil True if set successfully, false if faction ID not provided.
 function PLAYER:SetWhitelisted(factionID, whitelisted)
     if not factionID then return false end
 
@@ -301,6 +394,9 @@ function PLAYER:SetWhitelisted(factionID, whitelisted)
     return true
 end
 
+--! \brief Check if the player is whitelisted for a specific faction.
+--! \param factionID string The faction ID to check.
+--! \return boolean True if whitelisted, false otherwise.
 function PLAYER:IsWhitelisted(factionID)
     if not factionID then return false end
 
@@ -384,6 +480,9 @@ function PLAYER:ValidatePlayerData()
 end
 --]]
 
+--! \brief Create a new PLAYER object.
+--! \param isoPlayer IsoPlayer The Project Zomboid IsoPlayer object to create a player for.
+--! \return PLAYER|boolean The new PLAYER object or false if isoPlayer is nil.
 function FrameworkZ.Players:New(isoPlayer)
     if not isoPlayer then return false end
 
@@ -406,6 +505,9 @@ function FrameworkZ.Players:New(isoPlayer)
 	return object
 end
 
+--! \brief Initialize a player and add them to the player list.
+--! \param isoPlayer IsoPlayer The Project Zomboid IsoPlayer object to initialize.
+--! \return PLAYER|boolean The initialized PLAYER object or false if creation failed.
 function FrameworkZ.Players:Initialize(isoPlayer)
     local player = FrameworkZ.Players:New(isoPlayer) if not player then return false end
     local username = player:GetUsername()
@@ -417,6 +519,9 @@ function FrameworkZ.Players:Initialize(isoPlayer)
     return self.List[username]
 end
 
+--! \brief Start the player tick system for executing periodic player updates.
+--! \param player PLAYER The player object to start ticking for.
+--! \details Only runs on client. Creates a timer that executes PlayerTick hooks at configured intervals.
 function FrameworkZ.Players:StartPlayerTick(player)
     if not isClient() then return end
 
@@ -425,16 +530,25 @@ function FrameworkZ.Players:StartPlayerTick(player)
     end)
 end
 
+--! \brief Get all registered players.
+--! \return table Table of all PLAYER objects indexed by username.
+function FrameworkZ.Players:GetAllPlayers()
+    return self.List
+end
+
 --! \brief Gets the player object by their username.
 --! \param username \string The username of the player.
---! \return \object or \boolean The player object or false if the player was not found.
+--! \return \object|\boolean The player object or false if the player was not found.
 function FrameworkZ.Players:GetPlayerByID(username)
     if not username then return false, "Username not set." end
     if not self.List[username] then return false, "Player does not exist." end
 
-    return self.List[username]
+    return self.List[username], "Player found."
 end
 
+--! \brief Get the loaded character for a specific player.
+--! \param username string The username of the player.
+--! \return CHARACTER|boolean The loaded CHARACTER object or false if not found or no character loaded.
 function FrameworkZ.Players:GetLoadedCharacterByID(username)
     if not username then return false end
 
@@ -451,7 +565,7 @@ end
 --! \param username \string The username of the player.
 --! \param characterID \integer The ID of the character.
 --! \param callback \function (Optional) Callback function for async handling.
---! \return \table or \boolean The character data or false if the data failed to be retrieved.
+--! \return \table|\boolean The character data or false if the data failed to be retrieved.
 function FrameworkZ.Players:GetCharacterDataByID(username, characterID, callback)
     if not username then 
         if callback then callback(false, "Missing username.") end
@@ -471,6 +585,10 @@ function FrameworkZ.Players:GetCharacterDataByID(username, characterID, callback
     return player:GetCharacterDataByID(characterID, callback)
 end
 
+--! \brief Get the next available character ID for a player.
+--! \param username string The username of the player.
+--! \return number|boolean The next character ID or false if max characters reached or player not found.
+--! \return string|nil Error message if applicable.
 function FrameworkZ.Players:GetNextCharacterID(username)
     if not username then return false end
 
@@ -489,6 +607,41 @@ function FrameworkZ.Players:GetNextCharacterID(username)
     return false, "Player not found."
 end
 
+--! \brief Create the character auto-save interval timer.
+--! \details Creates the FZ_CharacterSaveInterval timer if it doesn't exist. Timer saves the active character at configured intervals.
+function FrameworkZ.Players:CreateCharacterSaveInterval()
+    if FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
+        return -- Timer already exists
+    end
+    
+    if not isClient() then return end
+    
+    local saveInterval = FrameworkZ.Config.Options.TicksUntilCharacterSave * FrameworkZ.Config.Options.PlayerTickInterval
+    
+    FrameworkZ.Timers:Create("FZ_CharacterSaveInterval", saveInterval, 0, function()
+        local isoPlayer = getPlayer()
+        if not isoPlayer then return end
+        
+        local username = isoPlayer:getUsername()
+        local character = FrameworkZ.Characters:GetCharacterByID(username)
+        
+        if character then
+            character:Save(function(success, message)
+                if success then
+                    if FrameworkZ.Config.Options.ShouldNotifyOnCharacterSave then
+                        FrameworkZ.Notifications:AddToQueue("Character auto-saved.", FrameworkZ.Notifications.Types.Success)
+                    end
+                else
+                    print("[FrameworkZ] Auto-save failed: " .. (message or "Unknown error"))
+                    FrameworkZ.Notifications:AddToQueue("Auto-save failed: " .. (message or "Unknown error"), FrameworkZ.Notifications.Types.Danger)
+                end
+            end)
+        end
+    end)
+end
+
+--! \brief Reset the character auto-save interval timer.
+--! \details Restarts the FZ_CharacterSaveInterval timer if it exists.
 function FrameworkZ.Players:ResetCharacterSaveInterval()
     if FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
         FrameworkZ.Timers:Start("FZ_CharacterSaveInterval")
@@ -522,13 +675,18 @@ function FrameworkZ.Players.OnCreateCharacter(data, username, characterData)
     local player = FrameworkZ.Players:GetPlayerByID(username)
     if not player then return false, "Player not found." end
 
-    -- Use centralized data manager for character creation with player context
-    local processedCharacterData, createMessage = FrameworkZ.CharacterDataManager:CreateCharacterData(characterData, player)
-    if not processedCharacterData then
-        return false, "Failed to create character data: " .. (createMessage or "Unknown error")
+    -- Generate UID if not present
+    if not characterData[FZ_ENUM_CHARACTER_META_UID] then
+        characterData[FZ_ENUM_CHARACTER_META_UID] = player:GenerateUID()
     end
 
-    return FrameworkZ.Players:CreateCharacter(username, processedCharacterData)
+    local characterID = FrameworkZ.Players:CreateCharacter(username, characterData)
+    if not characterID then
+        return false, "Failed to create character."
+    end
+    
+    -- Return both character ID and UID for client synchronization
+    return characterID, characterData[FZ_ENUM_CHARACTER_META_UID]
 end
 FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.OnCreateCharacter", FrameworkZ.Players.OnCreateCharacter)
 
@@ -539,10 +697,6 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
     local player = self:GetPlayerByID(username)
 
     if player and player.Characters then
-        if isClient() then
-            FrameworkZ.Players:ResetCharacterSaveInterval()
-        end
-
         characterData[FZ_ENUM_CHARACTER_META_ID] = characterID and characterID or #player.Characters + 1
         characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = true
 
@@ -552,7 +706,10 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
             player.Characters[characterID] = characterData
         end
 
-        characterData[FZ_ENUM_CHARACTER_META_UID] = player:GenerateUID()
+        -- Only generate a new UID if one doesn't already exist (first time character creation)
+        if not characterData[FZ_ENUM_CHARACTER_META_UID] then
+            characterData[FZ_ENUM_CHARACTER_META_UID] = player:GenerateUID()
+        end
 
         if isServer() then
             FrameworkZ.Foundation:SetData(nil, "Characters", {username, characterData[FZ_ENUM_CHARACTER_META_ID]}, characterData)
@@ -569,7 +726,7 @@ end
 --! \param continueOnFailure \boolean (Optional) Whether or not to continue saving either the player or character if either should fail. Default = false. True not recommended.
 --! \return \boolean Whether or not the player was successfully saved.
 --! \return \string The failure message if the player or character failed to save.
-function FrameworkZ.Players:Save(username, continueOnFailure)
+function FrameworkZ.Players:Save(username, continueOnFailure, callback)
     if continueOnFailure == nil then continueOnFailure = false end
 
     local player = FrameworkZ.Players:GetPlayerByID(username)
@@ -580,23 +737,26 @@ function FrameworkZ.Players:Save(username, continueOnFailure)
     local failureMessage = ""
     local character = player.LoadedCharacter
     local characterSaved = false
-    local playerSaved = player:Save(false)
+    
+    -- Save player data with callback if provided
+    local playerSaved, message = player:Save(callback)
     saved = playerSaved
 
     if not saved and not continueOnFailure then
-        return false, "Failed to save player data."
+        return false, "Failed to save player data: " .. (message or "Unknown error.")
     elseif not saved and continueOnFailure then
         failureMessage = "Failed to save player data."
     end
 
     if character then
-        characterSaved = character:Save(false)
+        local hasCharacterSaved, message2 = character:Save()
+        characterSaved = hasCharacterSaved
         saved = characterSaved
 
         if not saved and not continueOnFailure then
-            return false, "Failed to save character data."
+            return false, "Failed to save character data: " .. (message2 or "Unknown error.")
         elseif not saved and continueOnFailure then
-            failureMessage = failureMessage == "Failed to save player data." and "Failed to save both player data and character data." or "Player data saved, but failed to save character data."
+            failureMessage = (failureMessage == "Failed to save player data." and "Failed to save both player data and character data." or "Player data saved, but failed to save character data. " .. message .. " " .. message2)
         end
     else
         characterSaved = true -- No character loaded, set true to prevent returning false.
@@ -615,13 +775,15 @@ function FrameworkZ.Players:Save(username, continueOnFailure)
     return saved, failureMessage
 end
 
-function FrameworkZ.Players:Destroy(username)
+function FrameworkZ.Players:Destroy(username, callback)
     local properlyDestroyed = false
     local message = "Failed to destroy player."
     local player = self:GetPlayerByID(username)
 
     if player then
-        properlyDestroyed, message = player:Destroy()
+        properlyDestroyed, message = player:Destroy(callback)
+    else
+        if callback then callback(false, "Player not found") end
     end
 
     return properlyDestroyed, message
@@ -709,7 +871,7 @@ function PLAYER:SetModel(characterData)
     isoPlayer:getDescriptor():setFemale(isFemale)
 
     -- Get color data with fallbacks from template
-    local template = FrameworkZ.CharacterDataManager.Templates.CharacterData
+    local template = FrameworkZ.Characters.DefaultCharacterData
     local hairColor = characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] or template[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]
     local beardColor = characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] or template[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]
     
@@ -765,70 +927,80 @@ function PLAYER:SetModel(characterData)
     isoPlayer:resetModel()
 end
 
-function PLAYER:LoadCharacter(characterID)
+function PLAYER:LoadCharacter(characterID, callback)
     if not characterID then return false end
 
-    FrameworkZ.Players:OnLoadCharacter(self:GetUsername(), characterID)
+    FrameworkZ.Players:LoadCharacterByID(self:GetUsername(), characterID, callback)
 end
 
-function FrameworkZ.Players:LoadCharacterByID(username, characterID)
+function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
+    local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, "Player not found." end
+    local isoPlayer = player:GetIsoPlayer()
     local clientLoadCharacter = function(_data, success, message)
         if not success then
-            FrameworkZ.Notifications:AddToQueue("Failed to load character: " .. message, FrameworkZ.Notifications.Types.Danger, nil, FrameworkZ.UI.MainMenu.instance)
+            if callback then callback(success, message) end
+
             return
         end
 
-        self:OnLoadCharacter(username, characterID)
+        local characterOrSuccess, message2 = self:OnLoadCharacter(username, characterID, callback)
+
+        if not characterOrSuccess then
+            if callback then callback(characterOrSuccess, message2) end
+
+            return
+        end
+
+        if callback then callback(characterOrSuccess, message2) end
+
+        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", characterOrSuccess:GetPlayer())
     end
 
-    FrameworkZ.Foundation:SendFire(FrameworkZ.Players:GetPlayerByID(username):GetIsoPlayer(), "FrameworkZ.Players.LoadCharacter", clientLoadCharacter, username, characterID)
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", player)
+
+    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.LoadCharacter", clientLoadCharacter, username, characterID)
 end
 
 if isServer() then
     function FrameworkZ.Players.LoadCharacter(_data, username, characterID)
-        return FrameworkZ.Players:OnLoadCharacter(username, characterID)
+        --FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", FrameworkZ.Players:GetPlayerByID(username))
+        local character, message = FrameworkZ.Players:OnLoadCharacter(username, characterID)
+
+        return character and true or false, message
     end
     FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.LoadCharacter", FrameworkZ.Players.LoadCharacter)
 end
 
-function FrameworkZ.Players:OnLoadCharacter(username, characterID)
-    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", username, characterID)
-
-    if isClient() and FrameworkZ.UI.MainMenu.instance and FrameworkZ.UI.MainMenu.instance.loadCharacterForwardButton then
-        FrameworkZ.UI.MainMenu.instance.loadCharacterForwardButton:setEnable(false)
-    end
-
+function FrameworkZ.Players:OnLoadCharacter(username, characterID, callback)
     local player, message = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, message end
 
+    -- Stop the auto-save timer to prevent race conditions during character switching
+    if isClient() and FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
+        FrameworkZ.Timers:Remove("FZ_CharacterSaveInterval")
+    end
+
+    -- Save current character before switching
     if player:GetCharacter() then
         player:GetCharacter():Save()
     end
 
-    local character, message2 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID) if not character then return false, message2 end
-    
-    -- Handle character data retrieval
-    local function onCharacterDataLoaded(characterData, message3)
-        if not characterData then return false, message3 end
-        
-        local isoPlayer = player:GetIsoPlayer()
-
-        player:SetCharacter(character)
-
-        FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
-        FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, characterData)
-
-        return true, "Successfully loaded character."
+    local characterInitializedCallback = function(success, message2)
+        if not success and callback then
+            callback(false, message2)
+        end
     end
 
-    -- Try synchronous first (for server or cached data)
-    local characterData, message3 = player:GetCharacterDataByID(characterID)
-    if characterData then
-        return onCharacterDataLoaded(characterData, message3)
-    else
-        -- If no immediate data available, use async with callback (client-side)
-        player:GetCharacterDataByID(characterID, onCharacterDataLoaded)
-        return true, "Character loading initiated."
+    local character, message3 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID, characterInitializedCallback) if not character then return false, message3 end
+
+    -- Create and start the character save interval timer for the newly loaded character
+    if isClient() then
+        FrameworkZ.Players:CreateCharacterSaveInterval()
+        FrameworkZ.Players:ResetCharacterSaveInterval()
     end
+
+    -- TODO run first load hook FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", character)
+
+    return character, "Character preemptively loaded successfully."
 end
 
 function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
@@ -837,13 +1009,8 @@ function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, cha
     isoPlayer:clearWornItems()
     isoPlayer:getInventory():clear()
 
-    -- Use centralized data manager for character restoration
-    local restoreSuccess, restoreMessage = FrameworkZ.CharacterDataManager:RestoreCharacterData(character, characterData)
-    if restoreSuccess then
-        print("[FrameworkZ] Character data restored from Players module: " .. restoreMessage)
-    else
-        print("[FrameworkZ] Warning: Character data restoration issues from Players module: " .. (restoreMessage or "Unknown error"))
-    end
+    -- Restoration is handled by CHARACTER:Restore() chain in Initialize()
+    -- No need for DataManager here anymore
 
     player:SetModel(characterData)
 
@@ -1029,6 +1196,36 @@ end
 
 function FrameworkZ.Players:DeleteCharacterByID(username, characterID)
 
+end
+
+function FrameworkZ.Players:OnDisconnect()
+    local usernames = {}
+
+    local isoPlayer = getPlayer()
+    if isoPlayer and isoPlayer.getUsername then
+        table.insert(usernames, isoPlayer:getUsername())
+    end
+
+    -- Fallback: drain any tracked players to avoid missing a save when IsoPlayer is nil
+    for username, _ in pairs(self.List) do
+        table.insert(usernames, username)
+    end
+
+    local processed = {}
+
+    for _, username in ipairs(usernames) do
+        if username and not processed[username] then
+            processed[username] = true
+
+            self:Destroy(username, function(success, message)
+                if success then
+                    print("[FrameworkZ] Player destroyed on disconnect: " .. username)
+                else
+                    print("[FrameworkZ] Warning during disconnect destroy: " .. (message or "Unknown error"))
+                end
+            end)
+        end
+    end
 end
 
 function FrameworkZ.Players:OnInitGlobalModData(isNewGame)
@@ -1217,5 +1414,52 @@ function FrameworkZ.Players:OnFillWorldObjectContextMenu(playerNumber, context, 
         menuManager:addOption(Options.new("No Admin Actions Available"), adminSubMenu)
     end
 end
+
+-- Server-side subscription handlers for save operations
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Save", function(data, username, saveablePlayerData)
+    if isServer() then
+        -- Save player data to storage
+        FrameworkZ.Foundation:SetLocalData("Players", username, saveablePlayerData)
+        print("[FrameworkZ] Player data saved for: " .. username)
+        return true
+    end
+end)
+
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Destroy", function(data, username, clientPlayerData, clientCharacterData)
+    if isServer() then
+        -- Save both player and character data before destroying
+        local player = FrameworkZ.Players:GetPlayerByID(username)
+        local character = FrameworkZ.Characters:GetCharacterByID(username)
+        
+        -- Get isoPlayer for SetData calls
+        local isoPlayer = player and player:GetIsoPlayer()
+        local finalPlayerData = clientPlayerData or (player and player:GetSaveableData())
+        local finalCharacterData = clientCharacterData
+
+        if not finalCharacterData and character then
+            -- As a fallback, resync server-side character state
+            character:Sync()
+            finalCharacterData = character:GetSaveableData()
+        end
+
+        if isoPlayer and finalPlayerData then
+            FrameworkZ.Foundation:SetData(isoPlayer, "Players", username, finalPlayerData)
+            print("[FrameworkZ] Player data saved during destroy for: " .. username)
+        end
+
+        if isoPlayer and finalCharacterData then
+            local characterID = finalCharacterData[FZ_ENUM_CHARACTER_META_ID] or (character and character:GetID())
+
+            if characterID then
+                FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {username, characterID}, finalCharacterData)
+                print("[FrameworkZ] Character data saved during destroy for: " .. username)
+            else
+                print("[FrameworkZ] Warning: Missing character ID during destroy save for: " .. username)
+            end
+        end
+
+        return true
+    end
+end)
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Players)

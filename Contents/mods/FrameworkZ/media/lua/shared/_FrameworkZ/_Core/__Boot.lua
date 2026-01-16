@@ -117,9 +117,9 @@ FrameworkZ.Meta.Version = "1.0.0"
 
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
-    SkipIntro = true,
-    Version = "12.8.3",
-    VersionType = "alpha",
+    SkipIntro = false,
+    Version = "13.8.3",
+    VersionType = "Pre-Alpha",
 
     IntroFrameworkImage = "media/textures/fz.png",
     IntroGamemodeImage = "media/textures/hl2rp.png",
@@ -176,16 +176,24 @@ FrameworkZ.Config.Options = {
     }
 }
 
+--! \brief Get a configuration option value.
+--! \param optionName \string The name of the option to retrieve.
+--! \return \mixed The value of the option.
 function FrameworkZ.Config:GetOption(optionName)
     return self.Options[optionName]
 end
 
+--! \brief Set a configuration option value.
+--! \param optionName \string The name of the option to set.
+--! \param value \mixed The value to set for the option.
 function FrameworkZ.Config:SetOption(optionName, value)
     self.Options[optionName] = value
 end
 
 FrameworkZ.Config = FrameworkZ:CreateObject(FrameworkZ.Config, "Config")
 
+--! \brief Load and lock an object to prevent modification.
+--! \param object \table The object to load and lock.
 function FrameworkZ:LoadAndLockObject(object)
     --local object = internalObjects[name]
 
@@ -267,6 +275,10 @@ function FrameworkZ:LoadAndLockObject(object)
     return lockedObject
 end
 
+--! \brief Load an object and initialize it.
+--! \param object \table The object to load.
+--! \return \table|\boolean A copy of the loaded object or false if failed.
+--! \return \string Success or error message.
 function FrameworkZ:LoadObject(object)
     --local object = internalObjects[objectName]
 
@@ -283,6 +295,9 @@ function FrameworkZ:LoadObject(object)
     return false, "Object '" .. object.Meta.Name .. "' is not registered or is already loaded."
 end
 
+--! \brief Unload an object by name (requires __allowUnload permission).
+--! \param objectName \string The name of the object to unload.
+--! \return \boolean True if unloaded successfully.
 function FrameworkZ:UnloadObject(objectName)
     if not self.__allowUnload then
         if isClient() then
@@ -297,6 +312,9 @@ function FrameworkZ:UnloadObject(objectName)
     return true
 end
 
+--! \brief Register an object with FrameworkZ.
+--! \param object \table The object to register (must have Meta.Name).
+--! \return \table|\boolean The registered object or false if failed.
 function FrameworkZ:RegisterObject(object)
     if self.__finalized == true then
         if isClient() then
@@ -328,14 +346,20 @@ function FrameworkZ:RegisterObject(object)
     return object
 end
 
+--! \brief Get a locked object by name.
+--! \param objectName \string The name of the object.
+--! \return \table The locked object.
 function FrameworkZ:GetObject(objectName)
     return lockedObjects[objectName]
 end
 
+--! \brief Check if FrameworkZ is initialized.
+--! \return \boolean True if initialized.
 function FrameworkZ:IsInitialized()
     return self.__initialized or false
 end
 
+--! \brief Initialize the FrameworkZ object.
 function FrameworkZ:InitializeObject()
     if self.__initialized then return end
     self.__initialized = true

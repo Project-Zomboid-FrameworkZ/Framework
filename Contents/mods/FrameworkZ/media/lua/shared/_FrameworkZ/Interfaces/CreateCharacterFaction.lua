@@ -28,6 +28,8 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
     self.uiHelper = FrameworkZ.UI
     local title = "FACTION SELECTION"
     local subtitle = "Choose your allegiance and shape your destiny"
+    local titleHeight = self.uiHelper.GetHeight(UIFont.Title, title)
+    local subtitleHeight = self.uiHelper.GetHeight(UIFont.Small, subtitle)
     
     -- Modern full-screen layout utilizing entire usable space
     local marginX = 40
@@ -35,7 +37,7 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
     local headerHeight = 120
     
     local usableWidth = self.width - (marginX * 2)
-    local usableHeight = self.height - (marginY * 2) - headerHeight
+    local usableHeight = self.height - (marginY * 2) - titleHeight - subtitleHeight - 40
     
     local yOffset = marginY
     local factionsList = FrameworkZ.Factions.List
@@ -60,7 +62,7 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
 
     -- Modern header with enhanced typography
     self.title = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2, y = yOffset, height = 40,
+        x = self.width / 2, y = yOffset, height = titleHeight,
         text = title,
         font = "Title",
         textAlign = FZ_ALIGN_CENTER,
@@ -68,10 +70,10 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
         parent = self
     })
 
-    yOffset = yOffset + 50
+    yOffset = yOffset + titleHeight + 10
 
     self.subtitle = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2, y = yOffset, height = 30,
+        x = self.width / 2, y = yOffset, height = subtitleHeight,
         text = subtitle,
         font = "Large",
         textAlign = FZ_ALIGN_CENTER,
@@ -79,7 +81,7 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
         parent = self
     })
 
-    yOffset = yOffset + 70
+    yOffset = yOffset + subtitleHeight + 30
 
     -- Main content area with modern card-based layout
     local cardGap = 30

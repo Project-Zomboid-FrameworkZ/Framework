@@ -92,20 +92,95 @@ function FrameworkZ.UI.CharacterView:updateAppearance()
     local survivor = self.survivor
     local character = self.character
 
-    -- Debug: Check if character data exists
     if not character then
         print("[CharacterView] Error: No character data provided")
         return
     end
 
-    -- Reduced verbose logging to improve preview performance when cycling
-
-    -- Use CharacterDataManager to restore appearance
-    local newSurvivor, message = FrameworkZ.CharacterDataManager:RestoreSurvivorAppearance(survivor, character)
-    if newSurvivor then self.survivor = newSurvivor end
-
+    -- Set basic appearance
+    local isFemale = (character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female")
+    survivor:setFemale(isFemale)
+    
+    local humanVisual = survivor:getHumanVisual()
+    
+    -- Set skin color
+    local skinColor = character[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR]
+    if type(skinColor) == "number" then
+        humanVisual:setSkinTextureIndex(skinColor)
+    else
+        humanVisual:setSkinTextureIndex(SKIN_COLOR_WHITE)
+    end
+    
+    -- Set hair
+    local hairStyle = character[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE]
+    if hairStyle and hairStyle ~= "" then
+        humanVisual:setHairModel(hairStyle)
+    end
+    
+    local hairColor = character[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]
+    if hairColor then
+        local immutableColor = ImmutableColor.new(hairColor.r, hairColor.g, hairColor.b, 1)
+        humanVisual:setHairColor(immutableColor)
+        humanVisual:setNaturalHairColor(immutableColor)
+    end
+    
+    -- Set beard
+    local beardStyle = character[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]
+    if beardStyle and beardStyle ~= "" and beardStyle ~= "None" then
+        humanVisual:setBeardModel(beardStyle)
+        
+        -- Only set beard color if there's actually a beard
+        local beardColor = character[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]
+        if beardColor then
+            local immutableColor = ImmutableColor.new(beardColor.r, beardColor.g, beardColor.b, 1)
+            humanVisual:setBeardColor(immutableColor)
+            humanVisual:setNaturalBeardColor(immutableColor)
+        end
+    else
+        humanVisual:setBeardModel("")
+    end
+    
+    -- Clear existing worn items
+    local equipmentSlots = FrameworkZ.Enumerations and FrameworkZ.Enumerations.EquipmentSlots or {}
+    for _, slot in ipairs(equipmentSlots) do
+        survivor:setWornItem(slot, nil)
+    end
+    
+    -- Restore equipment from Equipment table
+    local equipment = character[FZ_ENUM_CHARACTER_INFO_EQUIPMENT]
+    if equipment then
+        for slot, itemData in pairs(equipment) do
+            local itemType, itemColor, itemCondition
+            
+            -- Handle both new format (table) and legacy format (string)
+            if type(itemData) == "table" then
+                itemType = itemData.id
+                itemColor = itemData.color
+                itemCondition = itemData.condition
+            else
+                itemType = itemData
+            end
+            
+            if itemType and itemType ~= "" and itemType ~= "None" then
+                local item = InventoryItemFactory.CreateItem(itemType)
+                if item then
+                    -- Apply condition before equipping
+                    if itemCondition and item.setCondition then
+                        item:setCondition(itemCondition)
+                    end
+                    
+                    -- Equip item first
+                    survivor:setWornItem(slot, item)
+                    
+                    -- Apply color after equipping using Inventories method (handles edge cases)
+                    FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
+                end
+            end
+        end
+    end
+    
     -- Update the character preview
-    self.characterPreview:setSurvivorDesc(newSurvivor)
+    self.characterPreview:setSurvivorDesc(survivor)
 end
 
 function FrameworkZ.UI.CharacterView:setCharacter(character)

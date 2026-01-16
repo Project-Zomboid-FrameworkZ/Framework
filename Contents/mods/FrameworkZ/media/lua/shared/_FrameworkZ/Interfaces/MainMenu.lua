@@ -376,8 +376,31 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
     -- Get selected clothing from the new grid-based system (now includes color and other data)
     local selectedClothingWithData = appearanceInstance:getSelectedClothing()
     print("[onFinalizeCharacter] Selected clothing with data retrieved for character creation:")
-    for location, equipmentData in pairs(selectedClothingWithData) do
-        print("  " .. location .. ": " .. tostring(equipmentData.id) .. " with color and condition data")
+    
+    -- Transform UI clothing data to standard Equipment format (preserve full data)
+    local equipmentData = {}
+    for location, clothingData in pairs(selectedClothingWithData) do
+        if clothingData and clothingData.id and clothingData.id ~= "" and clothingData.id ~= "None" then
+            -- Store full equipment data: id, color, condition
+            local itemEquipment = {
+                id = clothingData.id,
+                condition = clothingData.condition
+            }
+            
+            -- Only include color if it's a properly formatted table
+            if clothingData.color and type(clothingData.color) == "table" and 
+               clothingData.color.r and clothingData.color.g and clothingData.color.b then
+                itemEquipment.color = {
+                    r = clothingData.color.r,
+                    g = clothingData.color.g,
+                    b = clothingData.color.b,
+                    a = clothingData.color.a or 1.0
+                }
+            end
+            
+            equipmentData[location] = itemEquipment
+            print("  " .. location .. ": " .. tostring(clothingData.id) .. " (with color data)")
+        end
     end
 
     -- Prepare creation data for centralized data manager
@@ -396,28 +419,89 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
         [FZ_ENUM_CHARACTER_INFO_SKIN_COLOR] = skinColor,
         [FZ_ENUM_CHARACTER_INFO_HAIR_STYLE] = hair,
         [FZ_ENUM_CHARACTER_INFO_BEARD_STYLE] = beard,
-        selectedClothingWithData = selectedClothingWithData -- Store the clothing data with all properties
+        [FZ_ENUM_CHARACTER_STAT_HUNGER] = 0,
+        [FZ_ENUM_CHARACTER_STAT_THIRST] = 0,
+        [FZ_ENUM_CHARACTER_STAT_FATIGUE] = 0,
+        [FZ_ENUM_CHARACTER_STAT_STRESS] = 0,
+        [FZ_ENUM_CHARACTER_STAT_PAIN] = 0,
+        [FZ_ENUM_CHARACTER_STAT_PANIC] = 0,
+        [FZ_ENUM_CHARACTER_STAT_BOREDOM] = 0,
+        [FZ_ENUM_CHARACTER_STAT_DRUNKENNESS] = 0,
+        [FZ_ENUM_CHARACTER_STAT_ENDURANCE] = 1,
+        [FZ_ENUM_CHARACTER_HEALTH_OVERALL] = 100,
+        [FZ_ENUM_CHARACTER_HEALTH_TEMPERATURE] = 37,
+        [FZ_ENUM_CHARACTER_HEALTH_WETNESS] = 0,
+        [FZ_ENUM_CHARACTER_HEALTH_SICKNESS] = 0,
+        [FZ_ENUM_CHARACTER_HEALTH_COLD_STRENGTH] = 0,
+        [FZ_ENUM_CHARACTER_HEALTH_HAS_COLD] = false,
+        [FZ_ENUM_CHARACTER_HEALTH_BODY_PARTS] = {},
+        [FZ_ENUM_CHARACTER_XP_SKILLS] = {},
+        [FZ_ENUM_CHARACTER_TRAITS] = {},
+        [FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = equipmentData -- Store equipment in standard format
     }
-    
+
+    -- Initialize body parts with default healthy state
+    local defaultBodyPart = {
+        Health = 100,
+        Bandaged = false,
+        Stitched = false,
+        DeepWounded = false,
+        Bitten = false,
+        Scratched = false,
+        Bleeding = false,
+        Fractured = false,
+        Splinted = false,
+        AdditionalPain = 0
+    }
+
+    local bodyPartsList = {
+        FZ_ENUM_BODY_PART_HEAD,
+        FZ_ENUM_BODY_PART_NECK,
+        FZ_ENUM_BODY_PART_TORSO_UPPER,
+        FZ_ENUM_BODY_PART_TORSO_LOWER,
+        FZ_ENUM_BODY_PART_UPPER_ARM_L,
+        FZ_ENUM_BODY_PART_UPPER_ARM_R,
+        FZ_ENUM_BODY_PART_FORE_ARM_L,
+        FZ_ENUM_BODY_PART_FORE_ARM_R,
+        FZ_ENUM_BODY_PART_HAND_L,
+        FZ_ENUM_BODY_PART_HAND_R,
+        FZ_ENUM_BODY_PART_UPPER_LEG_L,
+        FZ_ENUM_BODY_PART_UPPER_LEG_R,
+        FZ_ENUM_BODY_PART_LOWER_LEG_L,
+        FZ_ENUM_BODY_PART_LOWER_LEG_R,
+        FZ_ENUM_BODY_PART_FOOT_L,
+        FZ_ENUM_BODY_PART_FOOT_R,
+        FZ_ENUM_BODY_PART_GROIN
+    }
+
+    for _, bodyPartName in ipairs(bodyPartsList) do
+        creationData[FZ_ENUM_CHARACTER_HEALTH_BODY_PARTS][bodyPartName] = FrameworkZ.Utilities:CopyTable(defaultBodyPart)
+    end
+
     print("[onFinalizeCharacter] Final creation data:")
     print("  Hair Style: " .. tostring(creationData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE]))
     print("  Beard Style: " .. tostring(creationData[FZ_ENUM_CHARACTER_INFO_BEARD_STYLE]))
-    
-    -- Count clothing items properly (associative array)
-    local clothingCount = 0
-    for k, v in pairs(selectedClothingWithData) do
-        clothingCount = clothingCount + 1
-    end
-    print("  Selected Clothing Items: " .. tostring(clothingCount))
 
-    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, serverCharacterID, serverMessage)
+    -- Count equipment items properly
+    local equipmentCount = 0
+    for k, v in pairs(equipmentData) do
+        equipmentCount = equipmentCount + 1
+    end
+    print("  Equipment Items: " .. tostring(equipmentCount))
+
+    FrameworkZ.Foundation:SendFire(self.playerObject, "FrameworkZ.Players.OnCreateCharacter", function(data, serverCharacterID, serverUIDOrMessage)
         if serverCharacterID then
             -- Ensure client cache mirrors server-processed structure so preview shows equipment immediately
             local playerObj = FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername())
-            local processedCreationData, createMsg = FrameworkZ.CharacterDataManager:CreateCharacterData(creationData, playerObj)
+            local processedCreationData, createMsg = FrameworkZ.Characters:ProcessCreationData(creationData, playerObj)
             if not processedCreationData then
                 FrameworkZ.Notifications:AddToQueue("Client-side data processing failed: " .. tostring(createMsg), FrameworkZ.Notifications.Types.Warning, nil, self)
                 processedCreationData = creationData -- Fallback to raw data
+            end
+            
+            -- Use the server's UID instead of generating a new one on client
+            if serverUIDOrMessage then
+                processedCreationData[FZ_ENUM_CHARACTER_META_UID] = serverUIDOrMessage
             end
 
             local clientCharacterID, clientMessage = FrameworkZ.Players:CreateCharacter(self.playerObject:getUsername(), processedCreationData, serverCharacterID)
@@ -430,7 +514,7 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
                 FrameworkZ.Notifications:AddToQueue("Failed to create character client-side: " .. tostring(clientMessage), FrameworkZ.Notifications.Types.Warning, nil, self)
             end
         else
-            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. tostring(serverMessage), FrameworkZ.Notifications.Types.Warning, nil, self)
+            FrameworkZ.Notifications:AddToQueue("Failed to create character server-side: " .. tostring(serverUIDOrMessage), FrameworkZ.Notifications.Types.Warning, nil, self)
             return false
         end
     end, self.playerObject:getUsername(), creationData)
@@ -501,7 +585,6 @@ function FrameworkZ.UI.MainMenu:onEnterLoadCharacterMenu()
             title = "Load Character >",
             target = self,
             onClick = self.onLoadCharacter,
-            theme = "Primary",
             font = FZ_FONT_LARGE
         })
         self:addChild(self.loadCharacterForwardButton)
@@ -520,10 +603,44 @@ function FrameworkZ.UI.MainMenu:onEnterMainMenuFromLoadCharacterMenu()
 end
 
 function FrameworkZ.UI.MainMenu:onLoadCharacter()
+    local loadCallback = function(loadedCharacter, message)
+        if loadedCharacter then
+            FrameworkZ.Notifications:AddToQueue("Loading character... Please wait a few seconds for the map to load.", FrameworkZ.Notifications.Types.Info, nil, self)
+
+            FrameworkZ.Timers:Simple(2, function()
+                self.playerObject:setInvisible(false)
+                self.playerObject:setGhostMode(false)
+                self.playerObject:setNoClip(false)
+
+                if VoiceManager:playerGetMute(self.playerObject:getUsername()) then
+                    VoiceManager:playerSetMute(self.playerObject:getUsername())
+                end
+
+                if FrameworkZ.UI.MainMenu.instance then
+                    FrameworkZ.UI.MainMenu.instance:onClose()
+                end
+
+                FrameworkZ.Timers:Simple(3, function()
+                    self.playerObject:setGodMod(false)
+                    self.playerObject:setInvincible(false)
+
+                    if isClient() then
+                        FrameworkZ.Notifications:AddToQueue("Spawn protection has now been removed.", FrameworkZ.Notifications.Types.Warning)
+                    end
+
+                    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFinishedLoading", loadedCharacter:GetPlayer())
+                end)
+            end)
+        else
+            FrameworkZ.Notifications:AddToQueue("Failed to load character: " .. message, FrameworkZ.Notifications.Types.Warning, nil, self)
+            self.loadCharacterForwardButton:setEnable(true)
+        end
+    end
+    
+    self.loadCharacterForwardButton:setEnable(false)
+    
     local characterID = self.loadCharacterMenu.characterIDs[self.loadCharacterMenu.currentIndex]
-    FrameworkZ.Players:LoadCharacterByID(self.playerObject:getUsername(), characterID)
-
-
+    FrameworkZ.Players:LoadCharacterByID(self.playerObject:getUsername(), characterID, loadCallback)
 
 
 
@@ -541,9 +658,39 @@ function FrameworkZ.UI.MainMenu:onLoadCharacter()
 end
 
 function FrameworkZ.UI.MainMenu:onDisconnect()
-    self:setVisible(false)
-    self:removeFromUIManager()
-	getCore():exitToMenu()
+    local isoPlayer = self.playerObject
+    
+    if not isoPlayer then
+        self:setVisible(false)
+        self:removeFromUIManager()
+        getCore():exitToMenu()
+        return
+    end
+    
+    print("[FZ] Starting disconnect sequence from Main Menu...")
+    
+    -- Save character data and wait for confirmation before disconnecting
+    FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
+        if success then
+            print("[FZ] Character data saved successfully: " .. (message or ""))
+        else
+            print("[FZ] Warning during save: " .. (message or "Unknown error"))
+        end
+        
+        -- After save is confirmed, teleport to limbo and disconnect
+        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limbSuccess)
+            if limbSuccess then
+                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+                print("[FZ] Player teleported to limbo. Disconnecting now...")
+            else
+                print("[FZ] Warning: Failed to teleport to limbo. Disconnecting anyway...")
+            end
+            
+            self:setVisible(false)
+            self:removeFromUIManager()
+            getCore():exitToMenu()
+        end)
+    end)
 end
 
 function FrameworkZ.UI.MainMenu:prerender()

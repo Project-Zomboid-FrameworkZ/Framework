@@ -25,6 +25,8 @@ function FACTION:Initialize()
 	return FrameworkZ.Factions:Initialize(self.name, self)
 end
 
+--! \brief Get the faction's display color RGBA.
+--! \return \table Color table with r, g, b, a values.
 function FACTION:GetColor()
 	return self.color
 end
@@ -52,7 +54,7 @@ end
 --! \param name \string The faction's name (i.e. ID).
 --! \return \string The faction ID.
 function FrameworkZ.Factions:Initialize(id, object)
-    FrameworkZ.Factions.List[id] = object
+    self.List[id] = object
 
     return id
 end

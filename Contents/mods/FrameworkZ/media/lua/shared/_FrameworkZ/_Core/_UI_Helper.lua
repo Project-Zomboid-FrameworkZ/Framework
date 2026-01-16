@@ -11,12 +11,21 @@ function FrameworkZ.UI.GetCenteredX(length, fontSize, text)
     return (length / 2) - (width / 2)
 end
 
+--! \brief Get the middle position for text alignment.
+--! \param length \integer The length of the container.
+--! \param fontSize \string The font size (UIFont.Small, UIFont.Medium, UIFont.Large, UIFont.Title).
+--! \param text \string The text to measure.
+--! \return \number The middle position for text alignment.
 function FrameworkZ.UI.GetMiddle(length, fontSize, text)
     local width = getTextManager():MeasureStringX(fontSize, text)
 
     return (length - width) / 2
 end
 
+--! \brief Get the height of text.
+--! \param fontSize \string The font size (UIFont.Small, UIFont.Medium, UIFont.Large, UIFont.Title).
+--! \param text \string The text to measure.
+--! \return \number The height of the text.
 function FrameworkZ.UI.GetHeight(fontSize, text)
     local height = getTextManager():MeasureStringY(fontSize, text)
 

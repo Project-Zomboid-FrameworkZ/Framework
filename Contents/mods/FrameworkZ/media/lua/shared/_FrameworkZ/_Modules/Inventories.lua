@@ -90,8 +90,11 @@ end
 initializeFrameworkZItemLookup()
 
 -- Helper function to check if an item type is a FrameworkZ item - O(1) lookup
-local function isFrameworkZItemType(itemType)
-    return FrameworkZ.Inventories.FrameworkZItemTypeLookup[itemType] ~= nil
+--! \brief Check if an item type is a FrameworkZ item (O(1) lookup)
+--! \param itemType \string The full item type (e.g., "Base.Hat_Beanie")
+--! \return \boolean True if it's a FrameworkZ item
+function FrameworkZ.Inventories:IsFrameworkZItemType(itemType)
+    return self.FrameworkZItemTypeLookup[itemType] ~= nil
 end
 
 -- Enhanced Item Data System
@@ -106,8 +109,253 @@ end
 -- - Mod data persistence
 -- - Uses and remaining durability
 
--- Helper function to extract comprehensive item data including condition, color, magazine content, etc.
-local function extractItemData(item)
+--! \brief Extract basic item properties (condition, weight, uses)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractBasicProperties(item, itemData)
+    if item.getCondition then itemData.condition = item:getCondition() end
+    if item.getConditionMax then itemData.maxCondition = item:getConditionMax() end
+    if item.getWeight then itemData.weight = item:getWeight() end
+    if item.getActualWeight then itemData.actualWeight = item:getActualWeight() end
+    if item.getUsedDelta then itemData.usedDelta = item:getUsedDelta() end
+    if item.getUses then itemData.uses = item:getUses() end
+end
+
+--! \brief Extract color/tint information (prefers visual tint for clothing)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractColorData(item, itemData)
+    -- Prefer visual tint for clothing items
+    if item.getVisual and type(item.getVisual) == "function" then
+        local vis = item:getVisual()
+        if vis and vis.getTint then
+            local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+            local tint = clothingItem and vis:getTint(clothingItem) or vis:getTint()
+            if tint and tint.getRedFloat and tint.getGreenFloat and tint.getBlueFloat then
+                local r, g, b = tint:getRedFloat(), tint:getGreenFloat(), tint:getBlueFloat()
+                -- Validate color values are numbers
+                if type(r) == "number" and type(g) == "number" and type(b) == "number" then
+                    itemData.color = {
+                        r = r,
+                        g = g,
+                        b = b,
+                        a = 1.0
+                    }
+                    print("[FrameworkZ] Saved equipment color for " .. (item.getName and item:getName() or "item") .. ": r=" .. r .. ", g=" .. g .. ", b=" .. b)
+                    return
+                end
+            end
+        end
+    end
+    
+    -- Fallback to getColor
+    if item.getColor then
+        local color = item:getColor()
+        if color and color.getRedFloat and color.getGreenFloat and color.getBlueFloat then
+            local r, g, b = color:getRedFloat(), color:getGreenFloat(), color:getBlueFloat()
+            local a = color.getAlphaFloat and color:getAlphaFloat() or 1.0
+            -- Validate color values are numbers
+            if type(r) == "number" and type(g) == "number" and type(b) == "number" and type(a) == "number" then
+                itemData.color = {
+                    r = r,
+                    g = g,
+                    b = b,
+                    a = a
+                }
+            end
+        end
+    end
+end
+
+--! \brief Extract clothing-specific properties (dirty, wet, bloody, holes, patches)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractClothingProperties(item, itemData)
+    if item.isDirty and item:isDirty() then itemData.dirty = true end
+    
+    if item.isWet and item:isWet() then
+        itemData.wet = true
+        if item.getWetness then itemData.wetness = item:getWetness() end
+    end
+    
+    if item.isBloody and item:isBloody() then
+        itemData.bloody = true
+        if item.getBloodLevel then itemData.bloodLevel = item:getBloodLevel() end
+    end
+    
+    -- Only extract holes/patches if clothing is properly initialized
+    -- Check getFabricType to ensure internal structures are initialized (matches PZ pattern)
+    if item.getFabricType and item:getFabricType() then
+        -- Check for holes using covered parts (matches ISInventoryPaneContextMenu pattern)
+        if item.getCoveredParts and item.getVisual and item.getHolesNumber then
+            local coveredParts = item:getCoveredParts()
+            if coveredParts and coveredParts:size() > 0 then
+                local visual = item:getVisual()
+                if visual and visual.getHole then
+                    local hasHoles = false
+                    for i = 0, coveredParts:size() - 1 do
+                        local part = coveredParts:get(i)
+                        local hole = visual:getHole(part)
+                        if hole and hole > 0 then
+                            hasHoles = true
+                            break
+                        end
+                    end
+                    if hasHoles then
+                        itemData.holes = item:getHolesNumber()
+                    end
+                end
+            end
+        end
+        
+        -- Check if any patches exist before getting count (matches ISGarmentUI pattern)
+        if item.getPatchType and item.getCoveredParts and item.getPatchesNumber then
+            local coveredParts = item:getCoveredParts()
+            if coveredParts and coveredParts:size() > 0 then
+                -- Check if any part actually has a patch
+                local hasPatch = false
+                for i = 0, coveredParts:size() - 1 do
+                    local part = coveredParts:get(i)
+                    if item:getPatchType(part) then
+                        hasPatch = true
+                        break
+                    end
+                end
+                -- Only call getPatchesNumber if we confirmed patches exist
+                if hasPatch then
+                    itemData.patches = item:getPatchesNumber()
+                end
+            end
+        end
+    end
+end
+
+--! \brief Extract weapon-specific properties (ammo, magazine, bullets)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractWeaponProperties(item, itemData)
+    if not (item:getType():contains("Weapon") or item:getCategory() == "Weapon") then return end
+    
+    if item.getConditionLowerChance then
+        itemData.conditionLowerChance = item:getConditionLowerChance()
+    end
+    
+    if item.getBloodLevel then
+        itemData.weaponBloodLevel = item:getBloodLevel()
+    end
+    
+    -- Magazine and ammunition
+    if item.getMagazineType then
+        local magazineType = item:getMagazineType()
+        if magazineType and magazineType ~= "" then
+            itemData.magazineType = magazineType
+            if item.getCurrentAmmoCount then itemData.ammoCount = item:getCurrentAmmoCount() end
+            if item.getMaxAmmo then itemData.maxAmmo = item:getMaxAmmo() end
+            if item.getAmmoType then itemData.ammoType = item:getAmmoType() end
+            
+            -- Individual bullets
+            if item.getBullets then
+                local bullets = item:getBullets()
+                if bullets and bullets:size() > 0 then
+                    itemData.bullets = {}
+                    for i = 0, bullets:size() - 1 do
+                        local bullet = bullets:get(i)
+                        if bullet then
+                            table.insert(itemData.bullets, {
+                                type = bullet:getFullType(),
+                                condition = (bullet.getCondition and bullet:getCondition()) or 1.0
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+--! \brief Extract food-specific properties (freshness, age, frozen state)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractFoodProperties(item, itemData)
+    if not (item:getType():contains("Food") or item:getCategory() == "Food") then return end
+    
+    if item.getHungerChange then itemData.hungerChange = item:getHungerChange() end
+    if item.getBoredomChange then itemData.boredomChange = item:getBoredomChange() end
+    if item.getUnhappyChange then itemData.unhappyChange = item:getUnhappyChange() end
+    if item.isFrozen then itemData.frozen = item:isFrozen() end
+    if item.getAge then itemData.age = item:getAge() end
+    if item.getOffAge then itemData.offAge = item:getOffAge() end
+    if item.getOffAgeMax then itemData.offAgeMax = item:getOffAgeMax() end
+end
+
+--! \brief Extract container-specific properties (capacity, contents with recursive extraction)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractContainerProperties(item, itemData)
+    if not (item:getType():contains("Container") or item:getCategory() == "Container") then return end
+    
+    if item.getCapacity then itemData.capacity = item:getCapacity() end
+    
+    if item.getItems then
+        local containerItems = item:getItems()
+        if containerItems and containerItems:size() > 0 then
+            itemData.containerItems = {}
+            for i = 0, containerItems:size() - 1 do
+                local containerItem = containerItems:get(i)
+                if containerItem then
+                    -- Recursive extraction
+                    table.insert(itemData.containerItems, self:ExtractItemData(containerItem))
+                end
+            end
+        end
+        
+        -- Save container inventory ModData (e.g., Tetris grid layouts)
+        local containerModData = containerItems:getModData()
+        if containerModData then
+            local hasData = false
+            for _ in pairs(containerModData) do hasData = true break end
+            if hasData then
+                itemData.containerInventoryModData = {}
+                for key, value in pairs(containerModData) do
+                    itemData.containerInventoryModData[key] = value
+                end
+            end
+        end
+    end
+end
+
+--! \brief Extract literature-specific properties (pages, locks, writing)
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractLiteratureProperties(item, itemData)
+    if not (item:getType():contains("Book") or item:getType():contains("Literature") or item:getCategory() == "Literature") then return end
+    
+    if item.getNumberOfPages then itemData.numberOfPages = item:getNumberOfPages() end
+    if item.getPageToWrite then itemData.pageToWrite = item:getPageToWrite() end
+    if item.getLockedBy then itemData.lockedBy = item:getLockedBy() end
+end
+
+--! \brief Extract ModData from an item
+--! \param item \InventoryItem The item to extract from
+--! \param itemData \table The data table to populate
+function FrameworkZ.Inventories:ExtractModData(item, itemData)
+    local modData = item:getModData()
+    if modData then
+        local hasData = false
+        for _ in pairs(modData) do hasData = true break end
+        if hasData then
+            itemData.modData = {}
+            for key, value in pairs(modData) do
+                itemData.modData[key] = value
+            end
+        end
+    end
+end
+
+--! \brief Extract comprehensive item data by calling all category-specific extractors
+--! \param item \InventoryItem The item to extract data from
+--! \return \table Comprehensive item data
+function FrameworkZ.Inventories:ExtractItemData(item)
     if not item then return nil end
     
     local itemData = {
@@ -116,202 +364,51 @@ local function extractItemData(item)
         displayName = item:getDisplayName()
     }
     
-    -- Basic item properties
-    if item.getCondition then
-        itemData.condition = item:getCondition()
+    -- Call granular extractors - can be overridden individually
+    self:ExtractBasicProperties(item, itemData)
+    self:ExtractColorData(item, itemData)
+    self:ExtractClothingProperties(item, itemData)
+    
+    if item:getType() then
+        self:ExtractWeaponProperties(item, itemData)
+        self:ExtractFoodProperties(item, itemData)
+        self:ExtractContainerProperties(item, itemData)
+        self:ExtractLiteratureProperties(item, itemData)
     end
     
-    if item.getConditionMax then
-        itemData.maxCondition = item:getConditionMax()
-    end
-    
-    -- Color/Tint information
-    if item.getColor then
-        local color = item:getColor()
-        if color then
-            itemData.color = {
-                r = color:getRedFloat(),
-                g = color:getGreenFloat(), 
-                b = color:getBlueFloat(),
-                a = color:getAlphaFloat()
-            }
-        end
-    end
-    
-    -- Clothing specific properties
-    if item.isDirty and item:isDirty() then
-        itemData.dirty = true
-    end
-    
-    if item.isWet and item:isWet() then
-        itemData.wet = true
-        if item.getWetness then
-            itemData.wetness = item:getWetness()
-        end
-    end
-    
-    if item.isBloody and item:isBloody() then
-        itemData.bloody = true
-        if item.getBloodLevel then
-            itemData.bloodLevel = item:getBloodLevel()
-        end
-    end
-    
-    if item.getHolesNumber then
-        itemData.holes = item:getHolesNumber()
-    end
-    
-    if item.getPatchesNumber then
-        itemData.patches = item:getPatchesNumber()
-    end
-    
-    -- Weapon specific properties
-    if item:getType() and (item:getType():contains("Weapon") or item:getCategory() == "Weapon") then
-        if item.getConditionLowerChance then
-            itemData.conditionLowerChance = item:getConditionLowerChance()
-        end
-        
-        if item.getBloodLevel then
-            itemData.weaponBloodLevel = item:getBloodLevel()
-        end
-        
-        -- Magazine and ammunition for firearms
-        if item.getMagazineType then
-            local magazineType = item:getMagazineType()
-            if magazineType and magazineType ~= "" then
-                itemData.magazineType = magazineType
-                
-                if item.getCurrentAmmoCount then
-                    itemData.ammoCount = item:getCurrentAmmoCount()
-                end
-                
-                if item.getMaxAmmo then
-                    itemData.maxAmmo = item:getMaxAmmo()
-                end
-                
-                if item.getAmmoType then
-                    itemData.ammoType = item:getAmmoType()
-                end
-                
-                -- Save individual bullets if it's a magazine
-                if item.getBullets then
-                    local bullets = item:getBullets()
-                    if bullets and bullets:size() > 0 then
-                        itemData.bullets = {}
-                        for i = 0, bullets:size() - 1 do
-                            local bullet = bullets:get(i)
-                            if bullet then
-                                table.insert(itemData.bullets, {
-                                    type = bullet:getFullType(),
-                                    condition = (bullet.getCondition and bullet:getCondition()) or 1.0
-                                })
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Food specific properties
-    if item:getType() and (item:getType():contains("Food") or item:getCategory() == "Food") then
-        if item.getHungerChange then
-            itemData.hungerChange = item:getHungerChange()
-        end
-        
-        if item.getBoredomChange then
-            itemData.boredomChange = item:getBoredomChange()
-        end
-        
-        if item.getUnhappyChange then
-            itemData.unhappyChange = item:getUnhappyChange()
-        end
-        
-        if item.isFrozen then
-            itemData.frozen = item:isFrozen()
-        end
-        
-        if item.getAge then
-            itemData.age = item:getAge()
-        end
-        
-        if item.getOffAge then
-            itemData.offAge = item:getOffAge()
-        end
-        
-        if item.getOffAgeMax then
-            itemData.offAgeMax = item:getOffAgeMax()
-        end
-    end
-    
-    -- Container specific properties
-    if item:getType() and (item:getType():contains("Container") or item:getCategory() == "Container") then
-        if item.getCapacity then
-            itemData.capacity = item:getCapacity()
-        end
-        
-        if item.getItems then
-            local containerItems = item:getItems()
-            if containerItems and containerItems:size() > 0 then
-                itemData.containerItems = {}
-                for i = 0, containerItems:size() - 1 do
-                    local containerItem = containerItems:get(i)
-                    if containerItem then
-                        -- Recursively save container contents
-                        table.insert(itemData.containerItems, extractItemData(containerItem))
-                    end
-                end
-            end
-        end
-    end
-    
-    -- Literature/Book specific properties
-    if item:getType() and (item:getType():contains("Book") or item:getType():contains("Literature") or item:getCategory() == "Literature") then
-        if item.getNumberOfPages then
-            itemData.numberOfPages = item:getNumberOfPages()
-        end
-        
-        if item.getPageToWrite then
-            itemData.pageToWrite = item:getPageToWrite()
-        end
-        
-        if item.getLockedBy then
-            itemData.lockedBy = item:getLockedBy()
-        end
-    end
-    
-    -- Save mod data
-    local modData = item:getModData()
-    if modData and next(modData) then
-        itemData.modData = {}
-        for key, value in pairs(modData) do
-            itemData.modData[key] = value
-        end
-    end
-    
-    -- Save uses/remaining uses
-    if item.getUsedDelta then
-        itemData.usedDelta = item:getUsedDelta()
-    end
-    
-    if item.getUses then
-        itemData.uses = item:getUses()
-    end
-    
-    -- Custom properties that might be set
-    if item.getWeight then
-        itemData.weight = item:getWeight()
-    end
-    
-    if item.getActualWeight then
-        itemData.actualWeight = item:getActualWeight()
-    end
+    self:ExtractModData(item, itemData)
     
     return itemData
 end
 
--- Helper function to restore comprehensive item data
-local function restoreItemData(item, itemData)
+--! \brief Apply equipment color AFTER equipping to prevent randomization override
+--! \param item \InventoryItem The equipped item
+--! \param itemData \table The item data containing color information
+--! \return \boolean True if color was applied
+function FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
+    if not item or not itemData then return false end
+    
+    -- Validate color is a proper table with required fields
+    if not itemData.color or type(itemData.color) ~= "table" then return false end
+    if not itemData.color.r or not itemData.color.g or not itemData.color.b then return false end
+    
+    -- Apply color using proper PZ pattern
+    if item.setColor and item.getVisual and item.setCustomColor then
+        local color = Color.new(itemData.color.r, itemData.color.g, itemData.color.b, itemData.color.a or 1.0)
+        item:setColor(color)
+        item:getVisual():setTint(ImmutableColor.new(color))
+        item:setCustomColor(true)
+        return true
+    end
+    
+    return false
+end
+
+--! \brief Restore comprehensive item data from saved data
+--! \param item \InventoryItem The item to restore to
+--! \param itemData \table The saved item data
+--! \return \boolean True if restoration was successful
+function FrameworkZ.Inventories:RestoreItemData(item, itemData)
     if not item or not itemData then return false end
     
     -- Restore basic properties
@@ -324,12 +421,18 @@ local function restoreItemData(item, itemData)
     end
     
     -- Restore color/tint
-    if itemData.color and item.setColor then
-        -- Create color using ColorInfo or direct color values
-        if item.setColorRed and item.setColorGreen and item.setColorBlue then
-            item:setColorRed(itemData.color.r)
-            item:setColorGreen(itemData.color.g) 
-            item:setColorBlue(itemData.color.b)
+    -- NOTE: For equipped items, color should be applied AFTER setWornItem() to override randomization
+    -- This function handles non-equipped items. For equipment, see ApplyEquipmentColor() method.
+    if itemData.color and type(itemData.color) == "table" and item.setColor then
+        local r, g, b, a = itemData.color.r, itemData.color.g, itemData.color.b, itemData.color.a or 1.0
+        -- Validate all color components are numbers before applying
+        if type(r) == "number" and type(g) == "number" and type(b) == "number" and type(a) == "number" then
+            local color = Color.new(r, g, b, a)
+            item:setColor(color)
+            if item.getVisual and item.setCustomColor then
+                item:getVisual():setTint(ImmutableColor.new(color))
+                item:setCustomColor(true)
+            end
         end
     end
     
@@ -420,15 +523,43 @@ local function restoreItemData(item, itemData)
         end
     end
     
+    -- Restore item's own mod data FIRST (before container contents)
+    -- This ensures the container item itself has its ModData set before we manipulate its contents
+    if itemData.modData then
+        local modData = item:getModData()
+        for key, value in pairs(itemData.modData) do
+            modData[key] = value
+        end
+    end
+    
     -- Restore container contents
     if item:getType() and (item:getType():contains("Container") or item:getCategory() == "Container") and itemData.containerItems then
         local containerInventory = item:getItems()
         if containerInventory then
+            -- CRITICAL: Save the container inventory's ModData BEFORE clearing
+            -- This preserves plugin data (like Tetris grid layouts) that might already be set
+            local preservedContainerModData = nil
+            if itemData.containerInventoryModData then
+                preservedContainerModData = itemData.containerInventoryModData
+            end
+            
+            -- Clear the container to remove old items (needed for character swapping)
             containerInventory:clear()
+            
+            -- Restore the container inventory's ModData IMMEDIATELY after clearing
+            -- This must happen before adding items so plugins can track item placement
+            if preservedContainerModData then
+                local containerModData = containerInventory:getModData()
+                for key, value in pairs(preservedContainerModData) do
+                    containerModData[key] = value
+                end
+            end
+            
+            -- Now restore the items with the grid data intact
             for _, containerItemData in ipairs(itemData.containerItems) do
                 local containerItem = containerInventory:AddItem(containerItemData.id)
                 if containerItem then
-                    restoreItemData(containerItem, containerItemData)
+                    self:RestoreItemData(containerItem, containerItemData)
                 end
             end
         end
@@ -445,13 +576,8 @@ local function restoreItemData(item, itemData)
         end
     end
     
-    -- Restore mod data
-    if itemData.modData then
-        local modData = item:getModData()
-        for key, value in pairs(itemData.modData) do
-            modData[key] = value
-        end
-    end
+    -- NOTE: Item's ModData already restored earlier (before container contents)
+    -- to ensure proper initialization order
     
     -- Restore uses
     if itemData.usedDelta and item.setUsedDelta then
@@ -537,6 +663,9 @@ function INVENTORY:AddItem(item)
     self.items[inventoryIndex] = item
 end
 
+--! \brief Remove an item from the inventory.
+--! \param item \table The item object to remove.
+--! \return \boolean \string True if successful and a message.
 function INVENTORY:RemoveItem(item)
     if not item then return false, "No item provided." end
     if not item.inventoryIndex then return false, "Item does not have an inventory index." end
@@ -557,10 +686,16 @@ function INVENTORY:AddItems(uniqueID, quantity)
     end
 end
 
+--! \brief Get all items in the inventory.
+--! \return \table The items table.
 function INVENTORY:GetItems()
     return self.items
 end
 
+--! \brief Get an item by its unique ID.
+--! \param uniqueID \string The item's unique ID.
+--! \return \table|\boolean The item object or false if not found.
+--! \return \string Error message if not found.
 function INVENTORY:GetItemByUniqueID(uniqueID)
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
 
@@ -573,6 +708,9 @@ function INVENTORY:GetItemByUniqueID(uniqueID)
     return false, "No item found with unique ID: " .. uniqueID
 end
 
+--! \brief Get the count of items with a specific unique ID.
+--! \param uniqueID \string The item's unique ID.
+--! \return \integer The count of matching items.
 function INVENTORY:GetItemCountByID(uniqueID)
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
 
@@ -593,6 +731,8 @@ function INVENTORY:GetName()
     return self.name or "Someone's Inventory"
 end
 
+--! \brief Get filtered saveable data for the inventory.
+--! \return \table The processed saveable data.
 function INVENTORY:GetSaveableData()
     return FrameworkZ.Foundation:ProcessSaveableData(self)
 end
@@ -651,6 +791,10 @@ function FrameworkZ.Inventories:Initialize(id, object)
     return id
 end
 
+--! \brief Get an inventory by its ID.
+--! \param id \integer The inventory's ID.
+--! \return \table|\boolean The inventory object or false if not found.
+--! \return \string Error message if not found.
 function FrameworkZ.Inventories:GetInventoryByID(id)
     if not id then return false, "No inventory ID provided." end
 
@@ -661,6 +805,11 @@ function FrameworkZ.Inventories:GetInventoryByID(id)
     return inventory
 end
 
+--! \brief Get an item by its unique ID from a specific inventory.
+--! \param inventoryID \integer The inventory's ID to search in.
+--! \param uniqueID \string The item's unique ID.
+--! \return \table|\boolean The item object or false if not found.
+--! \return \string Error message if not found.
 function FrameworkZ.Inventories:GetItemByUniqueID(inventoryID, uniqueID)
     if not inventoryID then return false, "No inventory ID provided." end
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
@@ -674,6 +823,11 @@ function FrameworkZ.Inventories:GetItemByUniqueID(inventoryID, uniqueID)
     return itemOrSuccess, itemMessage
 end
 
+--! \brief Get the count of items with a specific unique ID in an inventory.
+--! \param inventoryID \integer The inventory's ID to search in.
+--! \param uniqueID \string The item's unique ID.
+--! \return \integer|\boolean The count or false if inventory not found.
+--! \return \string Error message if failed.
 function FrameworkZ.Inventories:GetItemCountByID(inventoryID, uniqueID)
     if not inventoryID then return false, "No inventory ID provided." end
     if not uniqueID or uniqueID == "" then return false, "No unique ID provided." end
@@ -794,7 +948,7 @@ function FrameworkZ.Inventories:Save(character)
         local item = inventory:get(i)
         if not item:getModData()["FZ_ITM"] then
             -- Use enhanced item data extraction
-            local itemData = extractItemData(item)
+            local itemData = self:ExtractItemData(item)
             if itemData then
                 table.insert(physicalItems, itemData)
             end
@@ -837,23 +991,26 @@ function FrameworkZ.Inventories:Save(character)
             local itemType = equippedItem:getFullType()
             
             -- O(1) check if item is FrameworkZ type
-            if isFrameworkZItemType(itemType) then
+            if self:IsFrameworkZItemType(itemType) then
                 print("[FrameworkZ] Skipping FrameworkZ item in equipment slot " .. slotName .. " (enum: " .. slotEnum .. "). Logical inventory handles this.")
                 return nil
             else
                 -- Use enhanced item data extraction for equipment
-                return extractItemData(equippedItem)
+                return self:ExtractItemData(equippedItem)
             end
         end
         return nil
     end
 
+    -- Store equipment in Equipment sub-table for consistency
+    local equipmentData = {}
     for slotEnum, slotName in pairs(self.SlotLookup) do
         if slotName then
             -- Use enum as primary key for consistency with character creation
-            inventoryData[slotEnum] = saveEquipmentSlot(slotName, slotEnum)
+            equipmentData[slotEnum] = saveEquipmentSlot(slotName, slotEnum)
         end
     end
+    inventoryData.Equipment = equipmentData
 
     return inventoryData, "Character inventory data saved successfully"
 end
@@ -886,7 +1043,7 @@ function FrameworkZ.Inventories:Restore(character, inventoryData)
                 local restoredItem = isoPlayer:getInventory():AddItem(itemData.id)
                 if restoredItem then
                     -- Restore all the detailed item properties
-                    restoreItemData(restoredItem, itemData)
+                    self:RestoreItemData(restoredItem, itemData)
                 end
             end
         end
@@ -907,14 +1064,6 @@ function FrameworkZ.Inventories:Restore(character, inventoryData)
             success = false
             table.insert(messages, "Failed to rebuild logical inventory: " .. (rebuildMessage or "Unknown error"))
         end
-    end
-
-    -- Restore all equipment (both physical and logical) using unified method
-    local equipSuccess, equipMessage = self:RestoreEquipment(character, inventoryData)
-    if equipSuccess then
-        table.insert(messages, equipMessage)
-    else
-        table.insert(messages, "Warning: " .. equipMessage)
     end
     
     return success, table.concat(messages, "; ")
@@ -942,15 +1091,18 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
     local restoredLogical = 0
     local failedCount = 0
 
+    -- Get equipment from Equipment sub-table
+    local equipmentTable = inventoryData.Equipment or {}
+
     -- First, restore physical equipment (non-FrameworkZ items) using SlotLookup
     for slotEnum, slotName in pairs(self.SlotLookup) do
         if slotName then
-            -- Try enum key first (from character creation), then legacy string key for backward compatibility
-            local equipmentData = inventoryData[slotEnum] or inventoryData["EQUIPMENT_SLOT_" .. string.upper(slotName:gsub("([A-Z])", "_%1"):gsub("^_", ""))]
+            -- Get equipment from Equipment sub-table using enum key
+            local equipmentData = equipmentTable[slotEnum]
             
             if equipmentData and equipmentData.id then
                 -- O(1) check if this equipment item is a FrameworkZ item
-                if not isFrameworkZItemType(equipmentData.id) then
+                if not self:IsFrameworkZItemType(equipmentData.id) then
                     local inventory = isoPlayer:getInventory()
                     local items = inventory:getItems()
                     local foundItem = nil
@@ -968,15 +1120,26 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
                     if not foundItem then
                         foundItem = inventory:AddItem(equipmentData.id)
                         if foundItem then
-                            -- Restore comprehensive item data for newly created equipment
-                            restoreItemData(foundItem, equipmentData)
-                            print("[FrameworkZ] Created missing physical item '" .. equipmentData.id .. "' for equipment restoration with detailed properties")
+                            print("[FrameworkZ] Created missing physical item '" .. equipmentData.id .. "' for equipment restoration")
                         end
                     end
                     
-                    -- If found or created, equip it
+                    -- If found or created, restore properties and equip it
                     if foundItem then
+                        -- Restore all item data EXCEPT color (which must be applied after equipping)
+                        local colorBackup = equipmentData.color
+                        equipmentData.color = nil
+                        self:RestoreItemData(foundItem, equipmentData)
+                        equipmentData.color = colorBackup
+                        
+                        -- Equip the item
                         if safeSetWornItem(isoPlayer, slotName, foundItem) then
+                            -- Apply color AFTER equipping to override randomization from setWornItem
+                            if self:ApplyEquipmentColor(foundItem, equipmentData) then
+                                print("[FrameworkZ] Applied color to '" .. equipmentData.id .. "': r=" .. (equipmentData.color and equipmentData.color.r or "nil"))
+                            else
+                                print("[FrameworkZ] Warning: Failed to apply color to '" .. equipmentData.id .. "'")
+                            end
                             restoredPhysical = restoredPhysical + 1
                             print("[FrameworkZ] Equipped physical item '" .. equipmentData.id .. "' to slot " .. slotName .. " (enum: " .. slotEnum .. ") with detailed properties")
                         else
@@ -1000,7 +1163,7 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
             
             if equipmentData and equipmentData.id then
                 -- O(1) check if this equipment item is a FrameworkZ item
-                local fzItemUniqueID = isFrameworkZItemType(equipmentData.id)
+                local fzItemUniqueID = self:IsFrameworkZItemType(equipmentData.id)
                 
                 -- Only restore FrameworkZ equipment here
                 if fzItemUniqueID then
@@ -1077,46 +1240,17 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
     -- Apply colors to all inventory items (equipment and inventory) for consistency and future-proofing
     local colorsApplied = 0
     
-    -- Get character data from the character object to access color information
-    local player = character:GetPlayer()
-    local characterData = nil
-    if player then
-        characterData = player:GetCharacterDataByID(character:GetID())
-    end
-    
-    if characterData then
-        -- Aliases to tolerate differing keys (e.g., Tshirt vs TShirt)
-        local aliases = {
-            Tshirt = {"Tshirt","TShirt","Undershirt"},
-            Shirt = {"Shirt","Overshirt","Jacket","FullTop"},
-            Hat = {"Hat","FullHat"},
-            Mask = {"Mask","MaskFull","MaskEyes"},
-        }
-        local function getSlotDataFor(enumKey)
-            -- 1) Exact key
-            local data = characterData[enumKey]
-            if data then return data end
-            -- 2) From EQUIPPED_ITEMS by the same enum key
-            if characterData.EQUIPPED_ITEMS and characterData.EQUIPPED_ITEMS[enumKey] then
-                return characterData.EQUIPPED_ITEMS[enumKey]
-            end
-            -- 3) Try aliases
-            local list = aliases[enumKey]
-            if list then
-                for _, alt in ipairs(list) do
-                    if characterData[alt] then return characterData[alt] end
-                    if characterData.EQUIPPED_ITEMS and characterData.EQUIPPED_ITEMS[alt] then
-                        return characterData.EQUIPPED_ITEMS[alt]
-                    end
-                end
-            end
-            return nil
-        end
-
+    -- Apply colors directly from the inventoryData that was passed in (already has the correct structure)
+    if inventoryData then
+        -- Get equipment from Equipment sub-table
+        local equipmentTable = inventoryData.Equipment or {}
+        
         -- Apply colors to equipped items using resolved SlotLookup mapping
         for slotEnum, slotName in pairs(self.SlotLookup) do
-            local slotData = getSlotDataFor(slotEnum)
+            -- Get equipment data from Equipment sub-table
+            local slotData = equipmentTable[slotEnum]
             if slotName and slotData and slotData.color then
+                print("[FrameworkZ] Re-applying color from inventoryData for slot " .. slotName .. ": r=" .. slotData.color.r)
                 local wornItem = isoPlayer:getWornItem(slotName)
                 if wornItem and wornItem.getVisual and type(wornItem.getVisual) == "function" then
                     if wornItem.setCustomColor then wornItem:setCustomColor(true) end
@@ -1164,8 +1298,6 @@ function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
             message = message .. string.format(" (applied %d item colors)", colorsApplied)
             print("[FrameworkZ] Applied colors to " .. colorsApplied .. " items total")
         end
-    else
-        print("[FrameworkZ] Warning: Could not retrieve character data for color application")
     end
 
     return failedCount == 0, message

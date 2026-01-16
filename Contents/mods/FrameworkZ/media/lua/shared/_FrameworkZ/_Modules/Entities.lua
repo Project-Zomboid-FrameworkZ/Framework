@@ -92,6 +92,10 @@ function FrameworkZ.Entities:GetEntityByID(entityID)
     return entity
 end
 
+--! \brief Get persisted entity data value by key from a world object.
+--! \param worldObject \table The world object containing entity mod data.
+--! \param index \string The persistData key to retrieve.
+--! \return \mixed The stored value or nil if missing.
 function FrameworkZ.Entities:GetData(worldObject, index)
     if worldObject then
         local entityPersistData = worldObject:getModData()["PFW_ENT"]
@@ -104,6 +108,11 @@ function FrameworkZ.Entities:GetData(worldObject, index)
     return nil
 end
 
+--! \brief Update a persisted entity data value and transmit the change.
+--! \param worldObject \table The world object containing entity mod data.
+--! \param index \string The persistData key to update.
+--! \param value \mixed The value to set.
+--! \return \boolean Whether the data was updated.
 function FrameworkZ.Entities:SetData(worldObject, index, value)
     if worldObject and index and value then
         local entityPersistData = worldObject:getModData()["PFW_ENT"]
@@ -134,6 +143,10 @@ function FrameworkZ.Entities:IsEntity(object)
     return false, nil
 end
 
+--! \brief Play a world sound at an entity's square.
+--! \param worldObject \table The world object to use as the source.
+--! \param sound \string The sound cue name.
+--! \return \boolean Whether the sound was queued.
 function FrameworkZ.Entities:EmitSound(worldObject, sound)
     if worldObject and sound then
         getSoundManager():PlayWorldSound(sound, worldObject:getSquare(), 0, 8, 1, false)
@@ -170,6 +183,8 @@ function FrameworkZ.Entities.OnObjectAdded(object)
 end
 Events.OnObjectAdded.Add(FrameworkZ.Entities.OnObjectAdded)
 
+--! \brief Invoked before an entity world object is removed.
+--! \param object \table The object being removed.
 function FrameworkZ.Entities.OnObjectAboutToBeRemoved(object)
 	local isEntity, entityID = FrameworkZ.Entities:IsEntity(object)
     
@@ -183,6 +198,11 @@ function FrameworkZ.Entities.OnObjectAboutToBeRemoved(object)
 end
 Events.OnObjectAboutToBeRemoved.Add(FrameworkZ.Entities.OnObjectAboutToBeRemoved)
 
+--! \brief Build interaction submenu entries for entity objects on right-click.
+--! \param player \integer The local player index.
+--! \param context \table The context menu being built.
+--! \param worldObjects \table The world objects under the cursor.
+--! \param test \boolean Test flag from PZ hook.
 function FrameworkZ.Entities.OnPreFillWorldObjectContextMenu(player, context, worldObjects, test)
 	local playerObj = getSpecificPlayer(player)
 	
@@ -224,10 +244,13 @@ function FrameworkZ.Entities.OnPreFillWorldObjectContextMenu(player, context, wo
     end
 end
 
+--! \brief Register entity context menu hook once the game starts.
 function FrameworkZ.Entities.OnGameStart()
     Events.OnPreFillWorldObjectContextMenu.Add(FrameworkZ.Entities.OnPreFillWorldObjectContextMenu)
 end
 
+--! \brief Placeholder for loading entity data on chunk load.
+--! \param square \table The gridsquare being loaded.
 function FrameworkZ.Entities:LoadGridsquare(square)
     --[[
 	for i = 0, square:getObjects():size() - 1 do

@@ -1,4 +1,4 @@
-FrameworkZ.UI.TabMenu = FrameworkZ.UI.TabMenu or {}
+FrameworkZ.UI.TabMenu = FrameworkZ.Interfaces:New("TabMenu", FrameworkZ.UI)
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabMenu, "TabMenu")
 
 local getTexture = getTexture

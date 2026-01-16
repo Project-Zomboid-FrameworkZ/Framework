@@ -1,0 +1,221 @@
+--[[
+    FrameworkZ - Quick Start Guide  
+    Getting started with FrameworkZ development
+]]
+
+--! \page Getting Started
+--! \brief Quick start guide for FrameworkZ developers
+--!
+--! \section Welcome Welcome to FrameworkZ
+--!
+--! FrameworkZ is a roleplay framework for Project Zomboid that provides a modular system for creating
+--! characters, managing players, handling persistence, and building custom gameplay features.
+--!
+--! \section Installation Installation
+--!
+--! 1. Subscribe to the Workshop mod or clone the repository
+--! 2. Add to your server: Include the Workshop ID in your server's mod list
+--! 3. Start your server: FrameworkZ will initialize automatically
+--!
+--! Most servers also install a gamemode alongside FrameworkZ (like HL2RP, LifeRP, etc.) for additional functionality.
+--!
+--! \section Architecture Architecture Overview
+--!
+--! FrameworkZ has a clear hierarchy:
+--!
+--! - FrameworkZ (top level): Core essential systems
+--! - Foundation: The base layer everything builds upon
+--! - Modules: Core house structure (Players, Characters, Inventories, etc.)
+--! - Plugins: Extensions, appliances, and tools that fill the house
+--!
+--! Think of Modules as integral parts of the framework that are always there,
+--! while Plugins are optional extensions you add to customize functionality.
+--!
+--! \section CoreConcepts Core Concepts
+--!
+--! Foundation: FrameworkZ.Foundation is the core system that manages modules, plugins, data persistence, 
+--! client-server networking, and the hook system.
+--!
+--! Modules: Core building blocks of FrameworkZ that provide essential functionality. 
+--! These are part of the framework's house structure.
+--!
+--! Plugins: Your custom extensions to the framework. This is where you add new features, 
+--! gameplay mechanics, and custom systems.
+--!
+--! Players vs Characters: PLAYER is the person connecting (account level), CHARACTER is the 
+--! in-game avatar (character level). One player can have multiple characters.
+--!
+--! \section FirstPlugin Creating Your First Plugin
+--!
+--! Plugins are the recommended way to extend FrameworkZ functionality:
+--!
+--! \code lua
+--! -- Create your plugin
+--! local MyPlugin = FrameworkZ.Plugins:CreatePlugin("MyPlugin")
+--!
+--! -- Set plugin metadata
+--! MyPlugin.Meta = {
+--!     Author = "YourName",
+--!     Name = "MyPlugin",
+--!     Description = "My custom plugin for FrameworkZ",
+--!     Version = "1.0.0",
+--!     Compatibility = "FrameworkZ 1.0+"
+--! }
+--!
+--! -- Initialize function is called when the plugin loads
+--! function MyPlugin:Initialize()
+--!     print("[MyPlugin] Initialized!")
+--! end
+--!
+--! -- Add hook functions to respond to events
+--! function MyPlugin:OnPlayerConnected(player)
+--!     local username = player:GetUsername()
+--!     print("[MyPlugin] " .. username .. " connected!")
+--! end
+--!
+--! -- Register your plugin
+--! FrameworkZ.Plugins:RegisterPlugin(MyPlugin)
+--! \endcode
+--!
+--! \section WorkingWithPlayers Working with Players
+--!
+--! \code lua
+--! -- Get a player by username
+--! local player = FrameworkZ.Players:GetPlayerByID("username")
+--!
+--! if player then
+--!     -- Access player properties
+--!     local username = player:GetUsername()
+--!     local isoPlayer = player:GetIsoPlayer()
+--!     local character = player:GetCharacter()
+--!     
+--!     print(username .. " is online")
+--! end
+--!
+--! -- Get all online players
+--! local allPlayers = FrameworkZ.Players:GetAllPlayers()
+--! for i = 1, #allPlayers do
+--!     local player = allPlayers[i]
+--!     print(player:GetUsername())
+--! end
+--! \endcode
+--!
+--! \section WorkingWithCharacters Working with Characters
+--!
+--! Characters have specific getter and setter methods for their properties:
+--!
+--! \code lua
+--! local player = FrameworkZ.Players:GetPlayerByID("username")
+--! local character = player:GetCharacter()
+--!
+--! if character then
+--!     -- Built-in character properties
+--!     character:SetName("John Doe")
+--!     character:SetAge(25)
+--!     character:SetDescription("A skilled survivor")
+--!     character:SetFaction("Survivors")
+--!     
+--!     -- Get character properties
+--!     local name = character:GetName()
+--!     local age = character:GetAge()
+--!     local faction = character:GetFaction()
+--!     local id = character:GetID()
+--!     
+--!     print(string.format("%s (%d) - %s", name, age, faction))
+--! end
+--! \endcode
+--!
+--! \section DataStorage Namespace-Based Data Storage
+--!
+--! FrameworkZ uses namespace-based storage for data persistence.
+--! Each namespace isolates your plugin's data from others:
+--!
+--! \code lua
+--! -- First, register your namespace in OnInitGlobalModData
+--! function MyPlugin:OnInitGlobalModData()
+--!     FrameworkZ.Foundation:RegisterNamespace("MyPlugin")
+--! end
+--!
+--! -- Store data in your namespace
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", "serverStartTime", os.time())
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", {"stats", "totalPlayers"}, 0)
+--!
+--! -- Retrieve data from your namespace
+--! local startTime = FrameworkZ.Foundation:GetLocalData("MyPlugin", "serverStartTime")
+--! local totalPlayers = FrameworkZ.Foundation:GetLocalData("MyPlugin", {"stats", "totalPlayers"})
+--! \endcode
+--!
+--! Namespaces keep your data isolated and organized.
+--! Use nested keys (tables) for hierarchical data structures.
+--!
+--! \section PluginHooks Plugin Hooks
+--!
+--! Plugins respond to framework events through hook functions:
+--!
+--! \code lua
+--! -- Called when a player connects
+--! function MyPlugin:OnPlayerConnected(player)
+--!     print(player:GetUsername() .. " connected!")
+--! end
+--!
+--! -- Called when a character is created
+--! function MyPlugin:OnCharacterCreated(character)
+--!     character:SetAge(25)
+--!     print("Character " .. character:GetName() .. " created")
+--! end
+--!
+--! -- Called when data is stored
+--! function MyPlugin:OnStorageSet(isoPlayer, command, namespace, keys, value)
+--!     if namespace == "MyPlugin" then
+--!         print("MyPlugin data updated")
+--!     end
+--! end
+--! \endcode
+--!
+--! Hooks are automatically registered when you call RegisterPlugin.
+--! The framework calls these functions when appropriate events occur.
+--!
+--! \section ClientServerCommunication Client-Server Communication
+--!
+--! Use SendFire for client-server networking with callbacks:
+--!
+--! \code lua
+--! -- Client requests data from server
+--! if isClient() then
+--!     function MyPlugin:RequestServerData()
+--!         local isoPlayer = getPlayer()
+--!         
+--!         FrameworkZ.Foundation:SendFire(
+--!             isoPlayer,
+--!             "MyPlugin.GetData",
+--!             function(data, result)
+--!                 print("Server returned: " .. result)
+--!             end,
+--!             "someArgument"
+--!         )
+--!     end
+--! end
+--!
+--! -- Server handles request and responds
+--! if isServer() then
+--!     function MyPlugin.GetData(data, arg)
+--!         local result = "Processed: " .. arg
+--!         return result
+--!     end
+--! end
+--! \endcode
+--!
+--! \section NextSteps Next Steps
+--!
+--! Now that you understand the basics:
+--!
+--! - Study the API Overview page for comprehensive API documentation
+--! - Explore FrameworkZ.Plugins to see all plugin system features
+--! - Look at existing plugins for real-world examples
+--! - Review FrameworkZ.Players and FrameworkZ.Characters for player management
+--! - Check the Documentation Guide for documenting your code
+--!
+--! \see API Overview
+--! \see Documentation Guide
+--! \see FrameworkZ.Plugins
+--! \see FrameworkZ.Foundation

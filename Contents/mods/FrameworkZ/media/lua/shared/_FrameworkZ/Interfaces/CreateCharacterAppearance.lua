@@ -30,14 +30,22 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
     self.textureChoiceMax = {}   -- Fallback max skins per slot when engine doesn’t expose counts
     self.decalValues = {}
 
+    self.backgroundOverlay = FrameworkZ.Interfaces:CreatePanel({
+        x = 0, y = 0, width = self.width, height = self.height,
+        theme = "Overlay",
+        parent = self
+    })
+
     local title = "Character Appearance"
     local subtitle = "Customize your character's physical appearance and clothing"
+    local titleHeight = self.uiHelper.GetHeight(UIFont.Title, title)
+    local subtitleHeight = self.uiHelper.GetHeight(UIFont.Small, subtitle)
     
     -- Layout constants for better organization
     local leftColumnX = 50
-    local previewWidth = 200
+    local previewWidth = 180
     local previewPadding = 20
-    local rightColumnX = math.max(leftColumnX + 320, self.width - previewWidth - previewPadding)  -- Ensure preview fits within bounds
+    local rightColumnX = self.width - previewWidth - previewPadding  -- Ensure preview fits within bounds
     local entryWidth = 200
     local colorButtonWidth = 80
     local sectionSpacing = 20
@@ -51,7 +59,7 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
 
     -- Enhanced title styling (themed + centered alignment)
     self.title = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2, y = yOffset, height = 25,
+        x = self.width / 2, y = yOffset, height = titleHeight,
         text = title,
         font = FZ_FONT_TITLE,
         textAlign = FZ_ALIGN_CENTER,
@@ -59,21 +67,21 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
         parent = self
     })
 
-    yOffset = yOffset + self.uiHelper.GetHeight(UIFont.Title, title) + 10
+    yOffset = yOffset + titleHeight + 10
 
     self.subtitle = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2, y = yOffset, height = 25,
+        x = self.width / 2, y = yOffset, height = subtitleHeight,
         text = subtitle,
-        font = FZ_FONT_MEDIUM,
+        font = FZ_FONT_LARGE,
         textAlign = FZ_ALIGN_CENTER,
-        theme = "Subtle",
+        theme = "Caption",
         parent = self
     })
 
-    yOffset = yOffset + self.uiHelper.GetHeight(UIFont.Medium, subtitle) + 30
+    yOffset = yOffset + subtitleHeight + 30
 
     -- Reduce padding between customization and preview areas
-    rightColumnX = leftColumnX + 420  -- Bring preview closer to customization area
+    rightColumnX = leftColumnX + 350  -- Bring preview closer to customization area
     
     -- Character preview on the right side
     self.characterPreview = FrameworkZ.UI.CharacterPreview:new(rightColumnX, yOffset, previewWidth, 400)
@@ -95,7 +103,7 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
     -- Section header
     self.physicalHeader = FrameworkZ.Interfaces:CreateLabel({
         x = leftColumnX, y = physicalY, height = 25,
-        text = "▎Physical Features",
+        text = "Physical Features",
         font = FZ_FONT_LARGE,
         variant = FrameworkZ.Themes.PrimaryLabelTheme,
         parent = self
@@ -165,7 +173,7 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
     -- CLOTHING SECTION HEADER (Outside scrolling panel)
     self.clothingHeader = FrameworkZ.Interfaces:CreateLabel({
         x = leftColumnX, y = physicalY, height = 25,
-        text = "▎Clothing & Accessories",
+        text = "Clothing & Accessories",
         font = FZ_FONT_LARGE,
         variant = FrameworkZ.Themes.PrimaryLabelTheme,
         parent = self
@@ -305,164 +313,6 @@ function FrameworkZ.UI.CreateCharacterAppearance:initialise()
     self.clothingScrollPanel:setScrollHeight(self.scrollYOffset + 30)  -- Add bottom padding
     self.clothingScrollPanel:addScrollBars()
     self.clothingScrollPanel:setScrollChildren(true)
-end
-
--- Build (if needed) and return a compact inline color palette anchored to the slot's color button
-function FrameworkZ.UI.CreateCharacterAppearance:ensureMiniPalette(location)
-    self._miniPalettes = self._miniPalettes or {}
-    local container = self.clothingPanels and self.clothingPanels[location]
-    if not container then return nil end
-
-    -- Check if we already have a valid palette for this location
-    if self._miniPalettes[location] and 
-       self._miniPalettes[location].parent == self.clothingScrollPanel and
-       self._miniPalettes[location].getIsVisible ~= nil then
-        return self._miniPalettes[location]
-    end
-
-    local colorButton = container.colorButton
-    if not colorButton then return nil end
-
-    -- Expanded clothing color palette with much more variety (8 columns for better organization)
-    local swatches = {
-        -- Row 1: Essential whites and light grays
-        {1,1,1},{0.95,0.95,0.95},{0.9,0.9,0.9},{0.85,0.85,0.85},{0.8,0.8,0.8},{0.75,0.75,0.75},{0.7,0.7,0.7},{0.65,0.65,0.65},
-        
-        -- Row 2: Medium to dark grays and blacks
-        {0.6,0.6,0.6},{0.55,0.55,0.55},{0.5,0.5,0.5},{0.45,0.45,0.45},{0.4,0.4,0.4},{0.3,0.3,0.3},{0.2,0.2,0.2},{0,0,0},
-        
-        -- Row 3: Light browns and tans
-        {0.95,0.87,0.75},{0.9,0.8,0.65},{0.87,0.72,0.53},{0.82,0.67,0.48},{0.76,0.6,0.42},{0.7,0.55,0.38},{0.65,0.5,0.35},{0.6,0.45,0.32},
-        
-        -- Row 4: Medium to dark browns
-        {0.55,0.4,0.28},{0.5,0.35,0.25},{0.45,0.32,0.22},{0.4,0.28,0.18},{0.35,0.25,0.18},{0.3,0.22,0.15},{0.25,0.18,0.12},{0.2,0.15,0.1},
-        
-        -- Row 5: Light reds and pinks
-        {1,0.9,0.9},{1,0.8,0.8},{1,0.7,0.7},{0.95,0.6,0.6},{0.9,0.5,0.5},{0.85,0.4,0.4},{0.8,0.3,0.3},{0.75,0.25,0.25},
-        
-        -- Row 6: Medium to dark reds and burgundy
-        {0.9,0.4,0.4},{0.8,0.2,0.2},{0.7,0.1,0.1},{0.6,0,0},{0.5,0,0},{0.45,0,0},{0.4,0,0},{0.3,0,0},
-        
-        -- Row 7: Light oranges and peaches
-        {1,0.9,0.7},{1,0.85,0.6},{1,0.8,0.5},{0.95,0.75,0.45},{0.9,0.7,0.4},{0.85,0.65,0.35},{0.8,0.6,0.3},{0.75,0.55,0.25},
-        
-        -- Row 8: Medium to dark oranges and rust
-        {1,0.75,0.4},{0.9,0.65,0.25},{0.8,0.55,0.15},{0.7,0.45,0.1},{0.6,0.35,0.05},{0.5,0.3,0.05},{0.4,0.25,0.05},{0.3,0.2,0.05},
-        
-        -- Row 9: Light yellows and creams
-        {1,1,0.9},{1,1,0.8},{1,1,0.7},{0.95,0.95,0.6},{0.9,0.9,0.5},{0.85,0.85,0.4},{0.8,0.8,0.3},{0.75,0.75,0.25},
-        
-        -- Row 10: Medium to dark yellows
-        {0.9,0.9,0.2},{0.8,0.8,0.1},{0.7,0.7,0},{0.6,0.6,0},{0.5,0.5,0},{0.4,0.4,0},{0.3,0.3,0},{0.25,0.25,0},
-        
-        -- Row 11: Light greens and mint
-        {0.9,1,0.9},{0.8,0.95,0.8},{0.7,0.9,0.7},{0.6,0.85,0.6},{0.5,0.8,0.5},{0.4,0.75,0.4},{0.3,0.7,0.3},{0.25,0.65,0.25},
-        
-        -- Row 12: Medium to dark greens
-        {0.5,0.75,0.5},{0.4,0.65,0.4},{0.3,0.55,0.3},{0.2,0.45,0.2},{0.15,0.4,0.15},{0.1,0.3,0.1},{0.05,0.25,0.05},{0,0.2,0},
-        
-        -- Row 13: Light blues and sky colors
-        {0.9,0.95,1},{0.8,0.9,1},{0.7,0.85,0.95},{0.6,0.8,0.9},{0.5,0.75,0.95},{0.4,0.7,0.9},{0.3,0.65,0.85},{0.25,0.6,0.8},
-        
-        -- Row 14: Medium to dark blues
-        {0.5,0.75,0.95},{0.4,0.65,0.85},{0.3,0.55,0.75},{0.2,0.4,0.7},{0.15,0.3,0.6},{0.1,0.2,0.5},{0.05,0.15,0.4},{0,0.1,0.3},
-        
-        -- Row 15: Light purples and lavender
-        {0.95,0.9,1},{0.9,0.8,1},{0.85,0.75,0.95},{0.8,0.7,0.9},{0.75,0.65,0.85},{0.7,0.6,0.8},{0.65,0.55,0.75},{0.6,0.5,0.7},
-        
-        -- Row 16: Medium to dark purples
-        {0.85,0.8,1},{0.75,0.65,0.9},{0.65,0.5,0.8},{0.55,0.5,0.85},{0.45,0.4,0.7},{0.35,0.3,0.7},{0.25,0.2,0.6},{0.2,0.15,0.5},
-    }
-
-    local cols, cell, gap = 8, 14, 1  -- 8 columns, smaller cells, tighter spacing for expanded palette
-    local rows = math.ceil(#swatches / cols)
-    local width = cols * cell + (cols - 1) * gap + 4
-    local height = rows * cell + (rows - 1) * gap + 4
-
-    local py = colorButton:getY() + colorButton:getHeight() + 4
-    local paletteWidth = math.max(width, colorButton:getWidth())
-    
-    -- Position palette so its right edge aligns with the right edge of the color button
-    local px = colorButton:getX() + colorButton:getWidth() - paletteWidth
-    
-    local palette = ISPanel:new(px, py, paletteWidth, height)
-    palette.backgroundColor = { r=0, g=0, b=0, a=0.85 }
-    palette.borderColor = { r=0.6, g=0.6, b=0.6, a=0.9 }
-    palette:initialise()
-    
-    -- Add to scroll panel instead of individual container to ensure it appears above combo boxes
-    self.clothingScrollPanel:addChild(palette)
-    
-    -- Adjust position relative to the scroll panel
-    local scrollX = container:getX() + colorButton:getX() + colorButton:getWidth() - paletteWidth
-    local scrollY = container:getY() + colorButton:getY() + colorButton:getHeight() + 4
-    
-    palette:setX(scrollX)
-    palette:setY(scrollY)
-
-    local x, y = 2, 2
-    for i = 1, #swatches do
-        local c = swatches[i]
-        local b = FrameworkZ.Interfaces:CreateButton({
-            x = x,
-            y = y,
-            width = cell,
-            height = cell,
-            title = "",
-            target = self,
-            onClick = self.onMiniPaletteColorClicked,
-            backgroundColor = { r=c[1], g=c[2], b=c[3], a=1 },
-            borderColor = { r=0.2, g=0.2, b=0.2, a=1 },
-            parent = palette
-        })
-        b.background = true
-        b.clothingLocation = location
-        b._color = { r=c[1], g=c[2], b=c[3], a=1 }
-        b.drawText = nil
-        
-        -- Disable hover effects and unnecessary updates to prevent animation speed issues
-        b.onMouseOver = nil
-        b.onMouseOut = nil
-        b.doToolTip = false
-        
-        b:initialise()
-        b:instantiate()
-        palette:addChild(b)
-
-        x = x + cell + gap
-        if (i % cols) == 0 then x = 2; y = y + cell + gap end
-    end
-
-    palette:setVisible(false)
-    self._miniPalettes[location] = palette
-    return palette
-end
-
--- Handle click on a mini-palette swatch
-function FrameworkZ.UI.CreateCharacterAppearance:onMiniPaletteColorClicked(button)
-    if not button or not button.clothingLocation or not button._color then return end
-    local location = button.clothingLocation
-    local c = button._color
-    self.clothingColors = self.clothingColors or {}
-    self.clothingColors[location] = { r=c.r, g=c.g, b=c.b, a=1 }
-
-    -- Update preview swatch
-    local panel = self.clothingPanels[location]
-    if panel and panel.colorButton and panel.colorButton.colorPreview then
-        panel.colorButton.colorPreview.backgroundColor = { r=c.r, g=c.g, b=c.b, a=0.8 }
-    end
-
-    -- Apply immediately
-    local item = self.survivor and self.survivor:getWornItem(location)
-    if item then
-        self:applyVisualSelectionsToItem(item, location)
-        if self.characterPreview then self.characterPreview:setSurvivorDesc(self.survivor) end
-    end
-
-    -- Hide the palette after selection
-    if self._miniPalettes and self._miniPalettes[location] then
-        self._miniPalettes[location]:setVisible(false)
-    end
 end
 
 -- Helper function to check if a clothing category has any items
@@ -1059,9 +909,7 @@ function FrameworkZ.UI.CreateCharacterAppearance:refreshSlotCapabilities(locatio
         local showColor = allowTint
         if panel.colorButton then panel.colorButton:setVisible(showColor) end
         if panel.colorButton and panel.colorButton.colorPreview then panel.colorButton.colorPreview:setVisible(showColor) end
-        -- Keep an inline palette available but hidden; disable if no tint
-        local mini = self:ensureMiniPalette(location)
-        if mini then mini:setVisible(false) end
+        
         -- Update color button preview to stored color or current tint
         if showColor and panel.colorButton and panel.colorButton.colorPreview then
             local previewColor = nil
@@ -1187,9 +1035,6 @@ function FrameworkZ.UI.CreateCharacterAppearance:onDecalComboChanged(combo)
     local location = combo and combo.clothingLocation
     if not location then return end
     
-    -- Hide any open mini palettes to prevent overlay conflicts
-    self:hideAllMiniPalettes()
-    
     local decalName = combo:getOptionData(combo.selected)
     -- Persist selection ("" means clear)
     self.decalValues[location] = decalName or ""
@@ -1221,52 +1066,104 @@ end
 function FrameworkZ.UI.CreateCharacterAppearance:onColorButtonClicked(button)
     if not button.clothingLocation then return end
     local location = button.clothingLocation
-    -- Toggle the inline mini palette instead of spawning the large color picker
-    local palette = self:ensureMiniPalette(location)
-    if palette then
-        local isCurrentlyVisible = palette:getIsVisible()
+    
+    -- Get current color for this clothing slot
+    local currentColor = self.clothingColors[location] or {r = 1.0, g = 1.0, b = 1.0, a = 1.0}
+    
+    -- Calculate position relative to the button
+    local btnAbsX = button:getAbsoluteX()
+    local btnAbsY = button:getAbsoluteY()
+    
+    -- Create ISColorPicker with clothing-appropriate color palette
+    local picker = ISColorPicker:new(btnAbsX, btnAbsY + button:getHeight())
+    picker:initialise()
+    
+    -- Custom clothing color palette - more muted, realistic tones
+    local clothingColors = {
+        -- Row 1: Whites and light grays
+        {r=1.0, g=1.0, b=1.0}, {r=0.95, g=0.95, b=0.95}, {r=0.9, g=0.9, b=0.9}, {r=0.85, g=0.85, b=0.85}, 
+        {r=0.8, g=0.8, b=0.8}, {r=0.75, g=0.75, b=0.75}, {r=0.7, g=0.7, b=0.7}, {r=0.65, g=0.65, b=0.65},
+        {r=0.6, g=0.6, b=0.6}, {r=0.55, g=0.55, b=0.55}, {r=0.5, g=0.5, b=0.5}, {r=0.45, g=0.45, b=0.45},
+        {r=0.4, g=0.4, b=0.4}, {r=0.35, g=0.35, b=0.35}, {r=0.3, g=0.3, b=0.3}, {r=0.25, g=0.25, b=0.25},
+        {r=0.2, g=0.2, b=0.2}, {r=0.1, g=0.1, b=0.1},
         
-        if isCurrentlyVisible then
-            -- If this palette is open, just close it
-            palette:setVisible(false)
-        else
-            -- If this palette is closed, hide others first then open this one
-            self:hideAllMiniPalettes()
-            palette:setVisible(true)
-        end
-    end
-end
-
--- Helper method to hide all mini palettes
-function FrameworkZ.UI.CreateCharacterAppearance:hideAllMiniPalettes()
-    if self._miniPalettes then
-        for loc, palette in pairs(self._miniPalettes) do
-            if palette and palette.setVisible then
-                palette:setVisible(false)
-            end
-        end
-    end
+        -- Row 2: Beiges, tans, and khakis
+        {r=0.96, g=0.96, b=0.86}, {r=0.96, g=0.87, b=0.7}, {r=0.93, g=0.84, b=0.66}, {r=0.89, g=0.78, b=0.59},
+        {r=0.85, g=0.75, b=0.56}, {r=0.82, g=0.71, b=0.55}, {r=0.76, g=0.7, b=0.5}, {r=0.74, g=0.65, b=0.47},
+        {r=0.71, g=0.62, b=0.45}, {r=0.68, g=0.57, b=0.42}, {r=0.64, g=0.54, b=0.39}, {r=0.6, g=0.5, b=0.36},
+        
+        -- Row 3: Browns and earth tones
+        {r=0.55, g=0.45, b=0.35}, {r=0.52, g=0.42, b=0.32}, {r=0.48, g=0.38, b=0.28}, {r=0.45, g=0.35, b=0.25},
+        {r=0.42, g=0.32, b=0.22}, {r=0.38, g=0.28, b=0.19}, {r=0.35, g=0.25, b=0.17}, {r=0.32, g=0.23, b=0.15},
+        {r=0.28, g=0.2, b=0.13}, {r=0.25, g=0.18, b=0.12}, {r=0.22, g=0.15, b=0.1}, {r=0.18, g=0.12, b=0.08},
+        
+        -- Row 4: Denim blues and navy
+        {r=0.6, g=0.7, b=0.8}, {r=0.52, g=0.62, b=0.74}, {r=0.45, g=0.55, b=0.68}, {r=0.38, g=0.48, b=0.62},
+        {r=0.32, g=0.42, b=0.56}, {r=0.28, g=0.38, b=0.52}, {r=0.24, g=0.34, b=0.48}, {r=0.2, g=0.3, b=0.44},
+        {r=0.17, g=0.27, b=0.4}, {r=0.14, g=0.24, b=0.36}, {r=0.12, g=0.2, b=0.32}, {r=0.1, g=0.17, b=0.28},
+        
+        -- Row 5: Olive greens and military tones
+        {r=0.5, g=0.55, b=0.45}, {r=0.46, g=0.51, b=0.41}, {r=0.42, g=0.47, b=0.37}, {r=0.38, g=0.43, b=0.33},
+        {r=0.35, g=0.4, b=0.3}, {r=0.32, g=0.37, b=0.27}, {r=0.29, g=0.34, b=0.24}, {r=0.26, g=0.31, b=0.21},
+        {r=0.23, g=0.28, b=0.19}, {r=0.2, g=0.25, b=0.17}, {r=0.18, g=0.22, b=0.15}, {r=0.15, g=0.19, b=0.13},
+        
+        -- Row 6: Burgundy and wine reds
+        {r=0.6, g=0.3, b=0.3}, {r=0.55, g=0.25, b=0.25}, {r=0.5, g=0.22, b=0.22}, {r=0.45, g=0.19, b=0.19},
+        {r=0.42, g=0.17, b=0.17}, {r=0.38, g=0.15, b=0.15}, {r=0.35, g=0.13, b=0.13}, {r=0.32, g=0.11, b=0.11},
+        {r=0.28, g=0.09, b=0.09}, {r=0.25, g=0.08, b=0.08}, {r=0.22, g=0.07, b=0.07}, {r=0.18, g=0.05, b=0.05},
+        
+        -- Row 7: Forest and dark greens
+        {r=0.3, g=0.45, b=0.35}, {r=0.28, g=0.42, b=0.32}, {r=0.25, g=0.38, b=0.28}, {r=0.22, g=0.35, b=0.25},
+        {r=0.2, g=0.32, b=0.23}, {r=0.18, g=0.29, b=0.21}, {r=0.16, g=0.26, b=0.19}, {r=0.14, g=0.23, b=0.17},
+        {r=0.12, g=0.2, b=0.15}, {r=0.1, g=0.18, b=0.13}, {r=0.08, g=0.15, b=0.11}, {r=0.06, g=0.12, b=0.09},
+        
+        -- Row 8: Charcoal and slate grays
+        {r=0.45, g=0.5, b=0.52}, {r=0.42, g=0.46, b=0.48}, {r=0.38, g=0.42, b=0.44}, {r=0.35, g=0.38, b=0.4},
+        {r=0.32, g=0.35, b=0.37}, {r=0.28, g=0.31, b=0.33}, {r=0.25, g=0.28, b=0.3}, {r=0.22, g=0.25, b=0.27},
+        {r=0.19, g=0.22, b=0.24}, {r=0.16, g=0.19, b=0.21}, {r=0.14, g=0.16, b=0.18}, {r=0.11, g=0.13, b=0.15},
+        
+        -- Row 9: Muted oranges and rusts
+        {r=0.65, g=0.45, b=0.3}, {r=0.6, g=0.42, b=0.28}, {r=0.55, g=0.38, b=0.25}, {r=0.5, g=0.35, b=0.22},
+        {r=0.46, g=0.32, b=0.2}, {r=0.42, g=0.29, b=0.18}, {r=0.38, g=0.26, b=0.16}, {r=0.34, g=0.23, b=0.14},
+        {r=0.3, g=0.2, b=0.12}, {r=0.27, g=0.18, b=0.11}, {r=0.24, g=0.16, b=0.09}, {r=0.2, g=0.13, b=0.08},
+        
+        -- Row 10: Muted purples and plums
+        {r=0.45, g=0.35, b=0.45}, {r=0.42, g=0.32, b=0.42}, {r=0.38, g=0.28, b=0.38}, {r=0.35, g=0.25, b=0.35},
+        {r=0.32, g=0.22, b=0.32}, {r=0.28, g=0.19, b=0.28}, {r=0.25, g=0.17, b=0.25}, {r=0.22, g=0.15, b=0.22},
+        {r=0.19, g=0.13, b=0.19}, {r=0.16, g=0.11, b=0.16}, {r=0.14, g=0.09, b=0.14}, {r=0.11, g=0.07, b=0.11},
+    }
+    
+    picker:setColors(clothingColors, 18, 10)
+    picker.pickedTarget = self
+    picker.pickedFunc = FrameworkZ.UI.CreateCharacterAppearance.onClothingColorPicked
+    picker.pickedArgs = {location}
+    
+    -- Set initial color to match current selection
+    local initialColor = Color.new(currentColor.r, currentColor.g, currentColor.b, 1.0)
+    picker:setInitialColor(initialColor)
+    
+    picker:addToUIManager()
+    picker:bringToTop()
 end
 
 -- Called by ISColorPicker when a clothing color is picked
-function FrameworkZ.UI.CreateCharacterAppearance:onClothingColorPicked(colorInfo, location)
+-- Signature: function(target, color, mouseUp, arg1, arg2, arg3, arg4)
+function FrameworkZ.UI.CreateCharacterAppearance:onClothingColorPicked(colorInfo, mouseUp, location)
     if not location or not colorInfo then return end
     self.clothingColors = self.clothingColors or {}
-    self.clothingColors[location] = { r = colorInfo:getR(), g = colorInfo:getG(), b = colorInfo:getB(), a = 1.0 }
+    self.clothingColors[location] = { r = colorInfo.r, g = colorInfo.g, b = colorInfo.b, a = 1.0 }
+    
     -- Update preview on the button
     local panel = self.clothingPanels[location]
     if panel and panel.colorButton and panel.colorButton.colorPreview then
-        panel.colorButton.colorPreview.backgroundColor = { r = self.clothingColors[location].r, g = self.clothingColors[location].g, b = self.clothingColors[location].b, a = 0.8 }
+        panel.colorButton.colorPreview.backgroundColor = { r = colorInfo.r, g = colorInfo.g, b = colorInfo.b, a = 0.8 }
     end
+    
     -- Apply to currently worn item immediately
     local item = self.survivor and self.survivor:getWornItem(location)
     if item then
         self:applyVisualSelectionsToItem(item, location)
         if self.characterPreview then self.characterPreview:setSurvivorDesc(self.survivor) end
-    end
-    -- Hide mini palette if open
-    if self._miniPalettes and self._miniPalettes[location] then
-        self._miniPalettes[location]:setVisible(false)
     end
 end
 

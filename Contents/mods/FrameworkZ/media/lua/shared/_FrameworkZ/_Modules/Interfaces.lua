@@ -11,6 +11,11 @@ FrameworkZ.Interfaces = {}
 FrameworkZ.Interfaces.List = {}
 FrameworkZ.Interfaces = FrameworkZ.Foundation:NewModule(FrameworkZ.Interfaces, "Interfaces")
 
+--! \brief Safely read an option value with a default.
+--! \param options \table Options table or nil.
+--! \param key \string Key to read.
+--! \param default \mixed Fallback value.
+--! \return \mixed The value or default.
 function FrameworkZ.Interfaces.Opt(options, key, default)
     if type(options) ~= "table" then return default end
     local v = options[key]
@@ -18,6 +23,9 @@ function FrameworkZ.Interfaces.Opt(options, key, default)
     return v
 end
 
+--! \brief Create a themed ISPanel with optional overrides.
+--! \param options \table Position, size, theme, and parent options.
+--! \return \table The initialized panel.
 function FrameworkZ.Interfaces:CreatePanel(options)
     local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
     local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 100)
@@ -39,6 +47,9 @@ function FrameworkZ.Interfaces:CreatePanel(options)
     return panel
 end
 
+--! \brief Create a themed ISLabel with alignment helpers.
+--! \param options \table Position, text, theme, alignment, and parent options.
+--! \return \table The initialized label.
 function FrameworkZ.Interfaces:CreateLabel(options)
     -- Extract options
     local x = self.Opt(options, "x", 0)
@@ -124,6 +135,9 @@ function FrameworkZ.Interfaces:CreateLabel(options)
     return label
 end
 
+--! \brief Create a themed ISButton.
+--! \param options \table Position, size, title, callbacks, theme, overrides, parent.
+--! \return \table The initialized button.
 function FrameworkZ.Interfaces:CreateButton(options)
     local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
     local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 25)
@@ -162,6 +176,9 @@ function FrameworkZ.Interfaces:CreateButton(options)
     return btn
 end
 
+--! \brief Create a themed ISSliderPanel.
+--! \param options \table Position, size, min/max/step/value, callbacks, theme, parent.
+--! \return \table The initialized slider.
 function FrameworkZ.Interfaces:CreateSlider(options)
     local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
     local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 20)
@@ -190,6 +207,9 @@ function FrameworkZ.Interfaces:CreateSlider(options)
     return slider
 end
 
+--! \brief Create a themed ISComboBox.
+--! \param options \table Position, size, options list, callbacks, theme, parent.
+--! \return \table The initialized combo box.
 function FrameworkZ.Interfaces:CreateCombo(options)
     local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
     local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 25)
@@ -232,10 +252,14 @@ function FrameworkZ.Interfaces:CreateCombo(options)
     return combo
 end
 
+--! \brief Alias for CreateCombo.
 function FrameworkZ.Interfaces:CreateComboBox(options)
     return self:CreateCombo(options)
 end
 
+--! \brief Create a themed ISTextEntryBox (single or multiline).
+--! \param options \table Position, size, text, theme, multiline, parent, overrides.
+--! \return \table The initialized text entry.
 function FrameworkZ.Interfaces:CreateTextEntry(options)
     local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
     local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 25)
@@ -273,10 +297,15 @@ function FrameworkZ.Interfaces:CreateTextEntry(options)
     return entry
 end
 
+--! \brief Alias for CreateTextEntry.
 function FrameworkZ.Interfaces:CreateTextBox(options)
     return self:CreateTextEntry(options)
 end
 
+--! \brief Factory helper for creating interface elements by kind string.
+--! \param kind \string The element type (Panel, Label, Button, Slider, Combo, ComboBox, TextEntry, TextBox).
+--! \param options \table Options forwarded to the concrete creator.
+--! \return \table|nil The created element or nil if kind is unknown.
 function FrameworkZ.Interfaces:Create(kind, options)
     if not kind then return nil end
     if kind == "Panel" then return self:CreatePanel(options) end
@@ -290,6 +319,10 @@ function FrameworkZ.Interfaces:Create(kind, options)
 end
 
 function FrameworkZ.Interfaces:New(uniqueID, parentTable)
+    --! \brief Define an interface table for later registration.
+    --! \param uniqueID \string Unique interface key.
+    --! \param parentTable \table Optional table to attach as Parent.
+    --! \return \table The interface definition table.
     local object = {
         UniqueID = uniqueID or "DefaultInterface",
         Parent = parentTable or nil
@@ -301,6 +334,10 @@ function FrameworkZ.Interfaces:New(uniqueID, parentTable)
 end
 
 function FrameworkZ.Interfaces:Register(tbl, index)
+    --! \brief Register an interface definition by key.
+    --! \param tbl \table Interface definition table.
+    --! \param index \string Registry key.
+    --! \return \table The registered interface table (empty if duplicate).
     if self.List[index] then
         print("[FZ] Interface '" .. index .. "' is already registered. Use 'FrameworkZ.Interfaces:GetInterface(index)' to modify an already existing interface. Re-registration has been aborted.")
         return {}
@@ -312,10 +349,14 @@ function FrameworkZ.Interfaces:Register(tbl, index)
 end
 
 function FrameworkZ.Interfaces:GetInterface(index)
+    --! \brief Retrieve a registered interface by key.
+    --! \param index \string Interface key.
+    --! \return \table|nil The interface table or nil if missing.
     return self.List[index]
 end
 
 function FrameworkZ.Interfaces:Initialize()
+    --! \brief Derive registered interfaces from ISPanel and merge definitions at client start.
     local uiPanel = ISPanel
     if not uiPanel or not uiPanel.derive then return end
 

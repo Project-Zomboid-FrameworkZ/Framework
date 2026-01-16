@@ -8,10 +8,16 @@ FrameworkZ.Utilities = {}
 FrameworkZ.Utilities.__index = FrameworkZ.Utilities
 FrameworkZ.Utilities = FrameworkZ.Foundation:NewModule(FrameworkZ.Utilities, "Utilities")
 
+--! \brief Pack variadic arguments into a table with count.
+--! \param ... \vararg Arguments to pack.
+--! \return \table Table with n (count) and arguments.
 function FrameworkZ.Utilities:Pack(...)
     return {n = select("#", ...), ...}
 end
 
+--! \brief Unpack a packed table back to individual arguments.
+--! \param t \table The packed table with n count.
+--! \return \vararg The unpacked arguments.
 function FrameworkZ.Utilities:Unpack(t)
     return unpack(t, 1, t.n)
 end
@@ -50,6 +56,11 @@ function FrameworkZ.Utilities:CopyTable(originalTable, tableCopies, shouldCopyMe
     return copy
 end
 
+--! \brief Merge two tables recursively.
+--! \param t1 \table The target table to merge into.
+--! \param t2 \table The source table to merge from.
+--! \param visited \table? Internal tracking for circular references.
+--! \return \table The merged table (t1).
 function FrameworkZ.Utilities:MergeTables(t1, t2, visited)
     visited = visited or {}
     if visited[t1] and visited[t2] then
@@ -90,6 +101,9 @@ function FrameworkZ.Utilities:MergeTables(t1, t2, visited)
     return t1
 end
 
+--! \brief Convert a table to a string representation.
+--! \param tbl \table The table to dump.
+--! \return \string String representation of the table.
 function FrameworkZ.Utilities:DumpTable(tbl)
     if type(tbl) == 'table' then
         local s = '{ '
@@ -103,10 +117,15 @@ function FrameworkZ.Utilities:DumpTable(tbl)
     end
 end
 
+--! \brief Print a table to console using DumpTable.
+--! \param tbl \table The table to print.
 function FrameworkZ.Utilities:PrintTable(tbl)
     print(self:DumpTable(tbl))
 end
 
+--! \brief Check if a table is empty.
+--! \param t \table The table to check.
+--! \return \boolean True if empty or not a table.
 function FrameworkZ.Utilities:TableIsEmpty(t)
     if type(t) ~= "table" then
         return false
@@ -122,6 +141,10 @@ function FrameworkZ.Utilities:TableIsEmpty(t)
     return isEmpty
 end
 
+--! \brief Check if a table contains a specific key.
+--! \param t \table The table to search.
+--! \param key \mixed The key to find.
+--! \return \boolean True if the key exists.
 function FrameworkZ.Utilities:TableContainsKey(t, key)
     if t then
         for k, _ in pairs(t) do
@@ -134,6 +157,10 @@ function FrameworkZ.Utilities:TableContainsKey(t, key)
     return false
 end
 
+--! \brief Check if a table contains a specific value.
+--! \param t \table The table to search.
+--! \param value \mixed The value to find.
+--! \return \boolean True if the value exists.
 function FrameworkZ.Utilities:TableContainsValue(t, value)
     if t then
         for _, v in pairs(t) do
@@ -146,6 +173,9 @@ function FrameworkZ.Utilities:TableContainsValue(t, value)
     return false
 end
 
+--! \brief Remove duplicate world objects from context menu.
+--! \param worldObjects \table Array of world objects.
+--! \return \table Array without duplicates.
 function FrameworkZ.Utilities:RemoveContextDuplicates(worldObjects)
     local newObjects = {}
 
@@ -167,6 +197,9 @@ function FrameworkZ.Utilities:RemoveContextDuplicates(worldObjects)
     return newObjects
 end
 
+--! \brief Internal: Generate ordered index for table iteration.
+--! \param t \table The table to index.
+--! \return \table Ordered index array.
 function FrameworkZ.Utilities:__GenOrderedIndex( t )
     local orderedIndex = {}
 
@@ -179,6 +212,10 @@ function FrameworkZ.Utilities:__GenOrderedIndex( t )
     return orderedIndex
 end
 
+--! \brief Internal: Iterator function for ordered table traversal.
+--! \param t \table The table being iterated.
+--! \param state \mixed The current state (previous key).
+--! \return \mixed \mixed Next key and value.
 function FrameworkZ.Utilities:OrderedNext(t, state)
     local key = nil
 
@@ -202,6 +239,9 @@ function FrameworkZ.Utilities:OrderedNext(t, state)
     return
 end
 
+--! \brief Iterate table in sorted key order.
+--! \param t \table The table to iterate.
+--! \return \function \table \nil Iterator function, table, and initial state.
 function FrameworkZ.Utilities:OrderedPairs(t)
     return self.OrderedNext, t, nil
 end
@@ -251,6 +291,11 @@ function FrameworkZ.Utilities:WordWrapText(text, maxLength, eolDelimiter)
     return lines
 end
 
+--! \brief Generate a random number between min and max.
+--! \param min \integer Minimum value.
+--! \param max \integer Maximum value.
+--! \param keepLeadingZeros \boolean? If true, format with leading zeros.
+--! \return \integer|\string Random number (string if keepLeadingZeros).
 function FrameworkZ.Utilities:GetRandomNumber(min, max, keepLeadingZeros)
     if min > max then
         min, max = max, min
@@ -268,10 +313,16 @@ FrameworkZ.Utilities.Directions = {
     { dx =  0, dy = -1, wallFlag = IsoFlagType.collideN, doorFlag = IsoFlagType.doorN, windowFlag = IsoFlagType.windowN },
 }
 
+--! \brief Check if a square is exterior (no room).
+--! \param square \IsoGridSquare The square to check.
+--! \return \boolean True if exterior.
 function FrameworkZ.Utilities:IsExterior(square)
     return not square or square:getRoom() == nil
 end
 
+--! \brief Check if a square is truly interior (no path to exterior without passing through walls/doors/windows).
+--! \param square \IsoGridSquare The square to check.
+--! \return \boolean True if truly interior.
 function FrameworkZ.Utilities:IsTrulyInterior(square)
     if not square then return false end
     local room = square:getRoom()
@@ -308,11 +359,17 @@ function FrameworkZ.Utilities:IsTrulyInterior(square)
     return true
 end
 
+--! \brief Check if a square is semi-exterior (in a room but has path to exterior).
+--! \param square \IsoGridSquare The square to check.
+--! \return \boolean True if semi-exterior.
 function FrameworkZ.Utilities:IsSemiExterior(square)
     if not square or not square:getRoom() then return false end
     return not FrameworkZ.Utilities:IsTrulyInterior(square)
 end
 
+--! \brief Convert seconds to a human-readable duration string.
+--! \param timeInSeconds \number The time in seconds.
+--! \return \string Pretty formatted duration (e.g., "1 day and 3 hours").
 function FrameworkZ.Utilities:GetPrettyDuration(timeInSeconds)
     local seconds = math.floor(tonumber(timeInSeconds) or 0)
     local days = math.floor(seconds / 86400)

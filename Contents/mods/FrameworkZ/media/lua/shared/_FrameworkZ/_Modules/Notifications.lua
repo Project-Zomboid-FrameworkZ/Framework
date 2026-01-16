@@ -3,8 +3,6 @@
 --! The notifications system allows for displaying messages to the player, such as alerts, warnings, and other important information.
 --! While the notifications system is client side only, it can be triggered by server events. Server messages can be logged using the Logs module instead.
 
-if not isClient() then return end
-
 FrameworkZ = FrameworkZ or {}
 
 --! \brief Notifications module for FrameworkZ. Queues and sends notifications.

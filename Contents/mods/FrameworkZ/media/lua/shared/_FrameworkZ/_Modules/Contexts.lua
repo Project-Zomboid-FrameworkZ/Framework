@@ -1,6 +1,9 @@
 MenuManager = {}
 MenuManager.__index = MenuManager
 
+--! \brief Create a menu manager wrapper around a context menu.
+--! \param context \table The ISContextMenu instance.
+--! \return \table MenuManager instance.
 function MenuManager.new(context)
     local self = setmetatable({}, MenuManager)
     self.context = context
@@ -9,11 +12,20 @@ function MenuManager.new(context)
     return self
 end
 
+--! \brief Add a simple option to the context menu or target builder.
+--! \param option \table Option table with text/target/callback parameters.
+--! \param target \table Optional ContextMenuBuilder target; defaults to root builder.
+--! \return \table The created menu option.
 function MenuManager:addOption(option, target)
     target = target or self.contextMenuBuilder
     return target:addOption(option.text, option.target, option.callback, option.callbackParameters, option.addOnTop)
 end
 
+--! \brief Create and return a submenu builder.
+--! \param name \string Submenu display name.
+--! \param addOnTop \boolean Whether to add the submenu on top.
+--! \param options \table Optional predefined options list.
+--! \return \table Submenu builder instance.
 function MenuManager:addSubMenu(name, addOnTop, options)
     -- Create a submenu and its builder
     local menuOption, subMenuBuilder = self.contextMenuBuilder:addSubMenu(name, addOnTop, options)
@@ -24,11 +36,16 @@ function MenuManager:addSubMenu(name, addOnTop, options)
     return subMenuBuilder
 end
 
+--! \brief Add an aggregated option bucket keyed by unique ID.
+--! \param unqiueID \string Aggregation key.
+--! \param option \table Option definition.
+--! \param target \table Optional target builder.
 function MenuManager:addAggregatedOption(unqiueID, option, target)
     target = target or self.contextMenuBuilder
     target:addAggregatedOptionWithCallback(unqiueID, option.target, option.text, option.callback, option.callbackParameters, option.addOnTop, option.useMultiple, option.count)
 end
 
+--! \brief Build all aggregated options for root and nested submenus.
 function MenuManager:buildMenu()
     local function buildSubMenu(subMenuBuilder)
         for _, subMenu in ipairs(subMenuBuilder.subMenus) do
@@ -47,10 +64,14 @@ function MenuManager:buildMenu()
     end
 end
 
+--! \brief Get the root ISContextMenu.
 function MenuManager:getContext()
     return self.context
 end
 
+--! \brief Lookup a submenu builder by name.
+--! \param subMenuName \string Name of submenu to find.
+--! \return \table|nil Submenu builder or nil.
 function MenuManager:getSubMenu(subMenuName)
     for _, subMenuBuilder in ipairs(self.subMenuBuilders) do
         if subMenuBuilder.name and subMenuBuilder.name == subMenuName then
@@ -65,6 +86,15 @@ end
 Options = {}
 Options.__index = Options
 
+--! \brief Construct a menu option descriptor.
+--! \param text \string Display text.
+--! \param target \table Callback target/self.
+--! \param callback \function Function to execute.
+--! \param callbackParameters \table Optional parameters table.
+--! \param addOnTop \boolean Whether to insert at top of menu.
+--! \param useMultiple \boolean Whether to show count badge.
+--! \param count \integer Count for multiple selection.
+--! \return \table Options instance.
 function Options.new(text, target, callback, callbackParameters, addOnTop, useMultiple, count)
     local self = setmetatable({}, Options)
 
@@ -101,6 +131,9 @@ function Options:setCount(count) self.count = count end
 AggregatedOptions = {}
 AggregatedOptions.__index = AggregatedOptions
 
+--! \brief Construct a container for grouped options.
+--! \param uniqueID \string Aggregation key.
+--! \return \table AggregatedOptions instance.
 function AggregatedOptions.new(uniqueID)
     local self = setmetatable({}, AggregatedOptions)
     self.uniqueID = uniqueID
@@ -120,6 +153,10 @@ end
 ContextMenuBuilder = {}
 ContextMenuBuilder.__index = ContextMenuBuilder
 
+--! \brief Builder that wraps an ISContextMenu for option aggregation.
+--! \param menuManager \table Owning MenuManager.
+--! \param context \table ISContextMenu being built.
+--! \return \table ContextMenuBuilder instance.
 function ContextMenuBuilder.new(menuManager, context)
     local self = setmetatable({}, ContextMenuBuilder)
     self.menuManager = menuManager
@@ -130,22 +167,33 @@ function ContextMenuBuilder.new(menuManager, context)
     return self
 end
 
+--! \brief Get the underlying ISContextMenu.
 function ContextMenuBuilder:getContext()
     return self.context
 end
 
+--! \brief Return the options added through this builder.
 function ContextMenuBuilder:getOptions()
     return self.addedOptions
 end
 
+--! \brief Return the aggregated options table.
 function ContextMenuBuilder:getAggregatedOptions()
     return self.aggregatedOptions
 end
 
+--! \brief Get owning MenuManager.
 function ContextMenuBuilder:getMenuManager()
     return self.menuManager
 end
 
+--! \brief Add a basic option to the context menu.
+--! \param name \string Display text.
+--! \param target \table Callback target/self.
+--! \param callback \function Callback.
+--! \param parameters \table Optional parameters.
+--! \param addOnTop \boolean Whether to add on top of menu.
+--! \return \table The created option.
 function ContextMenuBuilder:addOption(name, target, callback, parameters, addOnTop)
     local option
     if addOnTop then
@@ -159,6 +207,11 @@ function ContextMenuBuilder:addOption(name, target, callback, parameters, addOnT
     return option
 end
 
+--! \brief Add a submenu entry and return its builder.
+--! \param name \string Submenu label.
+--! \param addOnTop \boolean Whether to add on top of menu.
+--! \param options \table Optional predefined option list.
+--! \return \table The created menu option and submenu builder.
 function ContextMenuBuilder:addSubMenu(name, addOnTop, options)
     -- Create a new context for the submenu
     local subMenu = ISContextMenu:getNew(self.context)
@@ -187,6 +240,8 @@ function ContextMenuBuilder:addSubMenu(name, addOnTop, options)
     return menuOption, subMenuBuilder
 end
 
+--! \brief Register an AggregatedOptions container for later building.
+--! \param aggregatedOption \table AggregatedOptions instance.
 function ContextMenuBuilder:addAggregatedOption(aggregatedOption)
     local uniqueID = aggregatedOption:getUniqueID()
 
@@ -195,6 +250,15 @@ function ContextMenuBuilder:addAggregatedOption(aggregatedOption)
     end
 end
 
+--! \brief Convenience to add an aggregated option by ID.
+--! \param uniqueID \string Aggregation key.
+--! \param target \table Callback target/self.
+--! \param text \string Display text.
+--! \param callback \function Callback to invoke.
+--! \param params \table Optional parameters.
+--! \param addOnTop \boolean Whether to add on top of menu.
+--! \param useMultiple \boolean Whether to append count indicator.
+--! \param count \integer Count value.
 function ContextMenuBuilder:addAggregatedOptionWithCallback(uniqueID, target, text, callback, params, addOnTop, useMultiple, count)
     local option = Options.new(text, target, callback, params, addOnTop, useMultiple, count)
     local aggregatedOption = AggregatedOptions.new(uniqueID)
@@ -203,6 +267,7 @@ function ContextMenuBuilder:addAggregatedOptionWithCallback(uniqueID, target, te
     self:addAggregatedOption(aggregatedOption)
 end
 
+--! \brief Build and add all aggregated options to the context menu, then clear the queue.
 function ContextMenuBuilder:buildAggregatedOptions()
     local previousUniqueID = nil
 

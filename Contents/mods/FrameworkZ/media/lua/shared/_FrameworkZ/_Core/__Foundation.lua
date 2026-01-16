@@ -150,7 +150,7 @@ end
 
 --! \brief Get a module by name.
 --! \param moduleName \string The name of the module.
---! \return \object The module object or \false if the module was not found.
+--! \return \object|\boolean The module object or false if the module was not found.
 function FrameworkZ.Foundation:GetModule(moduleName)
     if not moduleName or moduleName == "" then return false, "No module name supplied." end
     if not self.Modules[moduleName] then return false, "Module not found." end
@@ -662,12 +662,14 @@ if isServer() then
 
             local returnValues = self:Fire(subID, data, arguments.args)
 
-            sendServerCommand(isoPlayer, self.NetworksName, "ConfirmFire", {
-                requestID = arguments.requestID,
-                subID = subID,
-                meta = meta,
-                returnValues = returnValues
-            })
+            if isoPlayer then
+                sendServerCommand(isoPlayer, self.NetworksName, "ConfirmFire", {
+                    requestID = arguments.requestID,
+                    subID = subID,
+                    meta = meta,
+                    returnValues = returnValues
+                })
+            end
         elseif command == "ConfirmFire" then
             local confirmation = self.PendingConfirmations[arguments.requestID]
 
@@ -757,7 +759,7 @@ if isClient() then
             end
         elseif command == "SendFire" then
             local subID = arguments.subID
-            local isoPlayer = getSpecificPlayer(arguments.playerID)
+            local isoPlayer = getPlayerByOnlineID(arguments.playerID)
             local meta = self:GetChannelMeta(subID) or {}
             local data = {
                 isoPlayer = isoPlayer,
@@ -786,7 +788,7 @@ if isClient() then
                 for _, returnArgs in pairs(returnValues) do
                     local data = {
                         subscriptionID = confirmation.subID,
-                        isoPlayer = getSpecificPlayer(confirmation.playerID),
+                        isoPlayer = getPlayerByOnlineID(confirmation.playerID),
                         sentAt = confirmation.sentAt,
                         createdAt = meta.createdAt,
                         lastFiredAt = meta.lastFiredAt,
@@ -1313,7 +1315,14 @@ local startTime
 local serverSaveTick = 0
 
 --! \brief Server tick handler that manages periodic data saving.
+--! \note Periodic saves are now disabled since SetData() persists immediately.
+--! This prevents redundant writes and ensures data is saved as soon as it changes.
 function FrameworkZ.Foundation:ServerTick()
+    -- Periodic auto-save disabled - SetData() now persists immediately to ModData
+    -- This prevents data loss on crashes/disconnects without redundant periodic writes
+    
+    -- Uncomment below if you want periodic saves as a backup (not recommended):
+    --[[
     if serverSaveTick >= FrameworkZ.Config.Options.TicksUntilServerSave then
         self:SaveData()
         print("[FZ] Server data saved...")
@@ -1322,6 +1331,7 @@ function FrameworkZ.Foundation:ServerTick()
     else
         serverSaveTick = serverSaveTick + 1
     end
+    --]]
 end
 
 --! \brief Starts the server tick system that manages timers and periodic operations.
@@ -1351,15 +1361,62 @@ function FrameworkZ.Foundation:OnServerStarted()
     end
 end
 
+if isServer() then
+    local clientsConfirmed = {}
+
+    function FrameworkZ.Foundation.OnConfirmClient(data)
+        if not data.isoPlayer then return end
+        if clientsConfirmed[data.isoPlayer:getUsername()] then return false end
+
+        clientsConfirmed[data.isoPlayer:getUsername()] = true
+
+        return true
+    end
+end
+
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
     if isClient() then
         self.Initialized = false
-
-        local isoPlayer = getPlayer()
         startTime = getTimestampMs()
 
-        self:ExecuteFrameworkHooks("PreInitializeClient", isoPlayer)
+        -- Create a simple black screen immediately to hide the game world
+        local blackScreen = ISPanel:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight())
+        blackScreen:initialise()
+        blackScreen.backgroundColor = {r=0, g=0, b=0, a=1}
+        blackScreen.borderColor = {r=0, g=0, b=0, a=1}
+        
+        -- Add "Please Wait..." text to the black screen
+        local textWidth = getTextManager():MeasureStringX(UIFont.Large, "Please Wait")
+        local textHeight = getTextManager():MeasureStringY(UIFont.Large, "Please Wait")
+        blackScreen.pleaseWaitLabel = ISLabel:new(
+            (getCore():getScreenWidth() - textWidth) / 2,
+            (getCore():getScreenHeight() - textHeight) / 2,
+            textHeight,
+            "Please Wait",
+            1, 1, 1, 1,
+            UIFont.Large,
+            true
+        )
+        blackScreen.pleaseWaitLabel:initialise()
+        blackScreen:addChild(blackScreen.pleaseWaitLabel)
+        
+        blackScreen:addToUIManager()
+        
+        -- Store reference for later removal
+        self.temporaryBlackScreen = blackScreen
+
+        -- Use a tick event to wait for getPlayer() and grid square to be valid
+        FrameworkZ.Timers:Create("FZ_WAIT_FOR_PLAYER", 0.1, 0, function()
+            if getPlayer() then
+                self:SendFire(getPlayer(), "FrameworkZ.Foundation.OnConfirmClient", function(data, confirmed)
+                    if not confirmed then return end
+
+                    FrameworkZ.Timers:Remove("FZ_WAIT_FOR_PLAYER")
+                    self:ExecuteFrameworkHooks("PreInitializeClient", getPlayer())
+                end)
+            end
+        end)
     end
 end
 
@@ -1370,13 +1427,20 @@ function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
     FrameworkZ.Interfaces:Initialize()
 
     local sidebar = ISEquippedItem.instance
-    self.fzuiTabMenu = FrameworkZ.UI.TabMenu:new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, getPlayer())
+    self.fzuiTabMenu = FrameworkZ.Interfaces:GetInterface("TabMenu"):new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, isoPlayer)
     self.fzuiTabMenu:initialise()
     self.fzuiTabMenu:addToUIManager()
 
-    local ui = FrameworkZ.UI.Introduction:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), getPlayer())
+    -- Now create the proper Introduction UI with the player object
+    local ui = FrameworkZ.Interfaces:GetInterface("Introduction"):new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), isoPlayer)
     ui:initialise()
     ui:addToUIManager()
+    
+    -- Remove the temporary black screen now that Introduction is displayed
+    if self.temporaryBlackScreen then
+        self.temporaryBlackScreen:removeFromUIManager()
+        self.temporaryBlackScreen = nil
+    end
 
     self:ExecuteModuleHooks("PreInitializeClient", isoPlayer)
     self:ExecuteGamemodeHooks("PreInitializeClient",isoPlayer)
@@ -1389,57 +1453,58 @@ FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 --! \brief Main client initialization function. Sets up player state and communicates with the server.
 --! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:InitializeClient(isoPlayer)
-    FrameworkZ.Timers:Simple(FrameworkZ.Config.Options.InitializationDuration, function()
-        self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized, playerData, charactersData)
-            if serverSideInitialized then
-                local username = isoPlayer:getUsername()
+    self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized, playerData, charactersData)
+        if not serverSideInitialized then
+            FrameworkZ.Notifications:AddToQueue("Failed to initialize player on server. Please rejoin the server.", 10, FrameworkZ.Notifications.Types.Danger)
+            return
+        end
 
-                if not VoiceManager:playerGetMute(username) then
-                    VoiceManager:playerSetMute(username)
-                end
+        local username = isoPlayer:getUsername()
 
-                isoPlayer:clearWornItems()
-                isoPlayer:getInventory():clear()
+        if not VoiceManager:playerGetMute(username) then
+            VoiceManager:playerSetMute(username)
+        end
 
-                local gown = isoPlayer:getInventory():AddItem("Base.HospitalGown")
-                isoPlayer:setWornItem(gown:getBodyLocation(), gown)
+        isoPlayer:clearWornItems()
+        isoPlayer:getInventory():clear()
 
-                local slippers = isoPlayer:getInventory():AddItem("Base.Shoes_Slippers")
-                local color = Color.new(1, 1, 1, 1);
-                slippers:setColor(color);
-                slippers:getVisual():setTint(ImmutableColor.new(color));
-                slippers:setCustomColor(true);
-                isoPlayer:setWornItem(slippers:getBodyLocation(), slippers)
+        local gown = isoPlayer:getInventory():AddItem("Base.HospitalGown")
+        isoPlayer:setWornItem(gown:getBodyLocation(), gown)
 
-                isoPlayer:setGodMod(true)
-                isoPlayer:setInvincible(true)
-                isoPlayer:setHealth(1.0)
+        local slippers = isoPlayer:getInventory():AddItem("Base.Shoes_Slippers")
+        local color = Color.new(1, 1, 1, 1);
+        slippers:setColor(color);
+        slippers:getVisual():setTint(ImmutableColor.new(color));
+        slippers:setCustomColor(true);
+        isoPlayer:setWornItem(slippers:getBodyLocation(), slippers)
 
-                local bodyParts = isoPlayer:getBodyDamage():getBodyParts()
-                for i=1, bodyParts:size() do
-                    local bP = bodyParts:get(i-1)
-                    bP:RestoreToFullHealth();
+        isoPlayer:setGodMod(true)
+        isoPlayer:setInvincible(true)
+        isoPlayer:setHealth(1.0)
 
-                    if bP:getStiffness() > 0 then
-                        bP:setStiffness(0)
-                        isoPlayer:getFitness():removeStiffnessValue(BodyPartType.ToString(bP:getType()))
-                    end
-                end
+        local bodyParts = isoPlayer:getBodyDamage():getBodyParts()
+        for i=1, bodyParts:size() do
+            local bP = bodyParts:get(i-1)
+            bP:RestoreToFullHealth();
 
-                isoPlayer:setInvisible(true)
-                isoPlayer:setGhostMode(true)
-                isoPlayer:setNoClip(true)
-
-                isoPlayer:setX(FrameworkZ.Config.Options.LimboX)
-                isoPlayer:setY(FrameworkZ.Config.Options.LimboY)
-                isoPlayer:setZ(FrameworkZ.Config.Options.LimboZ)
-                isoPlayer:setLx(FrameworkZ.Config.Options.LimboX)
-                isoPlayer:setLy(FrameworkZ.Config.Options.LimboY)
-                isoPlayer:setLz(FrameworkZ.Config.Options.LimboZ)
-
-                self:InitializePlayer(isoPlayer, playerData, charactersData)
+            if bP:getStiffness() > 0 then
+                bP:setStiffness(0)
+                isoPlayer:getFitness():removeStiffnessValue(BodyPartType.ToString(bP:getType()))
             end
-        end)
+        end
+
+        isoPlayer:setInvisible(true)
+        isoPlayer:setGhostMode(true)
+        isoPlayer:setNoClip(true)
+
+        isoPlayer:setX(FrameworkZ.Config.Options.LimboX)
+        isoPlayer:setY(FrameworkZ.Config.Options.LimboY)
+        isoPlayer:setZ(FrameworkZ.Config.Options.LimboZ)
+        isoPlayer:setLx(FrameworkZ.Config.Options.LimboX)
+        isoPlayer:setLy(FrameworkZ.Config.Options.LimboY)
+        isoPlayer:setLz(FrameworkZ.Config.Options.LimboZ)
+
+        self:InitializePlayer(isoPlayer, playerData, charactersData)
     end)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("InitializeClient")
@@ -1556,7 +1621,8 @@ function FrameworkZ.Foundation:PostInitializeClient(player)
     self:ExecutePluginHooks("PostInitializeClient", player)
 
     if isClient() then
-        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format(" %.2f", (getTimestampMs() - startTime - FrameworkZ.Config:GetOption("InitializationDuration") * 1000) / 1000)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, FrameworkZ.UI.Introduction.instance)
+        local elapsedTime = (getTimestampMs() - startTime) / 1000
+        FrameworkZ.Foundation.InitializationNotification = FrameworkZ.Notifications:AddToQueue("Initialized in " .. tostring(string.format("%.2f", elapsedTime)) .. " seconds.", FrameworkZ.Notifications.Types.Success, nil, FrameworkZ.UI.Introduction.instance)
     end
 
     self.Initialized = true
@@ -1742,6 +1808,9 @@ function FrameworkZ.Foundation.OnSetData(data, namespace, keys, value, subscript
             return false
         end
 
+        -- Immediately persist to ModData (handles client-initiated SetData calls)
+        FrameworkZ.Foundation:SaveNamespace(nil, namespace)
+
         if subscriptionID then
             FrameworkZ.Foundation:Fire(subscriptionID, data, FrameworkZ.Utilities:Pack(namespace, keys, value))
         end
@@ -1772,6 +1841,11 @@ function FrameworkZ.Foundation:GetData(isoPlayer, namespace, keys, subscriptionI
         self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnGetData", function(data, value)
             if value == "FZ ERROR CODE: 1" then
                 print("[FZ] WARNING: Failed to get server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
+
+                if callback then
+                    callback(isoPlayer, namespace, keys, nil)
+                end
+
                 return
             end
 
@@ -1828,6 +1902,9 @@ function FrameworkZ.Foundation:SetData(isoPlayer, namespace, keys, value, subscr
             print("[FZ] ERROR: Failed to set server-side value for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "'")
             return false
         end
+
+        -- Immediately persist to ModData to prevent data loss on crashes/disconnects
+        self:SaveNamespace(isoPlayer, namespace)
 
         if callback then
             callback(isoPlayer, namespace, keys, value)
@@ -1930,50 +2007,63 @@ end
 --! \param namespace \string The namespace to retrieve.
 --! \return \table The namespace table or nil if not found.
 function FrameworkZ.Foundation:GetNamespace(namespace)
-    return self.Namespaces[namespace]
+    return self.Namespaces[namespace] or nil
+end
+
+--! \brief Server-side response to client sync request.
+--! \param data \table The sync request data containing namespace and key.
+--! \return \table Returns a table with namespace, key, and value if successful.
+function FrameworkZ.Foundation.OnSync(data, namespace, keys, value)
+    FrameworkZ.Foundation:SetLocalData(namespace, keys, value)
 end
 
 --! \brief Sends a specific key to a specific player.
 --! \param isoPlayer \object The player to send the data to.
 --! \param namespace \string The namespace containing the data.
 --! \param key \string The key to send.
-function FrameworkZ.Foundation:SyncToPlayer(isoPlayer, namespace, key)
-    self:SendFire(isoPlayer, "FrameworkZ.Storage.OnSync", function(data, success)
-        if success and data and data.namespace and data.key and data.value then
-            self.Namespaces[data.namespace] = self.Namespaces[data.namespace] or {}
-            self.Namespaces[data.namespace][data.key] = data.value
-        end
-    end, {
-        namespace = namespace,
-        key = key,
-        isoPlayer = isoPlayer
-    })
+function FrameworkZ.Foundation:SyncToPlayer(isoPlayer, namespace, keys, value)
+    if not isServer() then return end
+
+    self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnSync", nil, namespace, keys, value)
 end
 
 --! \brief Broadcasts updated or removed data to all clients.
 --! \param namespace \string The namespace containing the data.
 --! \param key \string The key being broadcast.
 --! \param remove \boolean Whether this is a removal operation.
-function FrameworkZ.Foundation:Broadcast(namespace, key, remove)
-    local value = self:Get(namespace, key)
+function FrameworkZ.Foundation:Broadcast(namespace, keys, remove)
+    if isServer() then
+        if not self:GetNamespace(namespace) then
+            print("[FZ] ERROR: Failed to broadcast for namespace '" .. (namespace and tostring(namespace) or "null") .. "' and key(s) '" .. FrameworkZ.Utilities:DumpTable(keys) .. "' - Namespace does not exist.")
+            return
+        end
 
-    self:SendFire(nil, remove and "FrameworkZ.Storage.OnRemove" or "FrameworkZ.Storage.OnSyncBroadcast", {
-        namespace = namespace,
-        key = key,
-        value = value
-    })
+        local value
+
+        if remove then
+            value = nil
+        else
+            value = self:GetLocalData(namespace, keys)
+        end
+
+        for username, player in pairs(FrameworkZ.Players:GetAllPlayers()) do
+            self:SyncToPlayer(player:GetIsoPlayer(), namespace, keys, value)
+        end
+    elseif isClient() then
+        print("[FZ] ERROR: Clients cannot broadcast data to other clients.")
+    end
 end
 
 --! \brief Server-side response to client sync request.
 --! \param data \table The sync request data containing namespace and key.
 --! \return \table Returns a table with namespace, key, and value if successful.
-function FrameworkZ.Foundation.OnSync(data)
+--[[function FrameworkZ.Foundation.OnSync(data) -- This function was moved above
     local namespace, key = data.namespace, data.key
     if not namespace or not key then return false end
     local value = FrameworkZ.Foundation:Get(namespace, key)
     if not value then return false end
     return { namespace = namespace, key = key, value = value }
-end
+end--]]
 --FrameworkZ.Foundation:Subscribe("FrameworkZ.Storage.OnSync", FrameworkZ.Foundation.OnSync)
 
 --! \brief Client receives sync data from broadcast.
@@ -2166,12 +2256,15 @@ function FrameworkZ.Foundation:Initialize()
 
     if isServer() then
         --self:Subscribe("FrameworkZ.Foundation.OnInitializeClient", self.OnInitializeClient)
+        self:Subscribe("FrameworkZ.Foundation.OnConfirmClient", self.OnConfirmClient)
         self:Subscribe("FrameworkZ.Foundation.OnGetData", self.OnGetData)
         self:Subscribe("FrameworkZ.Foundation.OnInitializePlayer", self.OnInitializePlayer)
         self:Subscribe("FrameworkZ.Foundation.OnSetData", self.OnSetData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveData", self.OnSaveData)
         self:Subscribe("FrameworkZ.Foundation.OnSaveNamespace", self.OnSaveNamespace)
         self:Subscribe("FrameworkZ.Foundation.OnTeleportToLimbo", self.OnTeleportToLimbo)
+    elseif isClient() then
+        self:Subscribe("FrameworkZ.Foundation.OnSync", self.OnSync)
     end
 end
 

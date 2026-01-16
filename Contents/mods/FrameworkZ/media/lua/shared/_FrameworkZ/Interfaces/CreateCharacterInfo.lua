@@ -15,39 +15,51 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
     self.descriptionLimit = 256
     self.recommendedDescriptionLength = 100
 
+    self.backgroundOverlay = FrameworkZ.Interfaces:CreatePanel({
+        x = 0, y = 0, width = self.width, height = self.height,
+        theme = "Overlay",
+        parent = self
+    })
+
     local title = "Character Information"
     local subtitle = "Define your character's identity and appearance"
+    local titleHeight = self.uiHelper.GetHeight(UIFont.Title, title)
+    local subtitleHeight = self.uiHelper.GetHeight(UIFont.Small, subtitle)
 
-    local yOffset = 15
+    local yOffset = 30
 
     -- Title and subtitle
     self.title = FrameworkZ.Interfaces:CreateLabel({
         x = self.width / 2,
         y = yOffset,
-        height = 35,
+        height = titleHeight,
         text = title,
         font = FZ_FONT_TITLE,
         textAlign = FZ_ALIGN_CENTER,
-        theme = "Primary",
+        theme = "Title",
         parent = self
     })
-    yOffset = yOffset + 50
+
+    yOffset = yOffset + titleHeight + 10
+
     self.subtitle = FrameworkZ.Interfaces:CreateLabel({
         x = self.width / 2,
         y = yOffset,
-        height = 25,
+        height = subtitleHeight,
         text = subtitle,
         font = FZ_FONT_LARGE,
         textAlign = FZ_ALIGN_CENTER,
-        theme = "Subtle",
+        theme = "Caption",
         parent = self
     })
-    yOffset = yOffset + 45
+    yOffset = yOffset + subtitleHeight + 30
 
     -- Content panel
-    local contentPadding = 25
-    local contentWidth = self.width - (contentPadding * 2)
-    local contentHeight = self.height - yOffset - 50
+    local marginX = 40
+    local marginY = 30
+    local contentPadding = 40
+    local contentWidth = self.width - (marginX * 2)
+    local contentHeight = self.height - (marginY * 2) - titleHeight - subtitleHeight - 40
     self.contentPanel = FrameworkZ.Interfaces:CreatePanel({
         x = contentPadding, y = yOffset, width = contentWidth, height = contentHeight,
         variant = FrameworkZ.Themes.CardPanelTheme,
@@ -135,7 +147,7 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
     self.descriptionEntry = FrameworkZ.Interfaces:CreateTextEntry({
         x = labelX, y = fieldY, width = leftColumnWidth, height = contentHeight - fieldY - bottomPadding,
         text = "",
-        multiple = true, maxLines = 0,
+        multipleLines = true,
         parent = self.contentPanel
     })
     self.descriptionCounter = FrameworkZ.Interfaces:CreateLabel({

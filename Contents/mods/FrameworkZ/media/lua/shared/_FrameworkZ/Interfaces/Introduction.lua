@@ -1,4 +1,4 @@
-FrameworkZ.UI.Introduction = FrameworkZ.UI.Introduction or {}
+FrameworkZ.UI.Introduction = FrameworkZ.Interfaces:New("Introduction", FrameworkZ.UI)
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.Introduction, "Introduction")
 
 -- Music volume settings
@@ -155,7 +155,6 @@ function FrameworkZ.UI.Introduction:onMuteToggle()
 end
 
 function FrameworkZ.UI.Introduction:initialise()
-    local emitter = self.playerObject:getEmitter()
 	self.vignetteTexture = getTexture("media/textures/vignette.png")
 	self.cfwTexture = getTexture(FrameworkZ.Config.Options.IntroFrameworkImage)
 	self.hl2rpTexture = getTexture(FrameworkZ.Config.Options.IntroGamemodeImage)
@@ -180,142 +179,144 @@ function FrameworkZ.UI.Introduction:initialise()
 
 	self.currentTick = 1
 
-	FrameworkZ.Timers:Create("FZ_INITIALIZATION", FrameworkZ.Config.Options.InitializationDuration, 1, function()
-		FrameworkZ.Timers:Create("FZ_INIT_TICK", 0.2, 0, function()
-			if not FrameworkZ.Foundation.Initialized then
-				if self.currentTick == 0 then
-					self.initializing:setName("Initializing")
-					self.currentTick = 1
-				elseif self.currentTick == 1 then
-					self.initializing:setName("Initializing.")
-					self.currentTick = 2
-				elseif self.currentTick == 2 then
-					self.initializing:setName("Initializing..")
-					self.currentTick = 3
-				elseif self.currentTick == 3 then
-					self.initializing:setName("Initializing...")
-					self.currentTick = 0
-				end
-			else
-				FrameworkZ.Timers:Remove("FZ_INIT_TICK")
-				self.initializing:setName("--- Initialized ---")
+	-- Start the dots animation immediately
+	FrameworkZ.Timers:Create("FZ_INIT_TICK", 0.2, 0, function()
+		if not FrameworkZ.Foundation.Initialized then
+			if self.currentTick == 0 then
+				self.initializing:setName("Initializing")
+				self.currentTick = 1
+			elseif self.currentTick == 1 then
+				self.initializing:setName("Initializing.")
+				self.currentTick = 2
+			elseif self.currentTick == 2 then
+				self.initializing:setName("Initializing..")
+				self.currentTick = 3
+			elseif self.currentTick == 3 then
+				self.initializing:setName("Initializing...")
+				self.currentTick = 0
+			end
+		else
+			FrameworkZ.Timers:Remove("FZ_INIT_TICK")
+			self.initializing:setName("--- Initialized ---")
 
-				FrameworkZ.Timers:Simple(2, function()
-					if not FrameworkZ.Config.Options.SkipIntro then
-						self:removeChild(self.initializing)
-						-- Start intro music with volume control
-						if FrameworkZ.Config.Options.IntroMusic then
-							currentIntroSong = emitter:playSoundImpl(FrameworkZ.Config.Options.IntroMusic, nil)
-							if currentIntroSong then
-								emitter:setVolume(currentIntroSong, musicVolume)
-							end
+			FrameworkZ.Timers:Simple(2, function()
+				if not FrameworkZ.Config.Options.SkipIntro then
+					self:removeChild(self.initializing)
+					-- Start intro music with volume control (playerObject should be set by now)
+					if self.playerObject and FrameworkZ.Config.Options.IntroMusic then
+						local emitter = self.playerObject:getEmitter()
+						currentIntroSong = emitter:playSoundImpl(FrameworkZ.Config.Options.IntroMusic, nil)
+						if currentIntroSong then
+							emitter:setVolume(currentIntroSong, musicVolume)
 						end
-
 						emitter:playSoundImpl("button1", nil)
+					end
+
+					self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
+
+					FrameworkZ.Timers:Simple(0.1, function()
+						self.backgroundColor = {r=0, g=0, b=0, a=1}
+
+						self.cfw = ISImage:new(self.width / 2 - self.cfwTexture:getWidth() / 2, self.height / 2 - self.cfwTexture:getHeight() / 2, self.cfwTexture:getWidth(), self.cfwTexture:getHeight(), self.cfwTexture)
+						self.cfw.backgroundColor = {r=1, g=1, b=1, a=1}
+						self.cfw.scaledWidth = self.cfwTexture:getWidth()
+						self.cfw.scaledHeight = self.cfwTexture:getHeight()
+						self.cfw.shrinking = true
+						self.cfw:initialise()
+						self:addChild(self.cfw)
+
+					FrameworkZ.Timers:Simple(7, function()
+						self:removeChild(self.cfw)
+						self.cfw = nil
+
+						if self.playerObject then
+							self.playerObject:getEmitter():playSoundImpl("lightswitch2", nil)
+						end
 						self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
 
 						FrameworkZ.Timers:Simple(0.1, function()
 							self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-							self.cfw = ISImage:new(self.width / 2 - self.cfwTexture:getWidth() / 2, self.height / 2 - self.cfwTexture:getHeight() / 2, self.cfwTexture:getWidth(), self.cfwTexture:getHeight(), self.cfwTexture)
-							self.cfw.backgroundColor = {r=1, g=1, b=1, a=1}
-							self.cfw.scaledWidth = self.cfwTexture:getWidth()
-							self.cfw.scaledHeight = self.cfwTexture:getHeight()
-							self.cfw.shrinking = true
-							self.cfw:initialise()
-							self:addChild(self.cfw)
+							self.hl2rp = ISImage:new(self.width / 2 - self.hl2rpTexture:getWidth() / 2, self.height / 2 - self.hl2rpTexture:getHeight() / 2, self.hl2rpTexture:getWidth(), self.hl2rpTexture:getHeight(), self.hl2rpTexture)
+							self.hl2rp.backgroundColor = {r=1, g=1, b=1, a=1}
+							self.hl2rp.scaledWidth = self.hl2rpTexture:getWidth()
+							self.hl2rp.scaledHeight = self.hl2rpTexture:getHeight()
+							self.hl2rp.shrinking = true
+							self.hl2rp:initialise()
+							self:addChild(self.hl2rp)
 
 							FrameworkZ.Timers:Simple(7, function()
-								self:removeChild(self.cfw)
-								self.cfw = nil
+								self:removeChild(self.hl2rp)
+								self.hl2rp = nil
 
-								emitter:playSoundImpl("lightswitch2", nil)
-								self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
+								if self.playerObject then
+									self.playerObject:getEmitter():playSoundImpl("lightswitch2", nil)
+								end
+								self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}									FrameworkZ.Timers:Remove("IntroTick")
 
-								FrameworkZ.Timers:Simple(0.1, function()
-									self.backgroundColor = {r=0, g=0, b=0, a=1}
+									FrameworkZ.Timers:Simple(0.1, function()
+										self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-									self.hl2rp = ISImage:new(self.width / 2 - self.hl2rpTexture:getWidth() / 2, self.height / 2 - self.hl2rpTexture:getHeight() / 2, self.hl2rpTexture:getWidth(), self.hl2rpTexture:getHeight(), self.hl2rpTexture)
-									self.hl2rp.backgroundColor = {r=1, g=1, b=1, a=1}
-									self.hl2rp.scaledWidth = self.hl2rpTexture:getWidth()
-									self.hl2rp.scaledHeight = self.hl2rpTexture:getHeight()
-									self.hl2rp.shrinking = true
-									self.hl2rp:initialise()
-									self:addChild(self.hl2rp)
+										local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+										characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
+										characterSelect:initialise()
+										-- Pass music volume settings to main menu immediately after initialization
+										characterSelect:setMainMenuMusicVolume(musicVolume)
+										-- If we're muted, pass the original volume for proper unmuting
+										if isMuted then
+											characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
+										end
+										
+										-- Transfer music controls panel to main menu
+										if self.musicControlsPanel then
+											self:removeChild(self.musicControlsPanel)
+											characterSelect:addChild(self.musicControlsPanel)
+											-- Update panel position for main menu
+											self.musicControlsPanel:setX(20)
+											self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
+										end
+										
+										characterSelect:addToUIManager()
 
-									FrameworkZ.Timers:Simple(7, function()
-										self:removeChild(self.hl2rp)
-										self.hl2rp = nil
-
-										emitter:playSoundImpl("lightswitch2", nil)
-										self.backgroundColor = {r=0.1, g=0.1, b=0.1, a=1}
-
-										FrameworkZ.Timers:Remove("IntroTick")
-
-										FrameworkZ.Timers:Simple(0.1, function()
-											self.backgroundColor = {r=0, g=0, b=0, a=1}
-
-											local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
-											characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
-											characterSelect:initialise()
-											-- Pass music volume settings to main menu immediately after initialization
-											characterSelect:setMainMenuMusicVolume(musicVolume)
-											-- If we're muted, pass the original volume for proper unmuting
-											if isMuted then
-												characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
-											end
-											
-											-- Transfer music controls panel to main menu
-											if self.musicControlsPanel then
-												self:removeChild(self.musicControlsPanel)
-												characterSelect:addChild(self.musicControlsPanel)
-												-- Update panel position for main menu
-												self.musicControlsPanel:setX(20)
-												self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
-											end
-											
-											characterSelect:addToUIManager()
-
-											FrameworkZ.Timers:Simple(1, function()
-												self:setVisible(false)
-												self:removeFromUIManager()
-											end)
+										FrameworkZ.Timers:Simple(1, function()
+											self:setVisible(false)
+											self:removeFromUIManager()
 										end)
 									end)
 								end)
 							end)
 						end)
-					else
-						FrameworkZ.Timers:Remove("IntroTick")
-						local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
-						characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
-						characterSelect:initialise()
-						-- Pass music volume settings to main menu immediately after initialization
-						characterSelect:setMainMenuMusicVolume(musicVolume)
-						-- If we're muted, pass the original volume for proper unmuting
-						if isMuted then
-							characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
-						end
-						
-						-- Transfer music controls panel to main menu
-						if self.musicControlsPanel then
-							self:removeChild(self.musicControlsPanel)
-							characterSelect:addChild(self.musicControlsPanel)
-							-- Update panel position for main menu
-							self.musicControlsPanel:setX(20)
-							self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
-						end
-						
-						characterSelect:addToUIManager()
-
-						FrameworkZ.Timers:Simple(1, function()
-							self:setVisible(false)
-							self:removeFromUIManager()
-						end)
+					end)
+				else
+					FrameworkZ.Timers:Remove("IntroTick")
+					local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+					characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
+					characterSelect:initialise()
+					-- Pass music volume settings to main menu immediately after initialization
+					characterSelect:setMainMenuMusicVolume(musicVolume)
+					-- If we're muted, pass the original volume for proper unmuting
+					if isMuted then
+						characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
 					end
-				end)
-			end
-		end)
+					
+					-- Transfer music controls panel to main menu
+					if self.musicControlsPanel then
+						self:removeChild(self.musicControlsPanel)
+						characterSelect:addChild(self.musicControlsPanel)
+						-- Update panel position for main menu
+						self.musicControlsPanel:setX(20)
+						self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
+					end
+					
+					characterSelect:addToUIManager()
+
+					FrameworkZ.Timers:Simple(1, function()
+						self:setVisible(false)
+						self:removeFromUIManager()
+					end)
+				end
+			end)
+		end
 	end)
 end
 

@@ -135,6 +135,10 @@ FrameworkZ.Themes.DefaultTheme = {
             BackgroundColor = FrameworkZ.Themes.Styles.Colors.Overlay,
             BorderColor     = FrameworkZ.Themes.Styles.Colors.Border,
         },
+        Outline = {
+            BackgroundColor = FrameworkZ.Themes.Styles.Colors.Transparent,
+            BorderColor     = FrameworkZ.Themes.Styles.Colors.Border,
+        },
         Basic = {
             BackgroundColor = FrameworkZ.Themes.Styles.Colors.Transparent,
             BorderColor     = FrameworkZ.Themes.Styles.Colors.Transparent,
@@ -174,39 +178,51 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
     local theme = self.DefaultTheme.Button[theme]
     if not theme then return end
     
-    -- Apply colors
-    button.backgroundColor = theme.BackgroundColor
-    button.borderColor = theme.BorderColor
+    -- Apply colors (create NEW table instances to avoid shared references)
+    button.backgroundColor = {r = theme.BackgroundColor.r, g = theme.BackgroundColor.g, b = theme.BackgroundColor.b, a = theme.BackgroundColor.a}
+    button.borderColor = {r = theme.BorderColor.r, g = theme.BorderColor.g, b = theme.BorderColor.b, a = theme.BorderColor.a}
     if theme.HoverColor then
-        button.backgroundColorMouseOver = theme.HoverColor
+        button.backgroundColorMouseOver = {r = theme.HoverColor.r, g = theme.HoverColor.g, b = theme.HoverColor.b, a = theme.HoverColor.a}
     end
     
-    -- Apply text color
+    -- Apply text color (create NEW table instance)
     if button.setColor and theme.TextColor then
         local c = theme.TextColor
-        button.textColor = c
+        button.textColor = {r = c.r, g = c.g, b = c.b, a = c.a}
     end
+    
+    -- Store theme colors as local copies for this specific button instance
+    local normalBg = button.backgroundColor
+    local normalBorder = button.borderColor
+    local normalText = button.textColor
+    local hoverBg = button.backgroundColorMouseOver
+    local hoverBorder = theme.HoverBorderColor and {r = theme.HoverBorderColor.r, g = theme.HoverBorderColor.g, b = theme.HoverBorderColor.b, a = theme.HoverBorderColor.a} or nil
+    local hoverText = theme.HoverTextColor and {r = theme.HoverTextColor.r, g = theme.HoverTextColor.g, b = theme.HoverTextColor.b, a = theme.HoverTextColor.a} or nil
     
     -- Apply hover text color on mouse enter and revert on mouse exit
     button.oldOnMouseMove = button.onMouseMove
-    button.onMouseMove = function(x, y)
-        button.oldOnMouseMove(x, y)
+    button.onMouseMove = function(self2, dx, dy)
+        if button.oldOnMouseMove then
+            button.oldOnMouseMove(self2, dx, dy)
+        end
 
-        if button.mouseOver then
-            if theme.HoverBorderColor then button.borderColor = theme.HoverBorderColor end
-            if theme.HoverColor then button.backgroundColor = theme.HoverColor end
-            if theme.HoverTextColor then button.textColor = theme.HoverTextColor end
+        if self2.mouseOver and self2.enable then
+            if hoverBorder then self2.borderColor = {r = hoverBorder.r, g = hoverBorder.g, b = hoverBorder.b, a = hoverBorder.a} end
+            if hoverBg then self2.backgroundColor = {r = hoverBg.r, g = hoverBg.g, b = hoverBg.b, a = hoverBg.a} end
+            if hoverText then self2.textColor = {r = hoverText.r, g = hoverText.g, b = hoverText.b, a = hoverText.a} end
         end
     end
 
     button.oldOnMouseMoveOutside = button.onMouseMoveOutside
-    button.onMouseMoveOutside = function(x, y)
-        button.oldOnMouseMoveOutside(x, y)
+    button.onMouseMoveOutside = function(self2, dx, dy)
+        if button.oldOnMouseMoveOutside then
+            button.oldOnMouseMoveOutside(self2, dx, dy)
+        end
 
-        if not button.mouseOver then
-            if theme.BorderColor then button.borderColor = theme.BorderColor end
-            if theme.BackgroundColor then button.backgroundColor = theme.BackgroundColor end
-            if theme.TextColor then button.textColor = theme.TextColor end
+        if not self2.mouseOver and self2.enable then
+            if normalBorder then self2.borderColor = {r = normalBorder.r, g = normalBorder.g, b = normalBorder.b, a = normalBorder.a} end
+            if normalBg then self2.backgroundColor = {r = normalBg.r, g = normalBg.g, b = normalBg.b, a = normalBg.a} end
+            if normalText then self2.textColor = {r = normalText.r, g = normalText.g, b = normalText.b, a = normalText.a} end
         end
     end
 end

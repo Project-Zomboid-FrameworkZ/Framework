@@ -32,30 +32,105 @@ ConnectToServer.OnConnected = function(self)
 end
 
 FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu = MainScreen.onMenuItemMouseDownMainMenu
+FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop = MainScreen.onConfirmQuitToDesktop
+
+-- Prevent double-disconnect/quit sequences from racing (e.g., repeated clicks)
+local isDisconnectInProgress = false
 
 function FrameworkZ.Overrides.onMenuItemMouseDownMainMenu(item, x, y)
     local isoPlayer = getPlayer()
 
-    if item.internal == "EXIT" or item.internal == "QUIT_TO_DESKTOP" then
-        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, success)
-            FrameworkZ.Players:Destroy(isoPlayer:getUsername())
+    if isDisconnectInProgress then
+        print("[FZ] Disconnect already in progress; ignoring duplicate request")
+        return
+    end
 
+    -- Handle EXIT (ESC menu) - save before quitting
+    if item.internal == "EXIT" then
+        if not isoPlayer then
+            print("[FZ] No IsoPlayer found; falling back to vanilla exit")
+            return FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+        end
+
+        print("[FZ] Starting disconnect sequence...")
+        isDisconnectInProgress = true
+        
+        -- Destroy saves data and waits for server confirmation via callback
+        FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
             if success then
-                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
-                print("[FZ] Player teleported to limbo. Disconnecting now...")
+                print("[FZ] Player data saved and destroyed successfully: " .. (message or ""))
             else
-                print("[FZ] Failed to teleport player to limbo. Disconnecting anyways...")
+                print("[FZ] Warning during destroy: " .. (message or "Unknown error"))
             end
+            
+            -- After save is confirmed, teleport to limbo and disconnect
+            FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limbSuccess)
+                if limbSuccess then
+                    FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+                    print("[FZ] Player teleported to limbo. Disconnecting now...")
+                else
+                    print("[FZ] Warning: Failed to teleport player to limbo. Disconnecting anyways...")
+                end
 
-            FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+                FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+                isDisconnectInProgress = false
+            end)
         end)
     else
+        -- For QUIT_TO_DESKTOP and other items, let vanilla handle it (shows confirmation first)
         FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
     end
 end
 
+-- Override the confirmation handler to save AFTER user confirms
+function FrameworkZ.Overrides.onConfirmQuitToDesktop(target, button)
+    if isDisconnectInProgress then
+        print("[FZ] Quit already in progress; ignoring duplicate request")
+        return
+    end
+
+    if button.internal == "NO" then
+        target.quitToDesktopDialog:destroy()
+        target.quitToDesktopDialog = nil
+        return
+    end
+    
+    local isoPlayer = getPlayer()
+    if not isoPlayer then
+        print("[FZ] No IsoPlayer found; falling back to vanilla quit to desktop")
+        return FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop(target, button)
+    end
+
+    isDisconnectInProgress = true
+    print("[FZ] User confirmed quit to desktop. Starting save sequence...")
+    
+    -- Save and destroy player data before quitting
+    FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
+        if success then
+            print("[FZ] Player data saved and destroyed successfully: " .. (message or ""))
+        else
+            print("[FZ] Warning during destroy: " .. (message or "Unknown error"))
+        end
+        
+        -- After save is confirmed, teleport to limbo and quit
+        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limbSuccess)
+            if limbSuccess then
+                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+                print("[FZ] Player teleported to limbo. Quitting to desktop...")
+            else
+                print("[FZ] Warning: Failed to teleport player to limbo. Quitting anyway...")
+            end
+
+            -- Call the original confirmation handler to actually quit
+            FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop(target, button)
+            isDisconnectInProgress = false
+        end)
+    end)
+end
+
 function FrameworkZ.Overrides:OnGameStart()
     MainScreen.onMenuItemMouseDownMainMenu = FrameworkZ.Overrides.onMenuItemMouseDownMainMenu
+    MainScreen.onConfirmQuitToDesktop = FrameworkZ.Overrides.onConfirmQuitToDesktop
 
     LoadMainScreenPanelInt(true)
 end

@@ -1,0 +1,244 @@
+--[[
+    FrameworkZ - DocZ Documentation Guide
+    How to properly document your code for DocZ documentation generation
+]]
+
+--! \page Documentation
+--! \brief This is a complete guide to documenting FrameworkZ code with DocZ tags. Here you'll learn about the various comment tags, type annotations, and best practices for writing clear, comprehensive documentation.
+--!
+--! \section WritingDocumentation Writing Documentation for FrameworkZ
+--! DocZ is the documentation generator used by FrameworkZ. It parses special comment tags to generate HTML documentation automatically. FrameworkZ uses DocZ comments extensively to document its API, modules, classes, functions, and more.
+--!
+--! \section CommentPrefixes Comment Prefixes
+--! DocZ recognizes two comment styles for documentation:
+--!
+--! \code lua
+--! --! This is a DocZ comment (recommended)
+--! --- This is also a DocZ comment (alternative)
+--! \endcode
+--!
+--! Use --! for documentation comments. Regular -- comments are ignored by DocZ (notice how there is one less dash compared to the alternative DocZ comment).
+--!
+--! \section BasicStructure Basic Structure
+--! \code lua
+--! --! \brief Short one-line description of the function
+--! --! Detailed description that can span
+--! --! multiple lines and provide more context.
+--! --! \param paramName \type Description of parameter
+--! --! \return \type Description of return value
+--! function MyModule:DoSomething(paramName)
+--!     -- implementation
+--! end
+--! \endcode
+--!
+--! \section brief @brief or \brief
+--! Creates a brief description for what's being documented.
+--! Tag: @brief or \brief [short description (one line)]
+--!
+--! \code lua
+--! --! \brief Gets the player's character by username
+--! \endcode
+--!
+--! \section class @class or \class
+--! Defines a class. Classes are objects that are used in instantiation.
+--! Tag: @class or \class [class name]
+--!
+--! \code lua
+--! --! \brief Player class for managing player data
+--! --! \class PLAYER
+--! local PLAYER = {}
+--! PLAYER.__index = PLAYER
+--! \endcode
+--!
+--! \section module @module or \module
+--! Defines a module. Modules are framework extensions that provide specific functionality that are intended for core systems.
+--! Tag: @module or \module [module scope/name]
+--!
+--! \code lua
+--! --! \brief Characters module for FrameworkZ
+--! --! \module FrameworkZ.Characters
+--! FrameworkZ.Characters = {}
+--! \endcode
+--!
+--! \section library @library or \library
+--! Defines a library. Libraries are collections of utility functions that are meant for general use or code reuse.
+--! Tag: @library or \library [library scope/name]
+--!
+--! \code lua
+--! --! \brief Utility functions for common operations
+--! --! \library FrameworkZ.Utilities
+--! FrameworkZ.Utilities = {}
+--! \endcode
+--!
+--! \section core @core or \core
+--! Defines a core system. Core systems are essential framework components that provide foundational functionality.
+--! Tag: @core or \core [core system scope/name]
+--!
+--! \code lua
+--! --! \brief Core FrameworkZ foundational systems.
+--! --! \core FrameworkZ.Foundation
+--! FrameworkZ.Foundation = {}
+--! \endcode
+--!
+--! \section param @param or \param
+--! Short for parameter. Documents function parameters that are passed in when called.
+--! Tag: @param or \param [paramName] \[paramType] [description]
+--!
+--! \code lua
+--! --! \param username \string The player's username
+--! --! \param level \integer The new level to set (1-100)
+--! --! \param callback \function Optional callback when complete
+--! function SetPlayerLevel(username, level, callback)
+--!     -- implementation
+--! end
+--! \endcode
+--!
+--! \section return @return or \return
+--! Documents return values from functions when called.
+--! Tag: @return or \return [returnType] [description]
+--!
+--! \code lua
+--! --! \return \boolean It will always return true.
+--! --! \return \string Success message.
+--! function TrySomething()
+--!     return true, "Success!"
+--! end
+--! \endcode
+--!
+--! \section field @field or \field
+--! Documents table fields at specific indexes.
+--! Tag: @field or \field [fieldName] \[fieldType] [description]
+--!
+--! \code lua
+--! FrameworkZ = {}
+--!
+--! --! \field NetworkName \string Unique identifier for the network system used internally.
+--! FrameworkZ.NetworkName = "FZ_NETWORK"
+--! \endcode
+--!
+--! \section note @note or \note
+--! Tag: @note or \note [note text]
+--! Important notes or warnings messages about the documented item. These will be displayed prominently in the generated documentation.
+--!
+--! \code lua
+--! -- [e.g. standard function documentation here]
+--! --! \note This function only works on the server side. Call this before initializing the character.
+--! \endcode
+--!
+--! \section see @see or \see
+--! Cross-references to related documentation(s).
+--! Tag: @see or \see [related item]
+--!
+--! \code lua
+--! --! \see FrameworkZ.Players
+--! --! \see CHARACTER:GetName
+--! --! \see Getting Started
+--! \endcode
+--!
+--! \section page @page or \page
+--! Creates a documentation page (like this one).
+--! Tag: @page or \page [page name]
+--!
+--! \code lua
+--! --! \page Getting Started
+--! --! \brief Quick start guide for new developers
+--! --! 
+--! --! \section Installation Installation
+--! --! Follow these steps...
+--! \endcode
+--!
+--! \section section @section or \section
+--! Creates a section within a page. The anchor ID must be unique and without spaces to allow navigation on the right side menu's quick navigation menu, search results, or cross-reference links.
+--! Tag: @section or \section [section anchor ID] [section title] 
+--!
+--! \code lua
+--! --! \section Installation Installation
+--! --! Download and install the framework...
+--! \endcode
+--!
+--! \section code @code or \code
+--! Code blocks with syntax highlighting.
+--! Tag: @code and @endcode or \code and \endcode
+--!
+--! \code lua
+--! --! Example usage:
+--! --! \code lua
+--! --! local player = FrameworkZ.Players:GetPlayerByID("username")
+--! --! if player then
+--! --!     print(player:GetName())
+--! --! end
+--! --! \endcode
+--! \endcode
+--!
+--! \section TypeAnnotations Type Annotations
+--!
+--! DocZ supports comprehensive type annotations:
+--!
+--! Basic Types:
+--! - \string - Text string
+--! - \integer or \number - Numeric values
+--! - \boolean or \bool - True or false
+--! - \function - Function reference
+--! - \table - Lua table
+--! - \object - General object
+--! - \any - Any type
+--! - \nil - Nil value
+--!
+--! Union Types (multiple possible types):
+--! \code lua
+--! --! \return \string|\boolean Returns string on success, false on failure
+--! --! \param data \table|\nil Optional data table
+--! \endcode
+--!
+--! Optional Types:
+--! \code lua
+--! --! \param callback \function? Optional callback function
+--! --! \return \table|\nil Returns table or nil if not found
+--! \endcode
+--!
+--! \section CompleteExample Complete Example
+--! \code lua
+--! --! \brief Gets a character by their unique ID
+--! --! Searches all active characters and returns the matching character object.
+--! --! If no character is found, returns nil.
+--! --! \param characterID \string The unique character ID to search for
+--! --! \param includeOffline \boolean? Optional - include offline characters
+--! --! \return \CHARACTER|\nil The character object if found, nil otherwise
+--! --! \note This function searches all online players by default
+--! --! \see FrameworkZ.Characters
+--! --! \see CHARACTER:GetID
+--! function FrameworkZ.Characters:GetCharacterByID(characterID, includeOffline)
+--!     -- implementation
+--! end
+--! \endcode
+--!
+--! \section BestPractices Best Practices
+--! DO:
+--! - Document all public functions and methods
+--! - Use clear, concise descriptions
+--! - Specify exact types for parameters and returns
+--! - Include usage examples for complex functions
+--! - Cross-reference related documentation
+--! - Note side effects and special conditions
+--! - Document all table fields
+--!
+--! DO NOT:
+--! - Leave functions undocumented
+--! - Use vague descriptions like "does stuff"
+--! - Forget to document return values
+--! - Use inconsistent type naming
+--! - Document private/internal helpers unless they are part of a public API
+--! - Duplicate documentation or leave TODOs unresolved
+--!
+--! \section GeneratingDocumentation Generating Documentation
+--! To generate documentation, run:
+--!
+--! \code bash
+--! lua DocZ.lua -i ./FrameworkZ/media/lua -o ./docs -t "FrameworkZ API"
+--! \endcode
+--!
+--! Command Line Options:
+--! -i <path> - Input directory with Lua files
+--! -o <path> - Output directory for HTML docs
+--! -t <title> - Documentation title
+--! -h - Show help

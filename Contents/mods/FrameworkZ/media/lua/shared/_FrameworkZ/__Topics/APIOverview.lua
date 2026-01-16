@@ -1,0 +1,309 @@
+--[[
+    FrameworkZ - API Overview
+    Comprehensive overview of the FrameworkZ API
+]]
+
+--! \page API Overview
+--! \brief Comprehensive overview of the FrameworkZ API
+--!
+--! \section CoreSystems Core Systems
+--!
+--! FrameworkZ.Foundation - The base layer providing core functionality:
+--! - Namespace-based data storage with RegisterNamespace, SetLocalData, GetLocalData
+--! - Hook system for plugins and modules
+--! - Client-server communication with SendFire
+--! - Module registration (for core systems)
+--!
+--! FrameworkZ.Players - Player management at the account level:
+--! - GetPlayerByID, GetAll, GetCharacter
+--! - Player authentication and connection handling
+--! - GetAllPlayers (list all instanced players)
+--!
+--! FrameworkZ.Characters - Character management at the avatar level:
+--! - Character creation, deletion, and property management
+--! - GetName, SetName, GetAge, SetAge, GetFaction, etc.
+--! - Character inventory and item management
+--!
+--! FrameworkZ.Plugins - Plugin system for extending FrameworkZ:
+--! - CreatePlugin, RegisterPlugin, LoadPlugin
+--! - Hook registration and event handling
+--! - Plugin lifecycle management
+--!
+--! \section PluginSystem Plugin System
+--!
+--! Plugins are the primary way to extend FrameworkZ. They provide a structured
+--! way to add features without modifying core code.
+--!
+--! Creating a Plugin:
+--!
+--! \code lua
+--! local MyPlugin = FrameworkZ.Plugins:CreatePlugin("MyPlugin")
+--!
+--! MyPlugin.Meta = {
+--!     Author = "YourName",
+--!     Name = "MyPlugin",
+--!     Description = "Custom functionality",
+--!     Version = "1.0.0",
+--!     Compatibility = "FrameworkZ 1.0+"
+--! }
+--!
+--! function MyPlugin:Initialize()
+--!     print("Plugin loaded!")
+--!     FrameworkZ.Foundation:RegisterNamespace("MyPlugin")
+--! end
+--!
+--! function MyPlugin:OnPlayerConnected(player)
+--!     -- Respond to player connection events
+--! end
+--!
+--! FrameworkZ.Plugins:RegisterPlugin(MyPlugin)
+--! \endcode
+--!
+--! \section PlayerManagement Player Management
+--!
+--! PLAYER class represents the account-level user:
+--!
+--! Key Functions:
+--! - GetUsername - Returns the player's username
+--! - GetIsoPlayer - Returns the underlying IsoPlayer object
+--! - GetCharacter - Returns the player's active character
+--! - Save - Persists player data
+--!
+--! Example:
+--!
+--! \code lua
+--! local player = FrameworkZ.Players:GetPlayerByID("username")
+--! if player then
+--!     local username = player:GetUsername()
+--!     local character = player:GetCharacter()
+--!     local isoPlayer = player:GetIsoPlayer()
+--! end
+--! \endcode
+--!
+--! \section CharacterManagement Character Management
+--!
+--! CHARACTER class represents the in-game avatar:
+--!
+--! Property Methods:
+--! - GetName / SetName - Character's name
+--! - GetAge / SetAge - Character's age
+--! - GetDescription / SetDescription - Character bio
+--! - GetFaction / SetFaction - Faction membership
+--! - GetID / GetUID - Unique identifiers
+--!
+--! Utility Methods:
+--! - Save - Persist character data
+--! - Sync - Synchronize with client
+--! - GetInventory - Access character inventory
+--!
+--! Example:
+--!
+--! \code lua
+--! local character = player:GetCharacter()
+--! character:SetName("John Doe")
+--! character:SetAge(30)
+--! character:SetFaction("Survivors")
+--! character:Save()
+--! \endcode
+--!
+--! \section DataStorage Namespace-Based Data Storage
+--!
+--! FrameworkZ uses namespaces to isolate plugin and module data.
+--! Each namespace has its own storage area, preventing conflicts.
+--!
+--! Registering a Namespace:
+--!
+--! \code lua
+--! function MyPlugin:OnInitGlobalModData()
+--!     FrameworkZ.Foundation:RegisterNamespace("MyPlugin")
+--! end
+--! \endcode
+--!
+--! Storing Data:
+--!
+--! \code lua
+--! -- Simple key-value
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", "lastSave", os.time())
+--!
+--! -- Nested keys
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", {"player", username, "score"}, 100)
+--!
+--! -- Complex data
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", "config", {
+--!     enabled = true,
+--!     maxPlayers = 50
+--! })
+--! \endcode
+--!
+--! Retrieving Data:
+--!
+--! \code lua
+--! local lastSave = FrameworkZ.Foundation:GetLocalData("MyPlugin", "lastSave")
+--! local score = FrameworkZ.Foundation:GetLocalData("MyPlugin", {"player", username, "score"})
+--! local config = FrameworkZ.Foundation:GetLocalData("MyPlugin", "config")
+--! \endcode
+--!
+--! \section Networking Client-Server Communication
+--!
+--! SendFire Pattern for Request-Response:
+--!
+--! \code lua
+--! -- Client sends request
+--! if isClient() then
+--!     FrameworkZ.Foundation:SendFire(
+--!         isoPlayer,
+--!         "MyPlugin.RequestData",
+--!         function(data, result)
+--!             -- Handle server response
+--!             print("Got: " .. result)
+--!         end,
+--!         arg1, arg2
+--!     )
+--! end
+--!
+--! -- Server handles request
+--! if isServer() then
+--!     function MyPlugin.RequestData(data, arg1, arg2)
+--!         local result = arg1 + arg2
+--!         return result  -- Sent back to client callback
+--!     end
+--! end
+--! \endcode
+--!
+--! \section HookSystem Hook System
+--!
+--! Plugins and modules respond to events through hooks:
+--!
+--! \code lua
+--! function MyPlugin:OnPlayerConnected(player)
+--!     -- Called when a player connects
+--! end
+--!
+--! function MyPlugin:OnCharacterCreated(character)
+--!     -- Called when a character is created
+--! end
+--!
+--! function MyPlugin:OnStorageSet(isoPlayer, command, namespace, keys, value)
+--!     -- Called when data is stored
+--!     if namespace == "MyPlugin" then
+--!         -- Your namespace was updated
+--!     end
+--! end
+--! \endcode
+--!
+--! Hooks are automatically registered via Foundation:RegisterPluginHandler.
+--!
+--! \section Libraries Additional Libraries
+--!
+--! FrameworkZ.Utilities - Helper functions:
+--! - MergeTables - Combine two tables
+--! - DumpTable - Debug table contents
+--! - String and data manipulation helpers
+--!
+--! FrameworkZ.Databases - Database operations:
+--! - Character and player data queries
+--! - Persistent storage helpers
+--!
+--! FrameworkZ.Timers - Timer and scheduling:
+--! - Create delayed or repeating callbacks
+--! - Schedule one-time or recurring tasks
+--!
+--! FrameworkZ.Commands - Command system:
+--! - Register chat commands
+--! - Command permission handling
+--!
+--! FrameworkZ.Factions - Faction management:
+--! - Create and manage factions
+--! - Faction membership and relationships
+--!
+--! FrameworkZ.Items - Item system:
+--! - Define custom items
+--! - Item metadata and behaviors
+--!
+--! FrameworkZ.Inventories - Inventory management:
+--! - Character inventory operations
+--! - Item placement and organization
+--!
+--! FrameworkZ.Entities - Entity system:
+--! - Create custom entities
+--! - Entity lifecycle management
+--!
+--! \section ModulesVsPlugins Modules vs Plugins
+--!
+--! Understanding the Difference:
+--!
+--! Modules are core framework systems:
+--! - Part of FrameworkZ's house structure
+--! - Always loaded and essential
+--! - Examples: Players, Characters, Inventories, Factions
+--! - Created with Foundation:NewModule (internal use)
+--!
+--! Plugins are extensions:
+--! - Optional appliances that fill the house
+--! - Add custom features and gameplay
+--! - Created with Plugins:CreatePlugin (your code)
+--! - Examples: Custom gamemodes, special items, new mechanics
+--!
+--! Use Plugins for:
+--! - Custom gameplay features
+--! - Gamemode-specific functionality
+--! - Server-specific modifications
+--! - Adding new commands, items, or systems
+--! - Integrating external features
+--!
+--! \section SideSpecificCode Client vs Server Code
+--!
+--! Use side checks for platform-specific code:
+--!
+--! \code lua
+--! if isClient() then
+--!     -- Client-side only (UI, input, local state)
+--!     function MyPlugin:ShowUI()
+--!         -- Display interface
+--!     end
+--! end
+--!
+--! if isServer() then
+--!     -- Server-side only (persistence, authority)
+--!     function MyPlugin:SaveAllData()
+--!         -- Save to database
+--!     end
+--! end
+--!
+--! -- Shared code runs on both sides
+--! function MyPlugin:GetDisplayName(character)
+--!     return character:GetName()
+--! end
+--! \endcode
+--!
+--! \section BestPractices Best Practices
+--!
+--! Plugin Development:
+--! - Always use namespaces for your data storage
+--! - Register your namespace in OnInitGlobalModData
+--! - Use meaningful, unique namespace names
+--! - Keep plugin metadata up to date
+--! - Implement Initialize and optional Cleanup functions
+--!
+--! Data Management:
+--! - Use GetLocalData and SetLocalData for persistent data
+--! - Use nested keys to organize complex data
+--! - Validate data before storing or retrieving
+--! - Handle nil returns from GetLocalData
+--!
+--! Client-Server Communication:
+--! - Always check isClient() and isServer()
+--! - Use SendFire for request-response patterns
+--! - Keep network traffic minimal
+--! - Validate all client requests on the server
+--!
+--! Code Organization:
+--! - Keep plugins focused on specific features
+--! - Use clear, descriptive function names
+--! - Document your code with DocZ comments
+--! - Follow FrameworkZ naming conventions
+--!
+--! \see Getting Started
+--! \see Documentation Guide
+--! \see FrameworkZ.Foundation
+--! \see FrameworkZ.Plugins
