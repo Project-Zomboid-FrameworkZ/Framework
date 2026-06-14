@@ -1,0 +1,103 @@
+--[[
+    FrameworkZ - For Server Owners
+    Everything a server owner needs to know to get FrameworkZ up and running
+]]
+
+--! \page _For Server Owners
+--! \brief A complete guide for server owners on installing and configuring FrameworkZ. FrameworkZ is a roleplay framework for Project Zomboid. On its own it provides the core systems (characters, factions, inventories, plugins, hooks, etc.) but does not define a specific gamemode. A typical FrameworkZ server consists of three layers:
+--!
+--! - **FrameworkZ**: The core framework. Always required.
+--! - **Gamemode**: A mod that defines the roleplay setting (e.g. HL2RP, LifeRP). Usually required.
+--! - **Plugins**: Optional mods that extend or customize functionality on top of the gamemode.
+--!
+--! \section WorkshopInstall Step 1: Installing FrameworkZ from the Workshop
+--! Subscribe to the [FrameworkZ mod on the Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3535820826). Once subscribed, add the mod to your server by editing your server config file (found in your ProjectZomboid server directory):
+--!
+--! \code
+--! Mods=FrameworkZ
+--! WorkshopItems=<FrameworkZ_Workshop_ID>
+--! \endcode
+--!
+--! Restart your server after you are done making changes to the config file (but probably not just this moment).
+--!
+--! \section GamemodeInstall Step 2: Installing a Gamemode
+--! A gamemode is a separate mod that depends on FrameworkZ. Common examples:
+--!
+--! - **[FZ] HL2RP** (id: fzHL2RP) — Half-Life 2 Roleplay setting
+--! - **[FZ] Life RP** (id: fzLifeRP) — Life RP setting
+--!
+--! To install a gamemode, subscribe to it on the Workshop and add its mod ID and Workshop ID to your server config alongside FrameworkZ:
+--!
+--! \code
+--! Mods=FrameworkZ;fzHL2RP
+--! WorkshopItems=<FrameworkZ_Workshop_ID>;<fzHL2RP_Workshop_ID>
+--! \endcode
+--!
+--! Each gamemode's own Workshop page will list any additional dependencies (tile packs, etc.) that must also be added.
+--!
+--! \section LoadOrder Step 3: Load Order
+--! Project Zomboid loads mods in the order they appear in the `Mods=` line of your server config. FrameworkZ must always appear first, followed by the gamemode, and then any plugins:
+--!
+--! \code
+--! Mods=FrameworkZ;fzHL2RP;MyCustomPlugin;AnotherPlugin
+--! \endcode
+--!
+--! \warning Never place a gamemode or plugin before FrameworkZ in the mod list. Doing so will cause the framework to be unavailable when those mods try to initialize, resulting in errors.
+--!
+--! A correct load order looks like this:
+--!
+--! | Position | Mod | Why |
+--! |----------|-----|-----|
+--! | 1 | FrameworkZ | Core must load first |
+--! | 2 | Gamemode (e.g. fzHL2RP) | Depends on FrameworkZ |
+--! | 3+ | Plugins | Depend on FrameworkZ + gamemode |
+--!
+--! \section AddingPlugins Step 4: Adding Plugins
+--! Plugins are standalone mods that extend FrameworkZ or your gamemode with new features. To add a plugin, subscribe to it on the Workshop (or install it manually), then add it to your server config after the gamemode:
+--!
+--! \code
+--! Mods=FrameworkZ;fzHL2RP;fzCurrency;fzImprisonment
+--! WorkshopItems=<FZ_ID>;<HL2RP_ID>;<Currency_ID>;<Imprisonment_ID>
+--! \endcode
+--!
+--! Plugins register themselves automatically when loaded. You do not need to manually call any registration function. Simply having the mod in the load order is enough. You can verify that a plugin loaded successfully by checking your server console at startup for lines like:
+--!
+--! \code
+--! [FrameworkZ.Plugins] Plugin registered successfully: fzCurrency
+--! \endcode
+--!
+--! \section WritingPlugins Writing a Simple Plugin (Optional)
+--! If you want to write a quick server-side customization without publishing a full mod, you can create a Lua file in your server's \c lua/shared folder and use the plugin API directly. This is the same API that published plugins use:
+--!
+--! \code lua
+--! local MyServerPlugin = FrameworkZ.Plugins:CreatePlugin("MyServerPlugin")
+--!
+--! MyServerPlugin.Meta = {
+--!     Author = "ServerOwner",
+--!     Name = "MyServerPlugin",
+--!     Description = "Custom server-side tweaks",
+--!     Version = "1.0.0",
+--!     Compatibility = "FrameworkZ 1.0+"
+--! }
+--!
+--! function MyServerPlugin:OnPlayerConnected(player)
+--!     local username = player:GetUsername()
+--!     print("[MyServer] Welcome, " .. username .. "!")
+--! end
+--!
+--! FrameworkZ.Plugins:RegisterPlugin(MyServerPlugin)
+--! \endcode
+--!
+--! See the Getting Started page and the Hooks page for a full list of available hook functions.
+--!
+--! \see Getting Started
+--! \see Hooks
+--!
+--! \section Persistence Data Persistence
+--! FrameworkZ automatically handles saving and loading character and player data. No additional configuration is required for basic persistence. If you are installing plugins that store their own data, refer to that plugin's documentation. Plugins that follow FrameworkZ conventions will register a namespace via `FrameworkZ.Foundation:RegisterNamespace()` and save data automatically.
+--!
+--! \section Support Support & Resources
+--! - **Discord:** [https://discord.gg/PgNTyva3xk](https://discord.gg/PgNTyva3xk) - Ask for assistance under the Help category, but search before asking as your question may have already been answered!
+--! - **GitHub:** [https://github.com/Project-Zomboid-FrameworkZ/Framework](https://github.com/Project-Zomboid-FrameworkZ/Framework)
+--! - **Bug Reports:** [https://github.com/Project-Zomboid-FrameworkZ/Framework/issues](https://github.com/Project-Zomboid-FrameworkZ/Framework/issues)
+--! - **Documentation:** [https://frameworkz.projectzomboid.life/documentation/](https://frameworkz.projectzomboid.life/documentation/)

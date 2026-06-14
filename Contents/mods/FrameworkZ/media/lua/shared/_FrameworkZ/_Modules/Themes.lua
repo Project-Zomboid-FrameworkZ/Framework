@@ -104,6 +104,39 @@ FrameworkZ.Themes.DefaultTheme = {
             TextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
         }
     },
+    ComboBoxDropdown = {
+        Default = {
+            OptionBackgroundColor = FrameworkZ.Themes.Styles.Colors.Surface,
+            OptionTextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
+            OptionHoverColor      = FrameworkZ.Themes.Styles.Colors.Accent,
+            OptionHoverTextColor  = FrameworkZ.Themes.Styles.Colors.TextLight,
+        },
+        Danger = {
+            OptionBackgroundColor = FrameworkZ.Themes.Styles.Colors.Surface,
+            OptionTextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
+            OptionHoverColor      = FrameworkZ.Themes.Styles.Colors.Danger,
+            OptionHoverTextColor  = FrameworkZ.Themes.Styles.Colors.TextLight,
+        },
+        Success = {
+            OptionBackgroundColor = FrameworkZ.Themes.Styles.Colors.Surface,
+            OptionTextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
+            OptionHoverColor      = FrameworkZ.Themes.Styles.Colors.Success,
+            OptionHoverTextColor  = FrameworkZ.Themes.Styles.Colors.TextDark,
+        },
+        Warning = {
+            OptionBackgroundColor = FrameworkZ.Themes.Styles.Colors.Surface,
+            OptionTextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
+            OptionHoverColor      = FrameworkZ.Themes.Styles.Colors.Warning,
+            OptionHoverTextColor  = FrameworkZ.Themes.Styles.Colors.TextDark,
+        }
+    },
+    RadioButtons = {
+        Default = {
+            BackgroundColor = FrameworkZ.Themes.Styles.Colors.Transparent,
+            TextColor       = FrameworkZ.Themes.Styles.Colors.TextLight,
+            HoverTextColor  = FrameworkZ.Themes.Styles.Colors.Primary,
+        }
+    },
     Label = {
         Title = {
             TextColor = FrameworkZ.Themes.Styles.Colors.TextPrimary,
@@ -191,15 +224,8 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
         button.textColor = {r = c.r, g = c.g, b = c.b, a = c.a}
     end
     
-    -- Store theme colors as local copies for this specific button instance
-    local normalBg = button.backgroundColor
-    local normalBorder = button.borderColor
-    local normalText = button.textColor
-    local hoverBg = button.backgroundColorMouseOver
-    local hoverBorder = theme.HoverBorderColor and {r = theme.HoverBorderColor.r, g = theme.HoverBorderColor.g, b = theme.HoverBorderColor.b, a = theme.HoverBorderColor.a} or nil
-    local hoverText = theme.HoverTextColor and {r = theme.HoverTextColor.r, g = theme.HoverTextColor.g, b = theme.HoverTextColor.b, a = theme.HoverTextColor.a} or nil
-    
-    -- Apply hover text color on mouse enter and revert on mouse exit
+    -- Apply hover effect on mouse enter and revert on mouse exit
+    -- Pre-hover colors are captured dynamically to preserve any user overrides applied after theme application
     button.oldOnMouseMove = button.onMouseMove
     button.onMouseMove = function(self2, dx, dy)
         if button.oldOnMouseMove then
@@ -207,9 +233,12 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
         end
 
         if self2.mouseOver and self2.enable then
-            if hoverBorder then self2.borderColor = {r = hoverBorder.r, g = hoverBorder.g, b = hoverBorder.b, a = hoverBorder.a} end
-            if hoverBg then self2.backgroundColor = {r = hoverBg.r, g = hoverBg.g, b = hoverBg.b, a = hoverBg.a} end
-            if hoverText then self2.textColor = {r = hoverText.r, g = hoverText.g, b = hoverText.b, a = hoverText.a} end
+            -- Store current color state before applying hover effect
+            -- This preserves any user-set overrides since theme application
+            if self2.backgroundColorMouseOver and not button._preHoverBackgroundColor then
+                button._preHoverBackgroundColor = {r = self2.backgroundColor.r, g = self2.backgroundColor.g, b = self2.backgroundColor.b, a = self2.backgroundColor.a}
+                self2.backgroundColor = {r = self2.backgroundColorMouseOver.r, g = self2.backgroundColorMouseOver.g, b = self2.backgroundColorMouseOver.b, a = self2.backgroundColorMouseOver.a}
+            end
         end
     end
 
@@ -220,9 +249,11 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
         end
 
         if not self2.mouseOver and self2.enable then
-            if normalBorder then self2.borderColor = {r = normalBorder.r, g = normalBorder.g, b = normalBorder.b, a = normalBorder.a} end
-            if normalBg then self2.backgroundColor = {r = normalBg.r, g = normalBg.g, b = normalBg.b, a = normalBg.a} end
-            if normalText then self2.textColor = {r = normalText.r, g = normalText.g, b = normalText.b, a = normalText.a} end
+            -- Restore to the pre-hover color (which respects user overrides)
+            if button._preHoverBackgroundColor then
+                self2.backgroundColor = {r = button._preHoverBackgroundColor.r, g = button._preHoverBackgroundColor.g, b = button._preHoverBackgroundColor.b, a = button._preHoverBackgroundColor.a}
+                button._preHoverBackgroundColor = nil  -- Reset for next hover
+            end
         end
     end
 end
@@ -285,6 +316,50 @@ function FrameworkZ.Themes:ApplyComboBoxTheme(combo, theme)
     end
 end
 
+-- Apply combo box dropdown theme for dropdown list options
+function FrameworkZ.Themes:ApplyComboBoxDropdownTheme(combo, theme)
+    if not combo then return end
+    theme = theme or "Default"
+    local dropdownTheme = self.DefaultTheme.ComboBoxDropdown[theme]
+    if not dropdownTheme then return end
+    
+    -- Apply directly to the combo's internal list if accessible
+    if combo.listOfOptions then
+        if dropdownTheme.OptionBackgroundColor then
+            combo.listOfOptions.backgroundColor = dropdownTheme.OptionBackgroundColor
+        end
+        if dropdownTheme.OptionTextColor and combo.listOfOptions.setColor then
+            local c = dropdownTheme.OptionTextColor
+            combo.listOfOptions:setColor(c.r, c.g, c.b, c.a)
+        end
+        if dropdownTheme.OptionHoverColor then
+            combo.listOfOptions.backgroundColorMouseOver = dropdownTheme.OptionHoverColor
+        end
+    end
+    
+    -- Store theme for dynamic application during rendering
+    combo._comboDropdownTheme = dropdownTheme
+end
+
+-- Apply radio buttons theme
+function FrameworkZ.Themes:ApplyRadioButtonsTheme(radio, theme)
+    if not radio then return end
+    theme = theme or "Default"
+    local theme = self.DefaultTheme.RadioButtons[theme]
+    if not theme then return end
+    
+    -- Apply background color
+    if theme.BackgroundColor then
+        radio.backgroundColor = theme.BackgroundColor
+    end
+    
+    -- Apply text color
+    if radio.setColor and theme.TextColor then
+        local c = theme.TextColor
+        radio:setColor(c.r, c.g, c.b, c.a)
+    end
+end
+
 -- Apply text entry theme from DefaultTheme.TextEntry themes
 function FrameworkZ.Themes:ApplyTextEntryTheme(textEntry, theme)
     if not textEntry then return end
@@ -330,6 +405,9 @@ function FrameworkZ.Themes:ApplyTheme(element, elementType, theme)
         self:ApplyLabelTheme(element, theme)
     elseif elementType == "ComboBox" then
         self:ApplyComboBoxTheme(element, theme)
+        self:ApplyComboBoxDropdownTheme(element, theme)
+    elseif elementType == "RadioButtons" then
+        self:ApplyRadioButtonsTheme(element, theme)
     elseif elementType == "TextEntry" then
         self:ApplyTextEntryTheme(element, theme)
     elseif elementType == "Slider" then

@@ -117,9 +117,14 @@ FrameworkZ.Meta.Version = "1.0.0"
 
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
-    SkipIntro = false,
-    Version = "13.8.3",
-    VersionType = "Pre-Alpha",
+    SkipIntro = true,
+    Version = "13.9.3",
+    VersionType = "Pre-Alpha (Preview)",
+
+    -- When true, server stdout is redirected to frameworkz.txt and console input
+    -- is intercepted so FZ commands can be typed directly into the server panel.
+    -- The panel will no longer show live output while this is active.
+    AdvancedConsole = true,
 
     IntroFrameworkImage = "media/textures/fz.png",
     IntroGamemodeImage = "media/textures/hl2rp.png",
@@ -148,13 +153,21 @@ FrameworkZ.Config.Options = {
     ShouldNotifyOnCharacterSave = true,
     CharacterLoadDelay = 3, -- In seconds. 3 seconds recommended for smoother transitions. Could be shorter if preferred.
 
-    LimboX = 18539,
+    --[[LimboX = 18539,
     LimboY = 79,
+    LimboZ = 0,--]]
+
+    LimboX = 0.5,
+    LimboY = 0.5,
     LimboZ = 0,
 
     SpawnX = 0,
     SpawnY = 0,
     SpawnZ = 0,
+
+    Respawns = {
+        {name = "Rosewood Medical", x = 8091, y = 11528, z = 0}
+    },
 
     DefaultMaxCharacters = 3,
 
@@ -191,6 +204,27 @@ function FrameworkZ.Config:SetOption(optionName, value)
 end
 
 FrameworkZ.Config = FrameworkZ:CreateObject(FrameworkZ.Config, "Config")
+
+function FrameworkZ:GetMajorVersion()
+    local version = tostring(self.Config:GetOption("Version"))
+    local majorVersion = version:match("^(%d+)")
+
+    return tonumber(majorVersion) or 0
+end
+
+function FrameworkZ:GetMinorVersion()
+    local version = tostring(self.Config:GetOption("Version"))
+    local minorVersion = version:match("^%d+%.(%d+)")
+
+    return tonumber(minorVersion) or 0
+end
+
+function FrameworkZ:GetPatchVersion()
+    local version = tostring(self.Config:GetOption("Version"))
+    local patchVersion = version:match("^%d+%.%d+%.(%d+)")
+
+    return tonumber(patchVersion) or 0
+end
 
 --! \brief Load and lock an object to prevent modification.
 --! \param object \table The object to load and lock.

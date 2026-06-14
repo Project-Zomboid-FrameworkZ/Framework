@@ -396,7 +396,11 @@ function FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
     if item.setColor and item.getVisual and item.setCustomColor then
         local color = Color.new(itemData.color.r, itemData.color.g, itemData.color.b, itemData.color.a or 1.0)
         item:setColor(color)
-        item:getVisual():setTint(ImmutableColor.new(color))
+
+        if item:getVisual().setTint then
+            item:getVisual():setTint(ImmutableColor.new(color))
+        end
+
         item:setCustomColor(true)
         return true
     end
@@ -430,7 +434,10 @@ function FrameworkZ.Inventories:RestoreItemData(item, itemData)
             local color = Color.new(r, g, b, a)
             item:setColor(color)
             if item.getVisual and item.setCustomColor then
-                item:getVisual():setTint(ImmutableColor.new(color))
+                if item:getVisual().setTint then
+                    item:getVisual():setTint(ImmutableColor.new(color))
+                end
+
                 item:setCustomColor(true)
             end
         end

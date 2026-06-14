@@ -123,12 +123,16 @@ function FrameworkZ.Utilities:PrintTable(tbl)
     print(self:DumpTable(tbl))
 end
 
+function FrameworkZ.Utilities:StringIsEmpty(s)
+    return type(s) ~= "string" or s == ""
+end
+
 --! \brief Check if a table is empty.
 --! \param t \table The table to check.
 --! \return \boolean True if empty or not a table.
 function FrameworkZ.Utilities:TableIsEmpty(t)
     if type(t) ~= "table" then
-        return false
+        return true
     end
 
     local isEmpty = true
@@ -243,7 +247,10 @@ end
 --! \param t \table The table to iterate.
 --! \return \function \table \nil Iterator function, table, and initial state.
 function FrameworkZ.Utilities:OrderedPairs(t)
-    return self.OrderedNext, t, nil
+    local _self = self
+    return function(tbl, state)
+        return _self:OrderedNext(tbl, state)
+    end, t, nil
 end
 
 --! \brief Word wraps text to a specified length.
@@ -479,4 +486,64 @@ function FrameworkZ.Utilities:GetItemColor(item)
     end
     
     return r, g, b, a
+end
+--! \brief Calculate form field layout with measured text dimensions.
+--! \param labelText \string The label text to measure.
+--! \param font \table The font to use for measurement.
+--! \brief Measure the pixel width of text or UI element.
+--! \param textOrElement \string|\table Text to measure, or a UI element (extracts .text and .font).
+--! \param font \userdata? Optional font token override. If provided, used instead of element's font.
+--! \return \number The width in pixels, or 0 if TextManager unavailable.
+function FrameworkZ.Utilities:MeasureStringX(textOrElement, font)
+    local text, resolvedFont
+    
+    -- Detect if argument is a string or UI element
+    if type(textOrElement) == "string" then
+        text = textOrElement
+        resolvedFont = font or UIFont.Small
+    elseif type(textOrElement) == "table" then
+        -- Extract text from UI element (handle various text property names)
+        text = textOrElement.text or textOrElement.title or ""
+        -- Use provided font, or extract from element, or default
+        if font then
+            resolvedFont = font
+        else
+            resolvedFont = textOrElement.font or UIFont.Small
+        end
+    else
+        return 0
+    end
+    
+    local textManager = getTextManager()
+    if not textManager then return 0 end
+    return textManager:MeasureStringX(resolvedFont, text)
+end
+
+--! \brief Measure the pixel height of text or UI element.
+--! \param textOrElement \string|\table Text to measure, or a UI element (extracts .text and .font).
+--! \param font \userdata? Optional font token override. If provided, used instead of element's font.
+--! \return \number The height in pixels, or 0 if TextManager unavailable.
+function FrameworkZ.Utilities:MeasureStringY(textOrElement, font)
+    local text, resolvedFont
+    
+    -- Detect if argument is a string or UI element
+    if type(textOrElement) == "string" then
+        text = textOrElement
+        resolvedFont = font or UIFont.Small
+    elseif type(textOrElement) == "table" then
+        -- Extract text from UI element (handle various text property names)
+        text = textOrElement.text or textOrElement.title or ""
+        -- Use provided font, or extract from element, or default
+        if font then
+            resolvedFont = font
+        else
+            resolvedFont = textOrElement.font or UIFont.Small
+        end
+    else
+        return 0
+    end
+    
+    local textManager = getTextManager()
+    if not textManager then return 0 end
+    return textManager:MeasureStringY(resolvedFont, text)
 end

@@ -6,11 +6,11 @@ local instanceof = instanceof
 FrameworkZ.Logs = {}
 FrameworkZ.Logs.LogEntries = {}
 FrameworkZ.Logs.MaxEntries = 1000
-FrameworkZ.Logs.RootDirectory = "FrameworkZ_Logs"
+FrameworkZ.Logs.RootDirectory = "FrameworkZ" .. getFileSeparator() .. "Logs"
 FrameworkZ.Logs.LogDirectories = { -- /.cache/Lua/FrameworkZ_Logs/[date: YYYY-MM]/[date: DD_#]/
     AdminLogs = { -- /AdminLogs/[username]/
         "Audit", -- Bans, kicks, mutes, etc.
-        "ItemSpawns",
+        "ItemSpawns"
     },
     PlayerLogs = { -- /PlayerLogs/[username]/
         "Actions", -- Enter/exit vehicle, grab/place/drop item, etc.
@@ -24,6 +24,9 @@ FrameworkZ.Logs.LogDirectories = { -- /.cache/Lua/FrameworkZ_Logs/[date: YYYY-MM
         "Errors",
         "Warnings",
         "Info"
+    },
+    TamperLogs = {
+        
     }
 }
 

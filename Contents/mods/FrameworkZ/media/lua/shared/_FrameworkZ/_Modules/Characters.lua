@@ -267,6 +267,9 @@ function CHARACTER:GetFaction() return self.Faction end
 --! \param faction \string The faction ID to set.
 function CHARACTER:SetFaction(faction) self.Faction = faction end
 
+function CHARACTER:GetFirstLoad() return self[FZ_ENUM_CHARACTER_META_FIRST_LOAD] end
+function CHARACTER:SetFirstLoad(firstLoad) self[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = firstLoad end
+
 --! \brief Get the character's gender.
 --! \return \string The character's gender.
 function CHARACTER:GetGender() return self.Gender end
@@ -999,8 +1002,13 @@ function CHARACTER:Restore(callback)
             return false, message
         end
 
-        -- Load location
+        -- Is this the first load?
         local firstLoad = characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD]
+
+        -- Hook call
+        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterRestore", self, characterData, firstLoad)
+
+        -- Lookup saved position
         local x = not firstLoad and characterData[FZ_ENUM_CHARACTER_META_POSITION_X] or FrameworkZ.Config:GetOption("SpawnX")
         local y = not firstLoad and characterData[FZ_ENUM_CHARACTER_META_POSITION_Y] or FrameworkZ.Config:GetOption("SpawnY")
         local z = not firstLoad and characterData[FZ_ENUM_CHARACTER_META_POSITION_Z] or FrameworkZ.Config:GetOption("SpawnZ")
@@ -1016,10 +1024,18 @@ function CHARACTER:Restore(callback)
         local success8, restoreSkillsMessage = self:RestoreSkills(characterData) if not success8 then callback(false, "Failed to restore character skills: " .. restoreSkillsMessage) return false, restoreSkillsMessage end
         local success9, restoreTraitsMessage = self:RestoreTraits(characterData) if not success9 then callback(false, "Failed to restore character traits: " .. restoreTraitsMessage) return false, restoreTraitsMessage end
 
-        -- First load complete
-        if characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] then
-            characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = false
+        -- Temporary hook injection for calling after spawn protection has been removed (since its restorations aren't retained while godmoded/invincible)
+        local function temporaryHook(character)
+            if character:GetUID() == self:GetUID() then
+                character:RestoreStats(characterData)
+                character:RestoreHealth(characterData)
+
+                -- Unregister after use to prevent memory leaks
+                FrameworkZ.Foundation:UnregisterHandler("OnCharacterSpawned", temporaryHook, nil, nil, HOOK_CATEGORY_MODULE)
+            end
         end
+
+        FrameworkZ.Foundation:RegisterHandler("OnCharacterSpawned", temporaryHook, nil, nil, HOOK_CATEGORY_MODULE)
 
         -- Recognize self
         if not self:RecognizesCharacter(self) then
@@ -1036,17 +1052,28 @@ function CHARACTER:Restore(callback)
             return false, "Failed to add character to cache."
         end
 
-        callback(characterData, "Character data and position restored server-side.")
-        return true, "Character data and position restored server-side."
+        -- Hook call
+        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterRestored", self, firstLoad)
+
+        -- First load complete, mark first load as false for future loads
+        if self:GetFirstLoad() then
+            self:SetFirstLoad(false)
+        end
+
+        callback(self, "Character restored.")
+        return self, "Character restored."
     end
 
     return player:GetCharacterDataByID(characterID, dataCallback)
 end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterRestore")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterRestored")
 
 --! \brief Used for restoring character data from a table, typically a table gathered through the FZ Data Storage system.
 --! \param characterData \table (Optional) The character data table to restore from.
 function CHARACTER:RestoreData(characterData)
     if not characterData then return false, "Character data not supplied in parameters." end
+    local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "Iso Player not found." end
 
     self:SetAge(characterData[FZ_ENUM_CHARACTER_INFO_AGE])
     self:SetBeardColor(characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR])
@@ -1065,7 +1092,10 @@ function CHARACTER:RestoreData(characterData)
     self:SetSkinColor(characterData[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR])
     self:SetUID(characterData[FZ_ENUM_CHARACTER_META_UID])
     self:SetWeight(characterData[FZ_ENUM_CHARACTER_INFO_WEIGHT])
-    -- Note: Logical and Physical inventory data is restored via RestoreInventory, not here
+
+    local descriptor = isoPlayer:getDescriptor()
+    descriptor:setForename(self:GetName())
+    descriptor:setSurname("")
 
     return true, "Character data restored."
 end

@@ -175,7 +175,10 @@ function FrameworkZ.UI.Introduction:initialise()
 	})
 
     -- Add music controls in bottom-left corner during initialization
-    self:createMusicControls()
+    --self:createMusicControls()
+	self.bgMusicController = FrameworkZ.UI.AudioController:new("Main Menu Music Volume", 10, self.height - 85, self.playerObject)
+	self.bgMusicController:initialise()
+	self:addChild(self.bgMusicController)
 
 	self.currentTick = 1
 
@@ -205,10 +208,16 @@ function FrameworkZ.UI.Introduction:initialise()
 					-- Start intro music with volume control (playerObject should be set by now)
 					if self.playerObject and FrameworkZ.Config.Options.IntroMusic then
 						local emitter = self.playerObject:getEmitter()
+
+						--[[
 						currentIntroSong = emitter:playSoundImpl(FrameworkZ.Config.Options.IntroMusic, nil)
 						if currentIntroSong then
 							emitter:setVolume(currentIntroSong, musicVolume)
 						end
+						--]]
+
+						self.bgMusicController:playTrack(FrameworkZ.Config:GetOption("IntroMusic"))
+						self.bgMusicController:setVolume(0.5) -- TODO restore client setting on previous volume used if applicable
 						emitter:playSoundImpl("button1", nil)
 					end
 
@@ -261,20 +270,22 @@ function FrameworkZ.UI.Introduction:initialise()
 										characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 										characterSelect:initialise()
 										-- Pass music volume settings to main menu immediately after initialization
-										characterSelect:setMainMenuMusicVolume(musicVolume)
+										--characterSelect:setMainMenuMusicVolume(musicVolume)
 										-- If we're muted, pass the original volume for proper unmuting
-										if isMuted then
-											characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
-										end
+										--if isMuted then
+										--	characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
+										--end
 										
+										self.bgMusicController:transfer(characterSelect)
+
 										-- Transfer music controls panel to main menu
-										if self.musicControlsPanel then
+										--[[if self.musicControlsPanel then
 											self:removeChild(self.musicControlsPanel)
 											characterSelect:addChild(self.musicControlsPanel)
 											-- Update panel position for main menu
 											self.musicControlsPanel:setX(20)
 											self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
-										end
+										end--]]
 										
 										characterSelect:addToUIManager()
 
@@ -293,20 +304,22 @@ function FrameworkZ.UI.Introduction:initialise()
 					characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 					characterSelect:initialise()
 					-- Pass music volume settings to main menu immediately after initialization
-					characterSelect:setMainMenuMusicVolume(musicVolume)
+					--characterSelect:setMainMenuMusicVolume(musicVolume)
 					-- If we're muted, pass the original volume for proper unmuting
-					if isMuted then
-						characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
-					end
+					--if isMuted then
+					--	characterSelect:setOriginalVolumeForUnmute(originalVolumeBeforeMute)
+					--end
+
+					self.bgMusicController:transfer(characterSelect)
 					
 					-- Transfer music controls panel to main menu
-					if self.musicControlsPanel then
+					--[[if self.musicControlsPanel then
 						self:removeChild(self.musicControlsPanel)
 						characterSelect:addChild(self.musicControlsPanel)
 						-- Update panel position for main menu
 						self.musicControlsPanel:setX(20)
 						self.musicControlsPanel:setY(characterSelect.height - 95)  -- Adjusted for new height
-					end
+					end--]]
 					
 					characterSelect:addToUIManager()
 
@@ -413,4 +426,3 @@ function FrameworkZ.UI.Introduction:new(x, y, width, height, playerObject)
 end
 
 return FrameworkZ.UI.Introduction
-

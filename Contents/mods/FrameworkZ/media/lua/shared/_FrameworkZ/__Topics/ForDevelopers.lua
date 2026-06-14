@@ -1,0 +1,235 @@
+--[[
+    FrameworkZ - For Developers
+    Everything a developer needs to know to build plugins, gamemodes, and custom systems on top of FrameworkZ
+]]
+
+--! \page _For Developers
+--! \brief A comprehensive guide for developers building on top of FrameworkZ. Whether you are writing a small plugin or a full gamemode, this page covers the core concepts, APIs, and patterns you need to know.
+--!
+--! FrameworkZ is structured in three tiers. Understanding where your code lives in that hierarchy is the most important thing before you start:
+--!
+--! | Tier | What it is | Who writes it |
+--! |------|-----------|---------------|
+--! | **FrameworkZ** | Core systems: players, characters, items, networking, hooks | Framework team |
+--! | **Gamemode** | Defines the roleplay setting; depends on FrameworkZ | Gamemode developers |
+--! | **Plugin** | Extends or customizes FrameworkZ and/or a gamemode | You |
+--!
+--! \section DevPluginSystem The Plugin System
+--! Plugins are the primary and recommended way to extend FrameworkZ. A plugin is a Lua table that is created via `FrameworkZ.Plugins:CreatePlugin()`, populated with lifecycle functions and hook handlers, then registered with `FrameworkZ.Plugins:RegisterPlugin()`.
+--!
+--! A minimal plugin looks like this:
+--!
+--! \code lua
+--! local MyPlugin = FrameworkZ.Plugins:CreatePlugin("MyPlugin")
+--!
+--! MyPlugin.Meta = {
+--!     Author = "YourName",
+--!     Name = "MyPlugin",
+--!     Description = "A short description of what this plugin does.",
+--!     Version = "1.0.0",
+--!     Compatibility = "FrameworkZ 1.0+"
+--! }
+--!
+--! function MyPlugin:Initialize()
+--!     print("[MyPlugin] Plugin initialized.")
+--! end
+--!
+--! FrameworkZ.Plugins:RegisterPlugin(MyPlugin)
+--! \endcode
+--!
+--! `Initialize()` is the entry point called once when FrameworkZ loads your plugin. Put any setup logic — registering namespaces, defining items, setting up factions — in here.
+--!
+--! \warning Always call `FrameworkZ.Plugins:RegisterPlugin()` at the bottom of your file, after all function definitions. Registering before defining functions will result in those functions not being attached.
+--!
+--! \section DevHooks Hooks
+--! FrameworkZ has a built-in hook system. To respond to a framework event, define the corresponding function on your plugin table. You do **not** need to manually subscribe — the plugin system handles this automatically when you register.
+--!
+--! Common hooks you will use:
+--!
+--! | Hook | When it fires |
+--! |------|--------------|
+--! | `Initialize()` | Plugin load; use for setup |
+--! | `OnPlayerConnected(player)` | A player has connected and been initialized |
+--! | `PostInitializeClient(player)` | Server + client both confirmed player is ready |
+--! | `OnCharacterReady(character)` | Character is spawned and controllable |
+--! | `OnCharacterRestored(character, firstLoad)` | Character data has been loaded from persistence |
+--!
+--! Example — greeting a player on connect:
+--!
+--! \code lua
+--! function MyPlugin:OnPlayerConnected(player)
+--!     local username = player:GetUsername()
+--!     print("[MyPlugin] " .. username .. " connected.")
+--! end
+--! \endcode
+--!
+--! \see Hooks
+--!
+--! \section DevNetworking Networking
+--! FrameworkZ provides a lightweight RPC system built on top of Project Zomboid's networking layer. Use `FrameworkZ.Foundation:Subscribe()` on the server to register a handler, and `FrameworkZ.Foundation:SendFire()` on the client to call it. The callback fires once the server responds.
+--!
+--! \code lua
+--! -- Server side
+--! if isServer() then
+--!     FrameworkZ.Foundation:Subscribe("MyPlugin.GetMessage", function(data)
+--!         if not data.isoPlayer then return end
+--!         return "Hello from the server!"
+--!     end)
+--! end
+--!
+--! -- Client side
+--! if isClient() then
+--!     FrameworkZ.Foundation:SendFire(getPlayer(), "MyPlugin.GetMessage", function(data, retVal)
+--!         print(retVal) -- prints "Hello from the server!"
+--!     end)
+--! end
+--! \endcode
+--!
+--! Prefix your subscription name with your plugin name (e.g. `MyPlugin.`) to avoid collisions with other plugins.
+--!
+--! \section DevPersistence Data Persistence
+--! FrameworkZ handles saving and loading data automatically. To store custom data for your plugin, first register a namespace in `Initialize()`, then use `SetLocalData` and `GetLocalData` to read and write values scoped to that namespace.
+--!
+--! \code lua
+--! function MyPlugin:Initialize()
+--!     FrameworkZ.Foundation:RegisterNamespace("MyPlugin")
+--! end
+--!
+--! -- Store a value
+--! FrameworkZ.Foundation:SetLocalData("MyPlugin", "someKey", someValue)
+--!
+--! -- Retrieve a value
+--! local value = FrameworkZ.Foundation:GetLocalData("MyPlugin", "someKey")
+--! \endcode
+--!
+--! Data tied to a character (e.g. a custom stat) should be written during `OnCharacterRestored` and read back there on load. Framework persistence runs automatically at disconnect and at timed intervals — you do not need to call a save function manually.
+--!
+--! \section DevPlayers Players and Characters
+--! FrameworkZ separates the **player** (account level, one per connection) from the **character** (avatar level, one active at a time per player). A player can have multiple characters but only one loaded at a time.
+--!
+--! Working with players:
+--!
+--! \code lua
+--! -- Get a player object by username
+--! local player = FrameworkZ.Players:GetPlayerByID("Username")
+--!
+--! if player then
+--!     local username = player:GetUsername()    -- "Username"
+--!     local isoPlayer = player:GetIsoPlayer() -- PZ IsoPlayer object
+--!     local character = player:GetCharacter() -- active CHARACTER object, or nil
+--! end
+--!
+--! -- Iterate all online players
+--! local all = FrameworkZ.Players:GetAllPlayers()
+--! for i = 1, #all do
+--!     print(all[i]:GetUsername())
+--! end
+--! \endcode
+--!
+--! Working with characters:
+--!
+--! \code lua
+--! local character = player:GetCharacter()
+--!
+--! if character then
+--!     -- Getters
+--!     local name        = character:GetName()
+--!     local age         = character:GetAge()
+--!     local description = character:GetDescription()
+--!     local factionID   = character:GetFaction()
+--!
+--!     -- Setters (changes are picked up by the next auto-save)
+--!     character:SetName("Jane Doe")
+--!     character:SetAge(30)
+--!     character:SetFaction("Survivors")
+--! end
+--! \endcode
+--!
+--! \section DevItems Defining Items
+--! Items in FrameworkZ are defined as named entries in `FrameworkZ.Items.List`. Each item definition is a Lua table that inherits from the `ITEM` base via `FrameworkZ.Items:New()` and defines callbacks for context menus, equip, use, etc.
+--!
+--! \code lua
+--! local MyItem = FrameworkZ.Items:New("MyPlugin.MyItem")
+--!
+--! MyItem.name        = "Ration Pack"
+--! MyItem.description = "A compact emergency food ration."
+--! MyItem.category    = "Food"
+--! MyItem.weight      = 0.5
+--! MyItem.itemID      = "Base.Granola"  -- the PZ item this wraps
+--! MyItem.shouldConsume = true
+--!
+--! function MyItem:OnUse(isoPlayer, worldItem)
+--!     isoPlayer:getStats():setHunger(0)
+--! end
+--!
+--! MyItem:Initialize()
+--! \endcode
+--!
+--! Always call `:Initialize()` at the end to register the item into `FrameworkZ.Items.List`. Item IDs should be namespaced (e.g. `MyPlugin.MyItem`) to avoid collisions.
+--!
+--! Item **bases** let you share common properties and callbacks across multiple item definitions using `FrameworkZ.Items:NewBase()`. Individual items inherit from a base and can override any field or function.
+--!
+--! \section DevFactions Defining Factions and Classes
+--! Factions and classes are defined similarly — create a new object, set properties, then call `:Initialize()`.
+--!
+--! \code lua
+--! -- Faction
+--! local Survivors = FrameworkZ.Factions:New("Survivors")
+--! Survivors.description = "A loose coalition of civilian survivors."
+--! Survivors.color = {r = 0.4, g = 0.8, b = 0.4, a = 1}
+--! Survivors.limit = 0  -- 0 = unlimited
+--! Survivors:Initialize()
+--!
+--! -- Class (sub-role within a faction)
+--! local Medic = FrameworkZ.Classes:New("Medic")
+--! Medic.description = "Trained in field medicine."
+--! Medic:Initialize()
+--! \endcode
+--!
+--! Define your factions and classes inside your plugin's `Initialize()` so they are registered at the correct time in the load sequence.
+--!
+--! \section DevServerClient Server vs. Client Guards
+--! Project Zomboid runs the same Lua files on both the server and every connected client. Use the PZ globals to guard code that should only run on one side:
+--!
+--! \code lua
+--! if isServer() then
+--!     -- Runs only on the server (authoritative logic, DB writes, etc.)
+--! end
+--!
+--! if isClient() then
+--!     -- Runs only on each client (UI, local sounds, client predictions, etc.)
+--! end
+--! \endcode
+--!
+--! FrameworkZ hooks are called on whichever realm fires them. Check the \see Hooks page for which realm each hook runs on.
+--!
+--! \section DevFileStructure Recommended File Structure
+--! For a typical plugin mod the layout below keeps things organized and predictable:
+--!
+--! \code
+--! MyPlugin/
+--!   Contents/
+--!     mods/
+--!       MyPlugin/
+--!         mod.info              <- mod metadata (name, id, workshopID, etc.)
+--!         media/
+--!           lua/
+--!             shared/           <- runs on both server and client
+--!               MyPlugin/
+--!                 MyPlugin.lua  <- plugin table + registration
+--!                 Items.lua     <- item definitions
+--!                 Factions.lua  <- faction/class definitions
+--!             server/           <- server-only files
+--!             client/           <- client-only files
+--! \endcode
+--!
+--! Files in `shared/` load on both sides. Keep authoritative logic (economy, inventory mutations, character saves) in `server/` and UI code in `client/`.
+--!
+--! \section DevNextSteps Next Steps
+--! Once your plugin is working, explore the rest of the API docs for deeper coverage of each system:
+--!
+--! - \see Getting Started
+--! - \see API Overview
+--! - \see Hooks
+--! - \see Code Examples
+--! - \see Features

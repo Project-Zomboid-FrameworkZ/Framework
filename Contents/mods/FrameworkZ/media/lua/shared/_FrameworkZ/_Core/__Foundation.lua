@@ -171,14 +171,14 @@ end
 
 --! \brief Register FrameworkZ. This is called after framework definition.
 function FrameworkZ.Foundation:RegisterFramework()
-	FrameworkZ.Foundation:RegisterFrameworkHandler()
+	self:RegisterFrameworkHandler()
     FrameworkZ:RegisterObject(self)
 end
 
 --! \brief Register a module for FrameworkZ. This is called after module definition.
 --! \param module \object The module to register.
 function FrameworkZ.Foundation:RegisterModule(module)
-	FrameworkZ.Foundation:RegisterModuleHandler(module)
+	self:RegisterModuleHandler(module)
     FrameworkZ:RegisterObject(module)
 end
 
@@ -1357,6 +1357,7 @@ FrameworkZ.Foundation:AddAllHookHandlers("ServerTimer")
 function FrameworkZ.Foundation:OnServerStarted()
     if isServer() then
         self:StartServerTick()
+        FrameworkZ.Logs:Initialize()
         FrameworkZ.Plugins:Initialize()
     end
 end
@@ -1374,11 +1375,17 @@ if isServer() then
     end
 end
 
+function FrameworkZ.Foundation:OnCharacterReady(character)
+    setGameSpeed(1) -- "Unpause" the game, this will unmute the game world
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterReady") -- TODO rework hook system to add handlers and then initialize them at a last loaded Lua file
+
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
     if isClient() then
         self.Initialized = false
         startTime = getTimestampMs()
+        setGameSpeed(0) -- "Pauses" the game, and also mutes game world
 
         -- Create a simple black screen immediately to hide the game world
         local blackScreen = ISPanel:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight())
@@ -1423,8 +1430,8 @@ end
 --! \brief Pre-initialization phase for client setup. Sets up the UI and executes module hooks.
 --! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
-    FrameworkZ.Plugins:Initialize()
-    FrameworkZ.Interfaces:Initialize()
+    FrameworkZ.Plugins:Initialize() -- Note: Plugins are initialized server side on server start, but client-side initializes here.
+    FrameworkZ.Interfaces:Initialize() -- Note: Interfaces are NOT initialized server side and only need to be initialized for the client side.
 
     local sidebar = ISEquippedItem.instance
     self.fzuiTabMenu = FrameworkZ.Interfaces:GetInterface("TabMenu"):new(sidebar:getX(), sidebar:getY() + sidebar:getHeight() + 10, sidebar:getWidth(), 40, isoPlayer)
@@ -1435,7 +1442,7 @@ function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
     local ui = FrameworkZ.Interfaces:GetInterface("Introduction"):new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), isoPlayer)
     ui:initialise()
     ui:addToUIManager()
-    
+
     -- Remove the temporary black screen now that Introduction is displayed
     if self.temporaryBlackScreen then
         self.temporaryBlackScreen:removeFromUIManager()
@@ -1497,13 +1504,16 @@ function FrameworkZ.Foundation:InitializeClient(isoPlayer)
         isoPlayer:setGhostMode(true)
         isoPlayer:setNoClip(true)
 
+        --[[
         isoPlayer:setX(FrameworkZ.Config.Options.LimboX)
         isoPlayer:setY(FrameworkZ.Config.Options.LimboY)
         isoPlayer:setZ(FrameworkZ.Config.Options.LimboZ)
         isoPlayer:setLx(FrameworkZ.Config.Options.LimboX)
         isoPlayer:setLy(FrameworkZ.Config.Options.LimboY)
         isoPlayer:setLz(FrameworkZ.Config.Options.LimboZ)
+        --]]
 
+        self:TeleportToLimbo(isoPlayer)
         self:InitializePlayer(isoPlayer, playerData, charactersData)
     end)
 end
@@ -1568,7 +1578,7 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, character
 
     local player = FrameworkZ.Players:Initialize(isoPlayer) if not player then return false end
     local username = player:GetUsername()
-    local options = FrameworkZ.Config.Options
+    --[[local options = FrameworkZ.Config.Options
     local x, y, z = options.LimboX, options.LimboY, options.LimboZ
 
     isoPlayer:setX(x)
@@ -1576,7 +1586,9 @@ function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, character
     isoPlayer:setZ(z)
     isoPlayer:setLx(x)
     isoPlayer:setLy(y)
-    isoPlayer:setLz(z)
+    isoPlayer:setLz(z)--]]
+
+    self:TeleportToLimbo(isoPlayer)
 
     if isServer() then
         playerData, charactersData = self:RestorePlayer(isoPlayer, player, username)
@@ -1648,7 +1660,11 @@ function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
     if not isoPlayer then return false end
 
     local x, y, z = FrameworkZ.Config:GetOption("LimboX"), FrameworkZ.Config:GetOption("LimboY"), FrameworkZ.Config:GetOption("LimboZ")
+    local nx = tonumber(x) or 0
+    local ny = tonumber(y) or 0
+    local nz = tonumber(z) or 0
 
+    -- Set player position (server handles this)
     isoPlayer:setX(x)
     isoPlayer:setY(y)
     isoPlayer:setZ(z)
@@ -1656,6 +1672,68 @@ function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
     isoPlayer:setLy(y)
     isoPlayer:setLz(z)
 
+    -- Client-side: validate grid square and create floor tile if needed
+    if isClient() then
+        FrameworkZ.Timers:Create("FZ_Validate_Create_Limbo_Floor", 0, 0, function()
+            if self:ValidateAndCreateLimboFloor(math.floor(nx), math.floor(ny), math.floor(nz)) then
+                FrameworkZ.Timers:Remove("FZ_Validate_Create_Limbo_Floor")
+            end
+        end)
+    end
+
+    return true
+end
+
+--! \brief Validates the limbo location on the client and creates a floor tile if the grid square is nil.
+--! \param x \number The X coordinate.
+--! \param y \number The Y coordinate.
+--! \param z \number The Z level.
+--! \return \boolean Returns true if grid square is valid or floor was created successfully.
+function FrameworkZ.Foundation:ValidateAndCreateLimboFloor(x, y, z)
+    if not isClient() then return false end
+    local cell = getCell() if not cell then return false end
+
+    -- Ensure the IsoGridSquare exists (loads/creates chunk data if needed).
+    local gridSquare = cell:getOrCreateGridSquare(x, y, z)
+    if not gridSquare then
+        print("[FZ] ERROR: Failed to get or create grid square at limbo location (" .. x .. ", " .. y .. ", " .. z .. ").")
+        return false
+    end
+
+    -- Verify floor exists.
+    local floor = gridSquare:getFloor()
+    if not floor then
+        print("[FZ] No floor found at limbo location. Creating placeholder floor...")
+        return self:CreateFloorTile(x, y, z)
+    end
+
+    print("[FZ] Limbo location grid square valid at (" .. x .. ", " .. y .. ", " .. z .. ")")
+    return true
+end
+
+--! \brief Creates a placeholder floor tile at the specified coordinates (client-side only).
+--! \param x \number The X coordinate.
+--! \param y \number The Y coordinate.
+--! \param z \number The Z level.
+--! \return \boolean Returns true if successful, false otherwise.
+function FrameworkZ.Foundation:CreateFloorTile(x, y, z)
+    if not isClient() then return false end
+    local cell = getCell() if not cell then return false end
+
+    local gridSquare = cell:getOrCreateGridSquare(x, y, z)
+    if not gridSquare then
+        print("[FZ] ERROR: Failed to create grid square at limbo location (" .. x .. ", " .. y .. ", " .. z .. ").")
+        return false
+    end
+
+    -- Create a floor object by name. This should be a valid floor sprite name.
+    local floor = gridSquare:addFloor("carpentry_02_56")
+    if not floor then
+        print("[FZ] ERROR: Failed to add floor at limbo location (" .. x .. ", " .. y .. ", " .. z .. ").")
+        return false
+    end
+
+    print("[FZ] Created placeholder floor tile at (" .. x .. ", " .. y .. ", " .. z .. ")")
     return true
 end
 

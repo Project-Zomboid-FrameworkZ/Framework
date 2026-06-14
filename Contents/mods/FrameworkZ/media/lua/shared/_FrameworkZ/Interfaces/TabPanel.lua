@@ -3,7 +3,7 @@ FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabPanel, "TabPanel")
 
 local PANEL_X = 0
 local PANEL_Y = 0
-local PANEL_WIDTH = getCore():getScreenWidth() * 0.2
+local PANEL_WIDTH = getCore():getScreenWidth() * 0.2  -- Increased to accommodate larger Directory panel
 local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
@@ -16,7 +16,10 @@ function FrameworkZ.UI.TabPanel:initialise()
     local TITLE_HEIGHT = getTextManager():MeasureStringY(FONT_TITLE, TITLE_TEXT)
     local TITLE_PADDING_TOP = 50
     local TITLE_PADDING_BOTTOM = 50
-    local BUTTON_PADDING_BOTTOM = 50
+    local BUTTON_PADDING_BOTTOM = 30
+    local CATEGORY_PADDING_BOTTOM = 15
+    local CATEGORY_LABEL_PADDING_BOTTOM = 8
+    local SEPARATOR_HEIGHT = 3
     local TITLE_X = (PANEL_WIDTH - TITLE_WIDTH) / 2
     local TITLE_Y = PANEL_MARGIN_Y + TITLE_PADDING_TOP
 
@@ -30,15 +33,84 @@ function FrameworkZ.UI.TabPanel:initialise()
     self.closeButton:setX(PANEL_WIDTH - self.closeButton:getWidth() - PANEL_MARGIN_X)
     self.closeButton.internal = "CLOSE"
 
-    local yOffset = self.titleLabel:getY() + self.titleLabel:getHeight() + TITLE_PADDING_BOTTOM
-    self.buttons = {}
+    local contentPanelYOffset = self.titleLabel:getY() + self.titleLabel:getHeight() + TITLE_PADDING_BOTTOM
+    local closeButtonTextHeight = getTextManager():MeasureStringY(FrameworkZ.UserInterfaces.ButtonTheme.hugeButtonFontSize, "Close")
+    local contentPanelHeight = PANEL_HEIGHT - contentPanelYOffset - PANEL_MARGIN_Y * 2 - closeButtonTextHeight
 
-    for _, buttonData in ipairs(FrameworkZ.UI.TabPanel.buttons) do
-        local button = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, yOffset, buttonData.text, self, buttonData.callback)
-        button.internal = buttonData.internal
-        table.insert(self.buttons, button)
-        yOffset = yOffset + button:getHeight() + BUTTON_PADDING_BOTTOM
+    -- Create scrollable content panel
+    self.contentPanel = ISPanel:new(0, contentPanelYOffset, PANEL_WIDTH, contentPanelHeight)
+    self.contentPanel.backgroundColor = {r=0, g=0, b=0, a=0}
+
+    self.contentPanel.onMouseWheel = function(self2, del)
+        self2:setYScroll(self2:getYScroll() - del * 16)
+        return true
     end
+
+    self.contentPanel.prerender = function(self2)
+        self:setStencilRect(self2:getX(), self2:getY(), self2:getWidth(), self2:getHeight())
+        ISPanel.prerender(self2)
+    end
+
+    self.contentPanel.render = function(self2)
+        ISPanel.render(self2)
+        self2:clearStencilRect()
+    end
+
+    self.contentPanel:initialise()
+    self:addChild(self.contentPanel)
+
+    local mainYOffset = CATEGORY_PADDING_BOTTOM
+    self.buttons = {}
+    local currentCategory = nil
+
+    -- Group buttons by category
+    local categoryGroups = {}
+    for _, buttonData in ipairs(FrameworkZ.UI.TabPanel.buttons) do
+        if buttonData.category then
+            if not categoryGroups[buttonData.category] then
+                categoryGroups[buttonData.category] = {}
+            end
+            table.insert(categoryGroups[buttonData.category], buttonData)
+        end
+    end
+
+    -- Create buttons and category separators
+    local isFirstCategory = true
+    for _, category in ipairs({"Character", "Tools", "Settings", "Admin"}) do
+        if categoryGroups[category] then
+            -- Add separator before category (except for first)
+            if not isFirstCategory then
+                local separator = ISPanel:new(PANEL_MARGIN_X, mainYOffset, PANEL_WIDTH - (PANEL_MARGIN_X * 2), SEPARATOR_HEIGHT)
+                separator.backgroundColor = {r=0.3, g=0.3, b=0.3, a=0.4}
+                separator.borderColor = {r=0, g=0, b=0, a=0}
+                separator:initialise()
+                self.contentPanel:addChild(separator)
+                mainYOffset = mainYOffset + SEPARATOR_HEIGHT + CATEGORY_PADDING_BOTTOM
+            end
+
+            -- Add category label
+            local categoryLabel = ISLabel:new(PANEL_MARGIN_X, mainYOffset, 20, category, 1, 1, 1, 1, UIFont.Small, true)
+            categoryLabel:initialise()
+            self.contentPanel:addChild(categoryLabel)
+            mainYOffset = mainYOffset + 20 + CATEGORY_LABEL_PADDING_BOTTOM
+
+            -- Add buttons for this category
+            for _, buttonData in ipairs(categoryGroups[category]) do
+                local button = FrameworkZ.UserInterfaces:CreateHugeButton(self.contentPanel, PANEL_MARGIN_X, mainYOffset, buttonData.text, self, buttonData.callback)
+                button.internal = buttonData.internal
+
+                table.insert(self.buttons, button)
+                mainYOffset = mainYOffset + button:getHeight() + BUTTON_PADDING_BOTTOM
+            end
+
+            isFirstCategory = false
+        end
+    end
+
+    -- Set scroll height and add scrollbars
+    self.contentPanel:setScrollHeight(mainYOffset + PANEL_MARGIN_Y)
+    self.contentPanel:addScrollBars()
+    self.contentPanel:setScrollChildren(true)
 
     local textHeight = getTextManager():MeasureStringY(FrameworkZ.UserInterfaces.ButtonTheme.hugeButtonFontSize, "Close")
     self.textCloseButton = FrameworkZ.UserInterfaces:CreateHugeButton(self, PANEL_X + PANEL_MARGIN_X, PANEL_HEIGHT - textHeight - PANEL_MARGIN_Y, "Close", self, FrameworkZ.UI.TabPanel.onMenuSelect)
@@ -103,11 +175,35 @@ function FrameworkZ.UI.TabPanel:update()
     ISPanel.update(self)
 end
 
+function FrameworkZ.UI.TabPanel:registerPanel(panel)
+    if not self.openPanels then
+        self.openPanels = {}
+    end
+    table.insert(self.openPanels, panel)
+end
+
+function FrameworkZ.UI.TabPanel:unregisterPanel(panel)
+    if self.openPanels then
+        for i, p in ipairs(self.openPanels) do
+            if p == panel then
+                table.remove(self.openPanels, i)
+                break
+            end
+        end
+    end
+end
+
 function FrameworkZ.UI.TabPanel:close()
     FrameworkZ.Timers:Remove("TabPanelSlideOut")
 
-    if FrameworkZ.UI.TabSession.instance then
-        FrameworkZ.UI.TabSession.instance:close()
+    -- Close all registered panels
+    if self.openPanels then
+        for _, panel in ipairs(self.openPanels) do
+            if panel and panel.close then
+                panel:close()
+            end
+        end
+        self.openPanels = {}
     end
 
     self:slideIn()
@@ -144,18 +240,48 @@ function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
             end
         end
     elseif button.internal == "DIRECTORY" then
-        print("Opening Directory")
+        if FrameworkZ.UI.TabPanel.instance and FrameworkZ.UI.TabPanel.instance.currentPanel then
+            FrameworkZ.UI.TabPanel.instance.currentPanel:close()
+            FrameworkZ.UI.TabPanel.instance.currentPanel = nil
+        end
+
+        if FrameworkZ.UI.TabDirectory.instance then
+            FrameworkZ.UI.TabDirectory.instance:close()
+            FrameworkZ.UI.TabPanel.instance.currentPanel = nil
+        else
+            local directory = FrameworkZ.UI.TabDirectory:new(self.isoPlayer)
+            if directory then
+                directory:initialise()
+                directory:addToUIManager()
+                FrameworkZ.UI.TabDirectory.instance = directory
+                FrameworkZ.UI.TabPanel.instance.currentPanel = directory
+            end
+        end
     elseif button.internal == "CONFIG" then
         print("Opening Config")
     end
 end
 
 FrameworkZ.UI.TabPanel.buttons = {
-    {text = "CHARACTERS", internal = "CHARACTERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {text = "MY CHARACTER", internal = "MY_CHARACTER", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect}
+    -- Character Management
+    {category = "Character", text = "Characters", internal = "CHARACTERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Character", text = "My Character", internal = "MY_CHARACTER", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+
+    -- Tools & Services
+    {category = "Tools", text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Tools", text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+
+    -- Settings
+    {category = "Settings", text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Settings", text = "Info", internal = "INFO", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+
+    -- Admin
+    {category = "Admin", text = "Server Settings", internal = "SERVER_SETTINGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Roles", internal = "ROLES", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Logs", internal = "LOGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Players", internal = "PLAYERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Whitelist", internal = "WHITELIST", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Announcements", internal = "ANNOUNCEMENTS", callback = FrameworkZ.UI.TabPanel.onMenuSelect}
 }
 
 function FrameworkZ.UI.TabPanel:new(isoPlayer)
@@ -167,6 +293,7 @@ function FrameworkZ.UI.TabPanel:new(isoPlayer)
     o.keepOnScreen = false
     o.moveWithMouse = false
     o.isoPlayer = isoPlayer
+    o.openPanels = {}
 
     FrameworkZ.UI.TabPanel.instance = o
 

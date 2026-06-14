@@ -207,6 +207,51 @@ function FrameworkZ.Interfaces:CreateSlider(options)
     return slider
 end
 
+--! \brief Create a themed ISRadioButtons.
+--! \param options \table Position, size, options list, callbacks, theme, parent.
+--! \return \table The initialized radio buttons.
+function FrameworkZ.Interfaces:CreateRadioButtons(options)
+    local x, y = self.Opt(options, "x", 0), self.Opt(options, "y", 0)
+    local w, h = self.Opt(options, "width", 100), self.Opt(options, "height", 20)
+    local target = self.Opt(options, "target", nil)
+    local onChange = self.Opt(options, "onChange", nil)
+    local options_data = self.Opt(options, "options", nil)
+    local theme = self.Opt(options, "theme", "Default")
+    local parent = self.Opt(options, "parent", nil)
+
+    local radio = ISRadioButtons:new(x, y, w, h, target, onChange)
+    radio:initialise()
+
+    if type(options_data) == "table" then
+        for _, v in ipairs(options_data) do
+            if type(v) == "table" then
+                local text = v.text or tostring(v[1] or "")
+                local data = v.data
+                radio:addOption(text, data)
+            else
+                radio:addOption(tostring(v))
+            end
+        end
+    end
+
+    FrameworkZ.Themes:ApplyRadioButtonsTheme(radio, theme)
+
+    -- Apply manual overrides
+    local bgColor = self.Opt(options, "backgroundColor", nil)
+    local borderColor = self.Opt(options, "borderColor", nil)
+    local textColor = self.Opt(options, "textColor", nil)
+    local fontToken = self.Opt(options, "font", nil)
+
+    if bgColor then radio.backgroundColor = bgColor end
+    if borderColor then radio.borderColor = borderColor end
+    if textColor and radio.setColor then radio:setColor(textColor.r, textColor.g, textColor.b, textColor.a) end
+    if fontToken then radio.font = FrameworkZ.Themes:GetFont(fontToken) end
+
+    if parent and parent.addChild then parent:addChild(radio) end
+
+    return radio
+end
+
 --! \brief Create a themed ISComboBox.
 --! \param options \table Position, size, options list, callbacks, theme, parent.
 --! \return \table The initialized combo box.
@@ -235,6 +280,9 @@ function FrameworkZ.Interfaces:CreateCombo(options)
     end
 
     FrameworkZ.Themes:ApplyComboBoxTheme(combo, theme)
+
+    -- Apply dropdown styling for better contrast on hover
+    FrameworkZ.Themes:ApplyComboBoxDropdownTheme(combo, theme)
 
     -- Apply manual overrides
     local bgColor = self.Opt(options, "backgroundColor", nil)
@@ -303,7 +351,7 @@ function FrameworkZ.Interfaces:CreateTextBox(options)
 end
 
 --! \brief Factory helper for creating interface elements by kind string.
---! \param kind \string The element type (Panel, Label, Button, Slider, Combo, ComboBox, TextEntry, TextBox).
+--! \param kind \string The element type (Panel, Label, Button, Slider, RadioButtons, Combo, ComboBox, TextEntry, TextBox).
 --! \param options \table Options forwarded to the concrete creator.
 --! \return \table|nil The created element or nil if kind is unknown.
 function FrameworkZ.Interfaces:Create(kind, options)
@@ -312,6 +360,7 @@ function FrameworkZ.Interfaces:Create(kind, options)
     if kind == "Label" then return self:CreateLabel(options) end
     if kind == "Button" then return self:CreateButton(options) end
     if kind == "Slider" then return self:CreateSlider(options) end
+    if kind == "RadioButtons" then return self:CreateRadioButtons(options) end
     if kind == "Combo" or kind == "ComboBox" then return self:CreateCombo(options) end
     if kind == "TextEntry" or kind == "TextBox" or kind == "TextEntryBox" then return self:CreateTextEntry(options) end
     print("[FZ][Interfaces] Unknown factory kind: " .. tostring(kind))
@@ -355,6 +404,7 @@ function FrameworkZ.Interfaces:GetInterface(index)
     return self.List[index]
 end
 
+-- TODO bake in predef functions from ISPanel if nil e.g. initialise, instantiate, render, prerender, etc.
 function FrameworkZ.Interfaces:Initialize()
     --! \brief Derive registered interfaces from ISPanel and merge definitions at client start.
     local uiPanel = ISPanel
@@ -364,6 +414,13 @@ function FrameworkZ.Interfaces:Initialize()
         local derived = uiPanel:derive(k)
         FrameworkZ.Utilities:MergeTables(v, derived)
         setmetatable(v, getmetatable(derived))
+
+        if not v.initialise then v.initialise = uiPanel.initialise end
+        if not v.instantiate then v.instantiate = uiPanel.instantiate end
+        if not v.addChild then v.addChild = ISUIElement.addChild end
+        if not v.render then v.render = uiPanel.render end
+        if not v.prerender then v.prerender = uiPanel.prerender end
+
         self.List[k] = v
     end
 end

@@ -135,25 +135,46 @@ function PLAYER:InitializeDefaultFactionWhitelists()
 end
 
 --! \brief Restore player data from saved data table.
---! \param data table The saved player data containing Role, MaxCharacters, PreviousCharacter, Whitelists, and CustomData.
+--! \param data table The saved player data containing MaxCharacters, PreviousCharacter, Whitelists, and CustomData.
+--! Role is managed separately by the Roles module; call PLAYER:RestoreRole() for role restoration.
 function PLAYER:RestoreData(data)
-    self:SetRole(data.Role)
     self:SetMaxCharacters(data.MaxCharacters)
     self:SetPreviousCharacter(data.PreviousCharacter)
     self:SetWhitelists(data.Whitelists)
     self:SetCustomData(data.CustomData)
+    self:RestoreRole()
 end
 
---! \brief Get the player's role.
---! \return string The player's current role (User, Operator, Moderator, Admin, Super_Admin, or Owner).
-function PLAYER:GetRole()
-    return self.Role
-end
+--! \brief Restore the player's role from persistent Roles storage.
+--! For a returning player this confirms the saved role is still valid and the role
+--! definition still exists. For a brand-new player this assigns the default role.
+--! \return \string roleId The confirmed or newly-assigned roleId.
+--! \return \string message Status message.
+function PLAYER:RestoreRole()
+    if not FrameworkZ.Roles then
+        return false, "Roles module not available."
+    end
 
---! \brief Set the player's role.
---! \param role string The role to set (read-only, cannot be changed after creation).
-function PLAYER:SetRole(role)
-    print("Failed to set Role to: '" .. tostring(role) .. "'. Role is read-only and must be set upon object creation.")
+    local username  = self:GetUsername()
+    local currentId = FrameworkZ.Roles.PlayerRoles[username]
+
+    -- Brand-new player — no stored role yet.
+    if not currentId then
+        local assignedId = FrameworkZ.Roles:EnsurePlayerRole(username)
+        print("[FrameworkZ] RestoreRole: assigned default role '" .. tostring(assignedId) .. "' to new player '" .. username .. "'")
+        return assignedId, "Default role assigned."
+    end
+
+    -- Returning player — validate the stored role still exists (in case roles were removed).
+    if not FrameworkZ.Roles.RegisteredRoles[currentId] then
+        print("[FrameworkZ] RestoreRole: stored role '" .. currentId .. "' no longer exists for '" .. username .. "'. Reassigning default.")
+        FrameworkZ.Roles.PlayerRoles[username] = nil
+        local assignedId = FrameworkZ.Roles:EnsurePlayerRole(username)
+        return assignedId, "Stored role invalid; default role reassigned."
+    end
+
+    print("[FrameworkZ] RestoreRole: confirmed role '" .. currentId .. "' for '" .. username .. "'")
+    return currentId, "Role restored."
 end
 
 --! \brief Get the player's previous character ID.
@@ -237,6 +258,23 @@ end
 --! \param steamID string The Steam ID (read-only, cannot be changed after creation).
 function PLAYER:SetSteamID(steamID)
     print("Failed to set SteamID to: '" .. tostring(steamID) .. "'. SteamID is read-only and must be set upon object creation.")
+end
+
+--! \brief Get the player's current role ID from the Roles module.
+--! \return \string roleId (e.g. "player", "admin", "superadmin")
+function PLAYER:GetRole()
+    return self.Role
+end
+
+--! \brief Set the player's role via the Roles module.
+--! \param roleId \string The roleId to assign (must be registered in FrameworkZ.Roles).
+--! \return \boolean Success
+function PLAYER:SetRole(roleId)
+    if not roleId then return false end
+
+    self.Role = roleId
+
+    return true
 end
 
 --! \brief Set the player's currently loaded character.
@@ -486,12 +524,11 @@ end
 function FrameworkZ.Players:New(isoPlayer)
     if not isoPlayer then return false end
 
-    -- TODO Reminder: Update FrameworkZ.Players:OnStorageSet() when updating here.
     local object = {
         IsoPlayer = isoPlayer,
         Username = isoPlayer:getUsername(),
         SteamID = tostring(isoPlayer:getSteamID()),
-        Role = FrameworkZ.Players.Roles.User,
+        Role = FrameworkZ.Roles:GetDefaultRole(),
         LoadedCharacter = nil,
         MaxCharacters = FrameworkZ.Config.Options.DefaultMaxCharacters,
         PreviousCharacter = nil,
@@ -935,7 +972,7 @@ end
 
 function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
     local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, "Player not found." end
-    local isoPlayer = player:GetIsoPlayer()
+    local isoPlayer = player:GetIsoPlayer() if not isoPlayer then return false, "IsoPlayer not found." end
     local clientLoadCharacter = function(_data, success, message)
         if not success then
             if callback then callback(success, message) end
@@ -943,23 +980,17 @@ function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
             return
         end
 
-        local characterOrSuccess, message2 = self:OnLoadCharacter(username, characterID, callback)
+        local character, message2 = self:OnLoadCharacter(username, characterID, callback) if not character then return false, message2 end
 
-        if not characterOrSuccess then
-            if callback then callback(characterOrSuccess, message2) end
-
-            return
-        end
-
-        if callback then callback(characterOrSuccess, message2) end
-
-        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", characterOrSuccess:GetPlayer())
+        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", character:GetPlayer())
     end
 
-    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", player)
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", player)
 
     FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.LoadCharacter", clientLoadCharacter, username, characterID)
 end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoaded")
 
 if isServer() then
     function FrameworkZ.Players.LoadCharacter(_data, username, characterID)
@@ -984,9 +1015,9 @@ function FrameworkZ.Players:OnLoadCharacter(username, characterID, callback)
         player:GetCharacter():Save()
     end
 
-    local characterInitializedCallback = function(success, message2)
-        if not success and callback then
-            callback(false, message2)
+    local characterInitializedCallback = function(character, message2)
+        if callback then
+            callback(character, message2)
         end
     end
 
@@ -1075,10 +1106,6 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
         end)
     end)
 end
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostLoad")
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterFirstLoad")
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPostliminaryLoad")
-FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterFinishedLoading")
 
 --[[
     Steps:

@@ -6,291 +6,272 @@ FrameworkZ.Roles = {}
 
 FrameworkZ.Roles = FrameworkZ.Foundation:NewModule(FrameworkZ.Roles, "Roles")
 
--- Role registry
+-- Role registry: roleId -> role data
 FrameworkZ.Roles.RegisteredRoles = {}
-FrameworkZ.Roles.RoleHierarchy = {}
-FrameworkZ.Roles.PlayerRoles = {} -- username -> {roleId1, roleId2, ...}
+FrameworkZ.Roles.RoleHierarchy    = {}
+
+-- Player role assignments: username -> roleId (exactly one role per player)
+FrameworkZ.Roles.PlayerRoles = {}
 
 -- Permission cache for faster lookups
 FrameworkZ.Roles.PermissionCache = {}
 
--- Built-in default roles
+-- Group registry: groupId -> { id, name, roles = { roleId, ... } }
+-- Groups are code-defined collections of roles. Membership is derived from PlayerRoles.
+FrameworkZ.Roles.Groups = {}
+
+-- Built-in default role IDs
 FrameworkZ.Roles.DEFAULT_ROLES = {
-    PLAYER = "player",
+    PLAYER    = "player",
     MODERATOR = "moderator",
-    ADMIN = "admin",
-    SUPERADMIN = "superadmin"
+    ADMIN     = "admin",
+    SUPERADMIN = "superadmin",
 }
 
---! \brief Initialize the Roles module
-function FrameworkZ.Roles:Initialize()
-    print("[FrameworkZ] Initializing Roles module...")
-    
-    -- Register default roles
+--[[ ============================================================
+     Lifecycle
+     ============================================================ ]]--
+
+--! \brief Registers the Roles namespace and seeds roles/data on game init.
+function FrameworkZ.Roles:OnInitGlobalModData()
+    FrameworkZ.Foundation:RegisterNamespace("Roles")
     self:RegisterDefaultRoles()
-    
-    -- Load custom roles from files
     self:LoadCustomRoles()
-    
-    -- Load player role assignments
-    self:LoadPlayerRoles()
-    
-    print("[FrameworkZ] Roles module initialized with " .. self:GetRoleCount() .. " roles")
+    if isServer() then
+        self:LoadPlayerRoles()
+    end
+    print("[FrameworkZ] Roles module ready with " .. self:GetRoleCount() .. " roles")
 end
 
---! \brief Register the default built-in roles
+--[[ ============================================================
+     Role Registration
+     ============================================================ ]]--
+
+--! \brief Register the four built-in default roles.
 function FrameworkZ.Roles:RegisterDefaultRoles()
-    -- Player role - basic permissions
     self:RegisterRole({
-        id = self.DEFAULT_ROLES.PLAYER,
-        name = "Player",
+        id          = self.DEFAULT_ROLES.PLAYER,
+        name        = "Player",
         description = "Default player role with basic permissions",
-        color = {r = 1.0, g = 1.0, b = 1.0},
-        permissions = {
-            "chat.send",
-            "chat.receive",
-            "faction.view",
-            "property.view"
-        },
-        priority = 0,
-        isDefault = true
+        color       = { r=1.0, g=1.0, b=1.0 },
+        permissions = { "chat.send", "chat.receive", "faction.view", "property.view" },
+        priority    = 0,
+        isDefault   = true,
     })
-    
-    -- Moderator role
     self:RegisterRole({
-        id = self.DEFAULT_ROLES.MODERATOR,
-        name = "Moderator",
+        id          = self.DEFAULT_ROLES.MODERATOR,
+        name        = "Moderator",
         description = "Moderator with basic administrative powers",
-        color = {r = 0.0, g = 0.8, b = 1.0},
+        color       = { r=0.0, g=0.8, b=1.0 },
         permissions = {
-            "chat.*",
-            "faction.*",
-            "property.view",
-            "property.manage",
-            "player.kick",
-            "player.mute",
-            "commands.teleport"
+            "chat.*", "faction.*",
+            "property.view", "property.manage",
+            "player.kick", "player.mute",
+            "commands.teleport",
         },
-        inherits = {self.DEFAULT_ROLES.PLAYER},
-        priority = 50
+        inherits  = { self.DEFAULT_ROLES.PLAYER },
+        priority  = 50,
     })
-    
-    -- Admin role
     self:RegisterRole({
-        id = self.DEFAULT_ROLES.ADMIN,
-        name = "Admin",
+        id          = self.DEFAULT_ROLES.ADMIN,
+        name        = "Admin",
         description = "Administrator with full server control",
-        color = {r = 1.0, g = 0.5, b = 0.0},
+        color       = { r=1.0, g=0.5, b=0.0 },
         permissions = {
-            "chat.*",
-            "faction.*",
-            "property.*",
-            "player.*",
-            "commands.*",
-            "roles.assign",
-            "roles.remove"
+            "chat.*", "faction.*", "property.*",
+            "player.*", "commands.*",
+            "roles.assign", "roles.remove",
         },
-        inherits = {self.DEFAULT_ROLES.MODERATOR},
-        priority = 100
+        inherits  = { self.DEFAULT_ROLES.MODERATOR },
+        priority  = 100,
     })
-    
-    -- Super Admin role
     self:RegisterRole({
-        id = self.DEFAULT_ROLES.SUPERADMIN,
-        name = "Super Admin",
+        id          = self.DEFAULT_ROLES.SUPERADMIN,
+        name        = "Super Admin",
         description = "Super Administrator with unrestricted access",
-        color = {r = 1.0, g = 0.0, b = 0.0},
-        permissions = {"*"}, -- All permissions
-        inherits = {self.DEFAULT_ROLES.ADMIN},
-        priority = 999
+        color       = { r=1.0, g=0.0, b=0.0 },
+        permissions = { "*" },
+        inherits    = { self.DEFAULT_ROLES.ADMIN },
+        priority    = 999,
     })
 end
 
---! \brief Register a new role
---! \param roleData Table containing role definition
---! \return boolean Success status
+--! \brief Register a new role.
+--! \param roleData \table { id, name, description?, color?, permissions?, inherits?, priority?, isDefault?, metadata? }
+--! \return \boolean Success
 function FrameworkZ.Roles:RegisterRole(roleData)
     if not roleData or not roleData.id then
         print("[FrameworkZ] Error: Cannot register role without ID")
         return false
     end
-    
-    -- Validate required fields
     if not roleData.name then
         print("[FrameworkZ] Error: Role " .. roleData.id .. " missing name")
         return false
     end
-    
-    -- Set defaults
     local role = {
-        id = roleData.id,
-        name = roleData.name,
+        id          = roleData.id,
+        name        = roleData.name,
         description = roleData.description or "",
-        color = roleData.color or {r = 1.0, g = 1.0, b = 1.0},
+        color       = roleData.color or { r=1.0, g=1.0, b=1.0 },
         permissions = roleData.permissions or {},
-        inherits = roleData.inherits or {},
-        priority = roleData.priority or 0,
-        isDefault = roleData.isDefault or false,
-        metadata = roleData.metadata or {}
+        inherits    = roleData.inherits or {},
+        priority    = roleData.priority or 0,
+        isDefault   = roleData.isDefault or false,
+        metadata    = roleData.metadata or {},
     }
-    
-    -- Register the role
     self.RegisteredRoles[role.id] = role
-    
-    -- Update hierarchy
-    self:UpdateRoleHierarchy(role)
-    
-    -- Clear permission cache since roles changed
+    self.RoleHierarchy[role.id]   = { priority = role.priority, inherits = role.inherits }
     self:ClearPermissionCache()
-    
     print("[FrameworkZ] Registered role: " .. role.name .. " (" .. role.id .. ")")
     return true
 end
 
---! \brief Update role hierarchy for inheritance
-function FrameworkZ.Roles:UpdateRoleHierarchy(role)
-    if not role or not role.id then return end
-    
-    self.RoleHierarchy[role.id] = {
-        priority = role.priority,
-        inherits = role.inherits or {}
-    }
+--! \brief Unregister a custom role. Default roles cannot be removed.
+--! Any player holding the unregistered role has their assignment cleared.
+--! \param roleId \string
+--! \return \boolean Success
+function FrameworkZ.Roles:UnregisterRole(roleId)
+    if not roleId then return false end
+    for _, defaultId in pairs(self.DEFAULT_ROLES) do
+        if roleId == defaultId then
+            print("[FrameworkZ] Cannot unregister default role: " .. roleId)
+            return false
+        end
+    end
+    self.RegisteredRoles[roleId] = nil
+    self.RoleHierarchy[roleId]   = nil
+    for username, assignedId in pairs(self.PlayerRoles) do
+        if assignedId == roleId then
+            self.PlayerRoles[username] = nil
+        end
+    end
+    self:ClearPermissionCache()
+    self:SavePlayerRoles()
+    print("[FrameworkZ] Unregistered role: " .. roleId)
+    return true
 end
 
---! \brief Load custom roles from role definition files
+--! \brief Hook point for custom role files to self-register.
 function FrameworkZ.Roles:LoadCustomRoles()
-    -- Custom roles should be defined in separate files that call RegisterRole
-    -- This allows mods to add their own roles
-    -- Example: media/lua/shared/_FrameworkZ/_Roles/MyCustomRole.lua
     print("[FrameworkZ] Loading custom roles...")
-    -- Custom role files are auto-loaded by PZ if in the correct directory
+    -- Custom role files placed in the correct directory are auto-loaded by PZ.
 end
 
---! \brief Load player role assignments from save data
+--[[ ============================================================
+     Player Role Persistence  (Namespace: "Roles", Key: "PlayerRoles")
+     ============================================================ ]]--
+
+--! \brief Load player role assignments from persistent storage.
 function FrameworkZ.Roles:LoadPlayerRoles()
-    if not isServer() then return end
-    
-    local data = FrameworkZ.Foundation:GetGlobalData("PlayerRoles") or {}
-    self.PlayerRoles = data
-    
+    local data = FrameworkZ.Foundation:GetData(nil, "Roles", "PlayerRoles")
+    if type(data) == "table" then
+        self.PlayerRoles = data
+    end
     print("[FrameworkZ] Loaded role assignments for " .. self:CountAssignedPlayers() .. " players")
 end
 
---! \brief Save player role assignments
+--! \brief Persist player role assignments.
 function FrameworkZ.Roles:SavePlayerRoles()
-    if not isServer() then return end
-    
-    FrameworkZ.Foundation:SetGlobalData("PlayerRoles", self.PlayerRoles)
-    FrameworkZ.Foundation:BroadcastGlobalData("PlayerRoles")
+    FrameworkZ.Foundation:SetData(nil, "Roles", "PlayerRoles", self.PlayerRoles, nil, true)
 end
 
---! \brief Assign a role to a player
---! \param username Player username
---! \param roleId Role ID to assign
---! \return boolean Success status
+--[[ ============================================================
+     Player Role Assignment  (one role per player)
+     ============================================================ ]]--
+
+--! \brief Return the roleId assigned to a player, or the default player role.
+--! \param username \string
+--! \return \string roleId
+function FrameworkZ.Roles:GetPlayerRole(username)
+    if not username then return self.DEFAULT_ROLES.PLAYER end
+    return self.PlayerRoles[username] or self.DEFAULT_ROLES.PLAYER
+end
+
+--! \brief Assign exactly one role to a player, replacing any previous assignment.
+--! \param username \string
+--! \param roleId \string
+--! \return \boolean Success
 function FrameworkZ.Roles:AssignRole(username, roleId)
     if not username or not roleId then return false end
-    
-    -- Validate role exists
     if not self.RegisteredRoles[roleId] then
         print("[FrameworkZ] Error: Role " .. roleId .. " does not exist")
         return false
     end
-    
-    -- Initialize player roles if needed
-    if not self.PlayerRoles[username] then
-        self.PlayerRoles[username] = {}
-    end
-    
-    -- Check if already assigned
-    for _, existingRoleId in ipairs(self.PlayerRoles[username]) do
-        if existingRoleId == roleId then
-            return true -- Already has role
-        end
-    end
-    
-    -- Add role
-    table.insert(self.PlayerRoles[username], roleId)
-    
-    -- Clear permission cache for this player
-    self.PermissionCache[username] = nil
-    
-    -- Save changes
+    if self.PlayerRoles[username] == roleId then return true end
+    self.PlayerRoles[username]       = roleId
+    self.PermissionCache[username]   = nil
     self:SavePlayerRoles()
-    
     print("[FrameworkZ] Assigned role " .. roleId .. " to " .. username)
     return true
 end
 
---! \brief Remove a role from a player
---! \param username Player username
---! \param roleId Role ID to remove
---! \return boolean Success status
+--! \brief Remove the role assignment from a player.
+--! If roleId is supplied the removal only proceeds when the player currently holds that exact role.
+--! \param username \string
+--! \param roleId \string? Optional guard — only remove if this is their current role.
+--! \return \boolean Success
 function FrameworkZ.Roles:RemoveRole(username, roleId)
-    if not username or not roleId then return false end
-    
+    if not username then return false end
     if not self.PlayerRoles[username] then return false end
-    
-    -- Find and remove role
-    for i, existingRoleId in ipairs(self.PlayerRoles[username]) do
-        if existingRoleId == roleId then
-            table.remove(self.PlayerRoles[username], i)
-            
-            -- Clear permission cache
-            self.PermissionCache[username] = nil
-            
-            -- Save changes
-            self:SavePlayerRoles()
-            
-            print("[FrameworkZ] Removed role " .. roleId .. " from " .. username)
-            return true
-        end
-    end
-    
-    return false
+    if roleId and self.PlayerRoles[username] ~= roleId then return false end
+    self.PlayerRoles[username]     = nil
+    self.PermissionCache[username] = nil
+    self:SavePlayerRoles()
+    print("[FrameworkZ] Removed role from " .. username)
+    return true
 end
 
---! \brief Get all roles assigned to a player
---! \param username Player username
---! \return table Array of role IDs
-function FrameworkZ.Roles:GetPlayerRoles(username)
-    if not username then return {} end
-    
-    local roles = self.PlayerRoles[username] or {}
-    
-    -- Add default player role if no roles assigned
-    if #roles == 0 then
-        return {self.DEFAULT_ROLES.PLAYER}
-    end
-    
-    return roles
+--! \brief Check whether a player is assigned a specific role.
+--! \param username \string
+--! \param roleId \string
+--! \return \boolean
+function FrameworkZ.Roles:HasRole(username, roleId)
+    return self:GetPlayerRole(username) == roleId
 end
 
---! \brief Get the highest priority role for a player
---! \param username Player username
---! \return table|nil Role data
+--! \brief Return the full role data table for a player's assigned role.
+--! \param username \string
+--! \return \table role data
 function FrameworkZ.Roles:GetPrimaryRole(username)
-    local roles = self:GetPlayerRoles(username)
-    local highestRole = nil
-    local highestPriority = -1
-    
-    for _, roleId in ipairs(roles) do
-        local role = self.RegisteredRoles[roleId]
-        if role and role.priority > highestPriority then
-            highestPriority = role.priority
-            highestRole = role
-        end
-    end
-    
-    return highestRole or self.RegisteredRoles[self.DEFAULT_ROLES.PLAYER]
+    return self.RegisteredRoles[self:GetPlayerRole(username)]
+        or self.RegisteredRoles[self.DEFAULT_ROLES.PLAYER]
 end
 
---! \brief Check if a player has a specific permission
---! \param username Player username (or IsoPlayer object)
---! \param permission Permission string (supports wildcards)
---! \return boolean Has permission
+--! \brief Number of players with an explicit role assignment.
+--! \return \integer
+function FrameworkZ.Roles:CountAssignedPlayers()
+    local n = 0
+    for _ in pairs(self.PlayerRoles) do n = n + 1 end
+    return n
+end
+
+--[[ ============================================================
+     Permissions
+     ============================================================ ]]--
+
+--! \brief Collect all permissions for a player by walking role inheritance.
+--! \param username \string
+--! \return \table Map of permission string -> true
+function FrameworkZ.Roles:GetAllPermissions(username)
+    local perms   = {}
+    local visited = {}
+    local function collect(roleId)
+        if visited[roleId] then return end
+        visited[roleId] = true
+        local role = self.RegisteredRoles[roleId]
+        if not role then return end
+        for _, p in ipairs(role.permissions) do perms[p] = true end
+        for _, inherited in ipairs(role.inherits) do collect(inherited) end
+    end
+    collect(self:GetPlayerRole(username))
+    return perms
+end
+
+--! \brief Check whether a player has a given permission (wildcard-aware).
+--! \param username \string or IsoPlayer
+--! \param permission \string
+--! \return \boolean
 function FrameworkZ.Roles:HasPermission(username, permission)
-    -- Handle IsoPlayer object
     if type(username) ~= "string" then
         if username and username.getUsername then
             username = username:getUsername()
@@ -300,96 +281,34 @@ function FrameworkZ.Roles:HasPermission(username, permission)
             return false
         end
     end
-    
     if not username or not permission then return false end
-    
-    -- Check cache first
-    if self.PermissionCache[username] and self.PermissionCache[username][permission] ~= nil then
-        return self.PermissionCache[username][permission]
-    end
-    
-    -- Get all permissions for this player
-    local allPermissions = self:GetAllPermissions(username)
-    
-    -- Check for exact match
-    if allPermissions[permission] then
-        self:CachePermission(username, permission, true)
-        return true
-    end
-    
-    -- Check for wildcard match
-    for perm, _ in pairs(allPermissions) do
-        if self:MatchesWildcard(permission, perm) then
-            self:CachePermission(username, permission, true)
-            return true
+    local cache = self.PermissionCache[username]
+    if cache and cache[permission] ~= nil then return cache[permission] end
+    local perms  = self:GetAllPermissions(username)
+    local result = perms["*"] == true
+    if not result then result = perms[permission] == true end
+    if not result then
+        for p in pairs(perms) do
+            if self:MatchesWildcard(permission, p) then result = true; break end
         end
     end
-    
-    -- Check if player has "*" (all permissions)
-    if allPermissions["*"] then
-        self:CachePermission(username, permission, true)
-        return true
-    end
-    
-    self:CachePermission(username, permission, false)
-    return false
+    self:CachePermission(username, permission, result)
+    return result
 end
 
---! \brief Get all permissions for a player (including inherited)
---! \param username Player username
---! \return table Map of permission -> true
-function FrameworkZ.Roles:GetAllPermissions(username)
-    local allPermissions = {}
-    local processedRoles = {} -- Prevent circular inheritance
-    
-    local function addRolePermissions(roleId)
-        if processedRoles[roleId] then return end
-        processedRoles[roleId] = true
-        
-        local role = self.RegisteredRoles[roleId]
-        if not role then return end
-        
-        -- Add this role's permissions
-        for _, perm in ipairs(role.permissions) do
-            allPermissions[perm] = true
-        end
-        
-        -- Add inherited permissions
-        if role.inherits then
-            for _, inheritedRoleId in ipairs(role.inherits) do
-                addRolePermissions(inheritedRoleId)
-            end
-        end
-    end
-    
-    -- Process all player roles
-    local roles = self:GetPlayerRoles(username)
-    for _, roleId in ipairs(roles) do
-        addRolePermissions(roleId)
-    end
-    
-    return allPermissions
-end
-
---! \brief Check if a permission matches a wildcard pattern
---! \param permission Permission to check
---! \param pattern Pattern with wildcards (e.g., "chat.*")
---! \return boolean Matches
+--! \brief Test whether a permission string matches a wildcard pattern (e.g. "chat.*").
 function FrameworkZ.Roles:MatchesWildcard(permission, pattern)
-    -- Convert wildcard pattern to Lua pattern
-    local luaPattern = "^" .. pattern:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
-    return permission:match(luaPattern) ~= nil
+    local lp = "^" .. pattern:gsub("%.", "%%."):gsub("%*", ".*") .. "$"
+    return permission:match(lp) ~= nil
 end
 
---! \brief Cache a permission check result
+--! \brief Store a permission-check result in the per-player cache.
 function FrameworkZ.Roles:CachePermission(username, permission, result)
-    if not self.PermissionCache[username] then
-        self.PermissionCache[username] = {}
-    end
+    if not self.PermissionCache[username] then self.PermissionCache[username] = {} end
     self.PermissionCache[username][permission] = result
 end
 
---! \brief Clear permission cache
+--! \brief Invalidate permission cache for one player, or for all players when username is nil.
 function FrameworkZ.Roles:ClearPermissionCache(username)
     if username then
         self.PermissionCache[username] = nil
@@ -398,124 +317,134 @@ function FrameworkZ.Roles:ClearPermissionCache(username)
     end
 end
 
---! \brief Get a role by ID
---! \param roleId Role ID
---! \return table|nil Role data
+--[[ ============================================================
+     Groups
+     Groups are code-defined collections of roles. They are never
+     persisted — membership is always derived live from PlayerRoles.
+     ============================================================ ]]--
+
+--! \brief Register a group.
+--! \param groupData \table { id \string, name \string, roles \table }
+--! \return \boolean Success
+function FrameworkZ.Roles:RegisterGroup(groupData)
+    if not groupData or not groupData.id or not groupData.name then
+        print("[FrameworkZ] Error: Cannot register group without id and name")
+        return false
+    end
+    self.Groups[groupData.id] = {
+        id    = groupData.id,
+        name  = groupData.name,
+        roles = groupData.roles or {},
+    }
+    print("[FrameworkZ] Registered group: " .. groupData.name .. " (" .. groupData.id .. ")")
+    return true
+end
+
+--! \brief Return the group definition for a given id, or nil.
+--! \param groupId \string
+--! \return \table|nil
+function FrameworkZ.Roles:GetGroup(groupId)
+    return self.Groups[groupId]
+end
+
+--! \brief Return all registered group definitions.
+--! \return \table
+function FrameworkZ.Roles:GetAllGroups()
+    return self.Groups
+end
+
+--! \brief Derive live membership for every role in a group from the current PlayerRoles table.
+--! \param groupId \string
+--! \return \table|nil { roleId -> { username, ... } }, or nil if the group does not exist.
+function FrameworkZ.Roles:GetGroupMembership(groupId)
+    local group = self.Groups[groupId]
+    if not group then return nil end
+    local membership = {}
+    for _, roleId in ipairs(group.roles) do
+        membership[roleId] = {}
+    end
+    for username, roleId in pairs(self.PlayerRoles) do
+        if membership[roleId] then
+            table.insert(membership[roleId], username)
+        end
+    end
+    return membership
+end
+
+--! \brief Return all players currently assigned to a specific role.
+--! \param roleId \string
+--! \return \table Array of username strings
+function FrameworkZ.Roles:GetPlayersWithRole(roleId)
+    local players = {}
+    for username, assignedId in pairs(self.PlayerRoles) do
+        if assignedId == roleId then
+            table.insert(players, username)
+        end
+    end
+    return players
+end
+
+--[[ ============================================================
+     Role Info Helpers
+     ============================================================ ]]--
+
+--! \brief Return the role data table for a given roleId.
 function FrameworkZ.Roles:GetRole(roleId)
     return self.RegisteredRoles[roleId]
 end
 
---! \brief Get all registered roles
---! \return table Map of roleId -> role data
+--! \brief Return the full RegisteredRoles table.
 function FrameworkZ.Roles:GetAllRoles()
     return self.RegisteredRoles
 end
 
---! \brief Get count of registered roles
---! \return number Count
+--! \brief Return the number of registered roles.
 function FrameworkZ.Roles:GetRoleCount()
-    local count = 0
-    for _ in pairs(self.RegisteredRoles) do
-        count = count + 1
-    end
-    return count
+    local n = 0
+    for _ in pairs(self.RegisteredRoles) do n = n + 1 end
+    return n
 end
 
---! \brief Count players with role assignments
---! \return number Count
-function FrameworkZ.Roles:CountAssignedPlayers()
-    local count = 0
-    for _ in pairs(self.PlayerRoles) do
-        count = count + 1
-    end
-    return count
-end
-
---! \brief Get all players with a specific role
---! \param roleId Role ID
---! \return table Array of usernames
-function FrameworkZ.Roles:GetPlayersWithRole(roleId)
-    local players = {}
-    
-    for username, roles in pairs(self.PlayerRoles) do
-        for _, playerRoleId in ipairs(roles) do
-            if playerRoleId == roleId then
-                table.insert(players, username)
-                break
+--! \brief Return the role marked as default (isDefault = true).
+--! When more than one default is registered the one with the highest priority wins.
+--! Falls back to DEFAULT_ROLES.PLAYER if nothing is found.
+--! \return \table Role data table
+function FrameworkZ.Roles:GetDefaultRole()
+    local best = nil
+    for _, role in pairs(self.RegisteredRoles) do
+        if role.isDefault then
+            if not best or role.priority > best.priority then
+                best = role
             end
         end
     end
-    
-    return players
+    return best or self.RegisteredRoles[self.DEFAULT_ROLES.PLAYER]
 end
 
---! \brief Check if a player has a specific role
---! \param username Player username
---! \param roleId Role ID
---! \return boolean Has role
-function FrameworkZ.Roles:HasRole(username, roleId)
-    local roles = self:GetPlayerRoles(username)
-    
-    for _, playerRoleId in ipairs(roles) do
-        if playerRoleId == roleId then
-            return true
-        end
-    end
-    
-    return false
+--! \brief Ensure a player has a role. If none is recorded, assign the default role.
+--! Safe to call for both brand-new players and returning players.
+--! \param username \string
+--! \return \string The player's roleId (existing or newly assigned default)
+function FrameworkZ.Roles:EnsurePlayerRole(username)
+    if not username then return false end
+    if self.PlayerRoles[username] then return self.PlayerRoles[username] end
+    local defaultRole = self:GetDefaultRole()
+    if not defaultRole then return false end
+    self:AssignRole(username, defaultRole.id)
+    return defaultRole.id
 end
 
---! \brief Get formatted role name with color for display
---! \param roleId Role ID
---! \return string Formatted name
+--! \brief Return the display name for a roleId, falling back to the raw id.
 function FrameworkZ.Roles:GetFormattedRoleName(roleId)
     local role = self.RegisteredRoles[roleId]
-    if not role then return roleId end
-    
-    -- Return just the name for now (could add color codes later)
-    return role.name
+    return role and role.name or roleId
 end
 
---! \brief Get role color
---! \param roleId Role ID
---! \return table {r, g, b} or nil
+--! \brief Return the { r, g, b } color table for a roleId, or nil.
 function FrameworkZ.Roles:GetRoleColor(roleId)
     local role = self.RegisteredRoles[roleId]
     return role and role.color or nil
 end
 
---! \brief Unregister a role
---! \param roleId Role ID
---! \return boolean Success
-function FrameworkZ.Roles:UnregisterRole(roleId)
-    if not roleId then return false end
-    
-    -- Don't allow removing default roles
-    for _, defaultRoleId in pairs(self.DEFAULT_ROLES) do
-        if roleId == defaultRoleId then
-            print("[FrameworkZ] Cannot unregister default role: " .. roleId)
-            return false
-        end
-    end
-    
-    -- Remove from registry
-    self.RegisteredRoles[roleId] = nil
-    self.RoleHierarchy[roleId] = nil
-    
-    -- Remove from all players
-    for username, roles in pairs(self.PlayerRoles) do
-        for i = #roles, 1, -1 do
-            if roles[i] == roleId then
-                table.remove(roles, i)
-            end
-        end
-    end
-    
-    -- Clear caches
-    self:ClearPermissionCache()
-    self:SavePlayerRoles()
-    
-    print("[FrameworkZ] Unregistered role: " .. roleId)
-    return true
-end
+FrameworkZ.Foundation:RegisterModule(FrameworkZ.Roles)
 

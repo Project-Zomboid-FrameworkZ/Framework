@@ -8,7 +8,8 @@ local mainMenuIsMuted = false
 local mainMenuOriginalVolume = 1.0
 
 function FrameworkZ.UI.MainMenu:initialise()
-    
+	ISPanel.initialise(self)
+
     -- HL2RP LIGHTNING STUFF
     --[[
     FrameworkZ.Timers:Create("MainMenuTick", 1, 0, function()
@@ -41,20 +42,19 @@ function FrameworkZ.UI.MainMenu:initialise()
     local middleX = self.width / 2 - 200 / 2
     local middleY = self.height / 2 + FrameworkZ.UI.GetHeight(UIFont.Title, title) + FrameworkZ.UI.GetHeight(UIFont.Large, subtitle)
 
-	ISPanel.initialise(self)
-
-    if FrameworkZ.Timers:Exists("FadeOutMainMenuMusic") then
+    --[[if FrameworkZ.Timers:Exists("FadeOutMainMenuMusic") then
         FrameworkZ.Timers:Remove("FadeOutMainMenuMusic")
-    end
+    end--]]
 
-    if currentMainMenuSong and self.emitter:isPlaying(currentMainMenuSong) then
-        self.emitter:stopSound(currentMainMenuSong)
-    end
-
-    mainMenuMusicVolume = 0.5
-    currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config.Options.MainMenuMusic, nil)
-    if currentMainMenuSong then
-        self.emitter:setVolume(currentMainMenuSong, mainMenuMusicVolume)
+    if FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"] then
+        self.bgMusicController = FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"]
+        self.bgMusicController:transfer(self)
+        self.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
+    else
+        self.bgMusicController = FrameworkZ.UI.AudioController:new("Main Menu Music Volume", 10, self.height - 85, self.playerObject)
+        self.bgMusicController:initialise()
+        self.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
+        self:addChild(self.bgMusicController)
     end
 
     local stepWidth, stepHeight = 600, 700 -- w = 500?
@@ -196,12 +196,15 @@ function FrameworkZ.UI.MainMenu:fadeOutMainMenuMusic()
 end
 
 function FrameworkZ.UI.MainMenu:onClose()
-    FrameworkZ.Timers:Create("FadeOutMainMenuMusic", 0.01, 0, function()
+    --[[FrameworkZ.Timers:Create("FadeOutMainMenuMusic", 0.01, 0, function()
         self:fadeOutMainMenuMusic()
-    end)
+    end)--]]
+
+    self.bgMusicController:fadeOut()
 
     self:setVisible(false)
     self:removeFromUIManager()
+    FrameworkZ.UI.MainMenu.instance = nil
 end
 
 function FrameworkZ.UI.MainMenu:onEnterMainMenu()
@@ -603,8 +606,12 @@ function FrameworkZ.UI.MainMenu:onEnterMainMenuFromLoadCharacterMenu()
 end
 
 function FrameworkZ.UI.MainMenu:onLoadCharacter()
+    self.backgroundImageOpacity = 1
+
     local loadCallback = function(loadedCharacter, message)
         if loadedCharacter then
+            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterSpawn", loadedCharacter)
+
             FrameworkZ.Notifications:AddToQueue("Loading character... Please wait a few seconds for the map to load.", FrameworkZ.Notifications.Types.Info, nil, self)
 
             FrameworkZ.Timers:Simple(2, function()
@@ -620,6 +627,8 @@ function FrameworkZ.UI.MainMenu:onLoadCharacter()
                     FrameworkZ.UI.MainMenu.instance:onClose()
                 end
 
+                FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterReady", loadedCharacter)
+
                 FrameworkZ.Timers:Simple(3, function()
                     self.playerObject:setGodMod(false)
                     self.playerObject:setInvincible(false)
@@ -628,7 +637,7 @@ function FrameworkZ.UI.MainMenu:onLoadCharacter()
                         FrameworkZ.Notifications:AddToQueue("Spawn protection has now been removed.", FrameworkZ.Notifications.Types.Warning)
                     end
 
-                    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFinishedLoading", loadedCharacter:GetPlayer())
+                    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterSpawned", loadedCharacter)
                 end)
             end)
         else
@@ -656,6 +665,9 @@ function FrameworkZ.UI.MainMenu:onLoadCharacter()
     end
     --]]
 end
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterSpawn")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterReady")
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterSpawned")
 
 function FrameworkZ.UI.MainMenu:onDisconnect()
     local isoPlayer = self.playerObject
@@ -732,9 +744,9 @@ end
 function FrameworkZ.UI.MainMenu:update()
     ISPanel.update(self)
 
-    if not self.emitter:isPlaying(currentMainMenuSong) then
+    --[[if not self.emitter:isPlaying(currentMainMenuSong) then
         currentMainMenuSong = self.emitter:playSoundImpl(FrameworkZ.Config:GetOption("MainMenuMusic"), nil)
-    end
+    end--]]
 end
 
 function FrameworkZ.UI.MainMenu:new(x, y, width, height, playerObject)

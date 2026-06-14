@@ -30,6 +30,7 @@ function FrameworkZ.Commands:New(name)
         adminOnly = false,
         serverOnly = false,
         clientOnly = false,
+        allowConsole = false,
         minArgs = 0,
         maxArgs = nil,
         metadata = {}
@@ -103,6 +104,29 @@ function FrameworkZ.Commands:HookChatSystem()
     end)
 end
 
+--! \brief Process a console input string as a command (no prefix required)
+--! \param message Console input text
+--! \return boolean True if message was a command and was handled
+function FrameworkZ.Commands:ProcessConsoleCommand(message)
+    if not message then return false end
+
+    -- Strip a leading slash so both "kick Bob" and "/kick Bob" work from file input
+    if message:sub(1, 1) == "/" then
+        message = message:sub(2)
+    end
+
+    local parts = self:ParseCommandString(message)
+    if #parts == 0 then return false end
+
+    local commandName = parts[1]:lower()
+    local args = {}
+    for i = 2, #parts do
+        table.insert(args, parts[i])
+    end
+
+    return self:ExecuteCommand(nil, commandName, args)
+end
+
 --! \brief Process a chat message as a potential command
 --! \param player IsoPlayer who sent the message
 --! \param message Chat message text
@@ -168,7 +192,8 @@ end
 --! \param args Array of arguments
 --! \return boolean Success status
 function FrameworkZ.Commands:ExecuteCommand(player, commandName, args)
-    if not player or not commandName then return false end
+    if not commandName then return false end
+    local isConsole = (player == nil)
     
     commandName = commandName:lower()
     args = args or {}
@@ -185,17 +210,25 @@ function FrameworkZ.Commands:ExecuteCommand(player, commandName, args)
         return false
     end
     
+    -- Console-only or console-allowed check
+    if isConsole and not command.allowConsole then
+        print("[FZ] Command /" .. commandName .. " does not allow console execution.")
+        return false
+    end
+
     -- Check if player can run command
-    if command.CanRun then
-        if not command:CanRun(player, args) then
-            self:SendMessage(player, "You don't have permission to use this command.")
-            return false
-        end
-    else
-        -- Fallback permission check
-        if not self:CanExecuteCommand(player, command) then
-            self:SendMessage(player, "You don't have permission to use this command.")
-            return false
+    if not isConsole then
+        if command.CanRun then
+            if not command:CanRun(player, args) then
+                self:SendMessage(player, "You don't have permission to use this command.")
+                return false
+            end
+        else
+            -- Fallback permission check
+            if not self:CanExecuteCommand(player, command) then
+                self:SendMessage(player, "You don't have permission to use this command.")
+                return false
+            end
         end
     end
     
@@ -216,16 +249,15 @@ function FrameworkZ.Commands:ExecuteCommand(player, commandName, args)
         return false
     end
     
-    if command.clientOnly and not isClient() then
+    if command.clientOnly and isConsole then
         self:SendMessage(player, "This command can only be used by clients.")
         return false
     end
-    
-    -- Execute command
+
     local success, result = pcall(command.OnRun, command, player, args)
     
     if not success then
-        print("[FrameworkZ] Error executing command " .. commandName .. ": " .. tostring(result))
+        print("[FZ] Error executing command " .. commandName .. ": " .. tostring(result))
         self:SendMessage(player, "Error executing command. Check server logs.")
         return false
     end
@@ -267,7 +299,10 @@ end
 --! \param player IsoPlayer
 --! \param message Message text
 function FrameworkZ.Commands:SendMessage(player, message)
-    if not player then return end
+    if not player then
+        print("[FZ] " .. tostring(message))
+        return
+    end
     
     if FrameworkZ.Notifications then
         FrameworkZ.Notifications:Send(player, {
@@ -285,7 +320,7 @@ end
 function FrameworkZ.Commands:LogCommandExecution(player, commandName, args, success)
     local entry = {
         timestamp = os.time(),
-        username = player:getUsername(),
+        username = player and player:getUsername() or "Console",
         command = commandName,
         args = args,
         success = success
@@ -299,7 +334,7 @@ function FrameworkZ.Commands:LogCommandExecution(player, commandName, args, succ
     end
     
     -- Console log
-    print(string.format("[FrameworkZ] %s executed: /%s %s (success: %s)",
+    print(string.format("[FZ] %s executed: /%s %s (success: %s)",
         entry.username,
         commandName,
         table.concat(args, " "),
@@ -360,7 +395,7 @@ function FrameworkZ.Commands:UnregisterCommand(commandName)
     -- Remove command
     self.RegisteredCommands[commandName] = nil
     
-    print("[FrameworkZ] Unregistered command: /" .. commandName)
+    print("[FZ] Unregistered command: /" .. commandName)
     return true
 end
 

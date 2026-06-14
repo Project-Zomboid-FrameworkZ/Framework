@@ -1,0 +1,18 @@
+--! \page Hooks
+--! \brief These are the available hooks in FrameworkZ that modules, plugins, and other scripts can use to extend functionality.
+--!
+--! \section PlayerInitializationHooks Player Initialization Hooks
+--! These hooks are called during the player initialization process on both server and client sides upon client connection and joining into the server.
+--! - PreInitializeClient(isoPlayer) - Called on the client side once the server has confirmed that the connecting isoPlayer is valid.
+--! - InitializeClient(isoPlayer) - Called on the server first, then the client last. This occurs after the client is ready to begin full initialization.
+--! - PostInitializeClient(player) - Called on the server first, then the client last. This occurs after the player has been fully initialized on its realm. Note: The player parameter is a FrameworkZ PLAYER object and not an IsoPlayer.
+--!
+--! \section CharacterLoadingHooks Character Loading Hooks
+--! These hooks are called at various stages of the character loading process. Character loading is server first, client last. This means the server side will load and restore a character before the client side begins loading the character in the same methods. So these hooks can be used on both server and client sides depending on the need.
+--! - OnCharacterLoad(player) - Called when a character is initially loaded by a player (e.g. load button just clicked).
+--! - OnCharacterLoaded(player) - Called when a character has finished preemptively loading for a player (load sequence started asynchronously).
+--! - OnCharacterRestore(character, data) - Called prior to a character being restored from data (ready to restore, data parameter is read-only).
+--! - OnCharacterRestored(character, firstLoad) - Called after a character has been restored from data (data fully restored).
+--! - OnCharacterSpawn(character) - Called when a character is spawned into the world but not ready (map loading).
+--! - OnCharacterReady(character) - Called when a character is ready in the world after spawning (main menu closed and character is controllable, map may still be loading depending on user PC specs or server load).
+--! - OnCharacterSpawned(character) - Called after a character has spawned into the world completely (spawn protection removed).
