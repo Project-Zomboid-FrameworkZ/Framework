@@ -63,6 +63,59 @@ function FrameworkZ.UI.TabMenu:prerender()
 end
 
 function FrameworkZ.UI.TabMenu:update()
+    local sidebar = ISEquippedItem and ISEquippedItem.instance or nil
+    if sidebar and sidebar.getX and sidebar.getY and sidebar.getHeight and sidebar.getWidth then
+        local desiredX = sidebar:getX()
+        local baseBottom = sidebar:getHeight()
+        local sidebarBottom = baseBottom
+        local sawOverflowChild = false
+
+        local children = sidebar.getChildren and sidebar:getChildren() or nil
+        if children and children.size then
+            for i = 0, children:size() - 1 do
+                local child = children:get(i)
+                if child and child.getY and child.getHeight then
+                    local visible = true
+                    if child.isVisible then
+                        visible = child:isVisible()
+                    end
+
+                    if visible then
+                        local childBottom = child:getY() + child:getHeight()
+                        if childBottom > baseBottom then
+                            sawOverflowChild = true
+                        end
+                        if childBottom > sidebarBottom then
+                            sidebarBottom = childBottom
+                        end
+                    end
+                end
+            end
+        end
+
+        local adminOffset = 0
+        local canCheckAdmin = self.isoPlayer and self.isoPlayer.isAccessLevel
+        if canCheckAdmin and not self.isoPlayer:isAccessLevel("None") and not sawOverflowChild then
+            -- Reserve minimal space only when admin controls are not represented as sidebar children.
+            adminOffset = 40
+        end
+
+        local desiredY = sidebar:getY() + sidebarBottom + adminOffset + 10
+        local desiredW = sidebar:getWidth()
+
+        if self:getX() ~= desiredX then
+            self:setX(desiredX)
+        end
+
+        if self:getY() ~= desiredY then
+            self:setY(desiredY)
+        end
+
+        if self:getWidth() ~= desiredW then
+            self:setWidth(desiredW)
+        end
+    end
+
     ISPanel.update(self)
 end
 

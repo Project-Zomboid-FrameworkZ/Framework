@@ -101,6 +101,34 @@ function FrameworkZ.Utilities:MergeTables(t1, t2, visited)
     return t1
 end
 
+function FrameworkZ.Utilities:MergeClassDefinition(target, source, visited)
+    visited = visited or {}
+
+    if type(target) ~= "table" or type(source) ~= "table" then
+        return target
+    end
+
+    if visited[source] then
+        return target
+    end
+
+    visited[source] = true
+
+    for k, v in pairs(source) do
+        if type(v) == "table" and type(target[k]) == "table" then
+            self:MergeClassDefinition(target[k], v, visited)
+        else
+            target[k] = v
+        end
+    end
+
+    -- Important:
+    -- Do not merge or replace metatables here.
+    -- The metatable from ISPanel:derive(...) is the inheritance chain.
+
+    return target
+end
+
 --! \brief Convert a table to a string representation.
 --! \param tbl \table The table to dump.
 --! \return \string String representation of the table.

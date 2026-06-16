@@ -7,6 +7,7 @@ FrameworkZ.Logs = {}
 FrameworkZ.Logs.LogEntries = {}
 FrameworkZ.Logs.MaxEntries = 1000
 FrameworkZ.Logs.RootDirectory = "FrameworkZ" .. getFileSeparator() .. "Logs"
+FrameworkZ.Logs.LogDirectory = FrameworkZ.Logs.RootDirectory .. getFileSeparator()
 FrameworkZ.Logs.LogDirectories = { -- /.cache/Lua/FrameworkZ_Logs/[date: YYYY-MM]/[date: DD_#]/
     AdminLogs = { -- /AdminLogs/[username]/
         "Audit", -- Bans, kicks, mutes, etc.
@@ -32,6 +33,7 @@ FrameworkZ.Logs.LogDirectories = { -- /.cache/Lua/FrameworkZ_Logs/[date: YYYY-MM
 
 -- Define log types
 FrameworkZ.Logs.LogTypes = {
+    PLAYER_ACTION = "Player Action",
     PLAYER_ACCEPT_TRADE = "Player Accept Trade",
     PLAYER_CANCEL_TRADE = "Player Cancel Trade",
     PLAYER_CREATE_CHARACTER = "Player Create Character",
@@ -58,8 +60,18 @@ FrameworkZ.Logs = FrameworkZ.Foundation:NewModule(FrameworkZ.Logs, "Logs")
 
 function FrameworkZ.Logs:Initialize()
     local separator = getFileSeparator()
-    local path = self:GetRootDirectory() .. separator .. "README.txt"
-    local writer = getFileWriter(path, true, true)
+    local rootDirectory = self:GetRootDirectory()
+
+    -- Prime both path segments to avoid intermittent directory creation failures.
+    local rootPrimeWriter = getFileWriter("FrameworkZ" .. separator .. "README.txt", true, false)
+    if rootPrimeWriter then
+        rootPrimeWriter:close()
+    end
+
+    self.LogDirectory = rootDirectory .. separator
+
+    local path = self.LogDirectory .. "README.txt"
+    local writer = getFileWriter(path, true, false)
 
     if writer then
         writer:write("FrameworkZ Logs\r\n")
@@ -104,7 +116,7 @@ end
 --! \brief Save a log entry to a file.
 --! \param logEntry \table The log entry to save.
 function FrameworkZ.Logs:SaveLogToFile(logEntry)
-    local filename = self.LogDirectory .. (logEntry.player or "system") .. ".log"
+    local filename = (self.LogDirectory or (self:GetRootDirectory() .. getFileSeparator())) .. (logEntry.player or "system") .. ".log"
     local fileWriter = getFileWriter(filename, true, false)
     if fileWriter then
         fileWriter:write(string.format("[%s] %s: %s\n", os.date("%Y-%m-%d %H:%M:%S", logEntry.timestamp), logEntry.logType, logEntry.message))
@@ -131,7 +143,7 @@ end
 --! \brief Load log entries from a file.
 --! \param player \string The player username to load logs for.
 function FrameworkZ.Logs:LoadLogsFromFile(player)
-    local filename = self.LogDirectory .. (player or "system") .. ".log"
+    local filename = (self.LogDirectory or (self:GetRootDirectory() .. getFileSeparator())) .. (player or "system") .. ".log"
     local fileReader = getFileReader(filename, true)
     if fileReader then
         while true do

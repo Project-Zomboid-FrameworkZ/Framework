@@ -405,6 +405,7 @@ function FrameworkZ.Interfaces:GetInterface(index)
 end
 
 -- TODO bake in predef functions from ISPanel if nil e.g. initialise, instantiate, render, prerender, etc.
+--[[
 function FrameworkZ.Interfaces:Initialize()
     --! \brief Derive registered interfaces from ISPanel and merge definitions at client start.
     local uiPanel = ISPanel
@@ -422,5 +423,39 @@ function FrameworkZ.Interfaces:Initialize()
         if not v.prerender then v.prerender = uiPanel.prerender end
 
         self.List[k] = v
+    end
+end
+--]]
+
+--! \brief Derive registered interfaces from ISPanel and merge definitions at client start.
+function FrameworkZ.Interfaces:Initialize()
+    local uiPanel = ISPanel
+    if not uiPanel or not uiPanel.derive then
+        return
+    end
+
+    for name, definition in pairs(self.List) do
+        if type(definition) == "table" then
+            -- Create proper PZ-derived class.
+            local derived = uiPanel:derive(name)
+
+            -- Apply the shared FrameworkZ definition onto the derived class.
+            FrameworkZ.Utilities:MergeClassDefinition(derived, definition)
+
+            -- Mutate the original table so existing references survive.
+            for k, v in pairs(derived) do
+                definition[k] = v
+            end
+
+            -- Preserve ISPanel inheritance chain.
+            setmetatable(definition, getmetatable(derived))
+
+            -- Important for instance lookup.
+            definition.__index = definition
+            definition.Type = name
+
+            -- Keep registry pointing at the same table reference.
+            self.List[name] = definition
+        end
     end
 end

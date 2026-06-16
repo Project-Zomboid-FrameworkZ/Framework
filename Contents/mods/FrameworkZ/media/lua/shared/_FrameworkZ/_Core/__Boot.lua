@@ -118,13 +118,13 @@ FrameworkZ.Meta.Version = "1.0.0"
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
     SkipIntro = true,
-    Version = "13.9.3",
+    Version = "14.9.3",
     VersionType = "Pre-Alpha (Preview)",
 
     -- When true, server stdout is redirected to frameworkz.txt and console input
     -- is intercepted so FZ commands can be typed directly into the server panel.
     -- The panel will no longer show live output while this is active.
-    AdvancedConsole = true,
+    AdvancedConsole = false,
 
     IntroFrameworkImage = "media/textures/fz.png",
     IntroGamemodeImage = "media/textures/hl2rp.png",
