@@ -17,7 +17,7 @@ A roleplay-first framework for Project Zomboid. It provides reusable systems for
 - Hooks/events are bridged via `__Foundation.lua`; see the documentation comments in that file for networking and storage helpers.
 
 ## Documentation
-- Live docs (when published): https://docz.pzframeworkz.net
+- Live docs (when published): https://fz.exiguous.net
 - Source docs: DocZ comments throughout the Lua modules and the `_Topics` pages listed above.
 
 ## Contributing
