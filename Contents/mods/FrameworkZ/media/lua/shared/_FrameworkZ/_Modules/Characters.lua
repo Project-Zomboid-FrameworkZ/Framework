@@ -115,7 +115,7 @@ FrameworkZ.Characters.DefaultCharacterData = {
     
     -- Inventory data
     [FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL] = {},
-    [FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = {},
+    [FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = { items = {}, equippedItems = {} },
     [FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = {},
     
     -- Position and stats
@@ -794,7 +794,18 @@ end
 function CHARACTER:GetInventoryContents()
     local inventory = self:GetInventory()
     if inventory and inventory.Save then
-        return inventory:Save()
+        local fullInventoryData, message = inventory:Save()
+        if fullInventoryData then
+            self[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = fullInventoryData.INVENTORY_LOGICAL or { items = {}, equippedItems = {} }
+            self[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL] = fullInventoryData.INVENTORY_PHYSICAL or {}
+
+            -- Keep equipment in sync with the same save snapshot.
+            if fullInventoryData.Equipment then
+                self[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = fullInventoryData.Equipment
+            end
+        end
+
+        return fullInventoryData, message
     end
     return nil, "No inventory object available"
 end
@@ -991,6 +1002,11 @@ end
 --! \return \boolean Success flag.
 --! \return \string Status or error message.
 function CHARACTER:Restore(callback)
+    -- Server-authoritative loads may not provide a callback; normalize to a no-op.
+    if type(callback) ~= "function" then
+        callback = function(...) end
+    end
+
     local username = self:GetPlayer():GetUsername()
     local characterID = self:GetID()
     local player = FrameworkZ.Players:GetPlayerByID(username) if not player then callback(false, "Player not found.") return false, "Player not found." end
@@ -1456,11 +1472,20 @@ function FrameworkZ.Characters:ProcessCreationData(creationData, player)
         local faction = FrameworkZ.Factions:GetFactionByID(characterData[FZ_ENUM_CHARACTER_INFO_FACTION])
         if faction and faction.items then
             for uniqueID, quantity in pairs(faction.items) do
-                -- Add to logical inventory
-                if not characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] then
-                    characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = {}
+                local logicalData = characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL]
+                if not logicalData or type(logicalData) ~= "table" then
+                    logicalData = { items = {}, equippedItems = {} }
+                    characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = logicalData
                 end
-                characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL][uniqueID] = (characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL][uniqueID] or 0) + quantity
+
+                if not logicalData.items then
+                    logicalData.items = {}
+                end
+
+                local safeQuantity = math.max(0, math.floor(tonumber(quantity) or 0))
+                for i = 1, safeQuantity do
+                    table.insert(logicalData.items, { uniqueID = uniqueID })
+                end
             end
         end
     end

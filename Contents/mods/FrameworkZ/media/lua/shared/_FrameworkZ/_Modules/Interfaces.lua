@@ -305,6 +305,7 @@ function FrameworkZ.Interfaces:CreateComboBox(options)
     return self:CreateCombo(options)
 end
 
+-- TODOs: Add ontextchange option
 --! \brief Create a themed ISTextEntryBox (single or multiline).
 --! \param options \table Position, size, text, theme, multiline, parent, overrides.
 --! \return \table The initialized text entry.
@@ -367,11 +368,11 @@ function FrameworkZ.Interfaces:Create(kind, options)
     return nil
 end
 
+--! \brief Define an interface table for later registration.
+--! \param uniqueID \string Unique interface key.
+--! \param parentTable \table Optional table to attach as Parent.
+--! \return \table The interface definition table.
 function FrameworkZ.Interfaces:New(uniqueID, parentTable)
-    --! \brief Define an interface table for later registration.
-    --! \param uniqueID \string Unique interface key.
-    --! \param parentTable \table Optional table to attach as Parent.
-    --! \return \table The interface definition table.
     local object = {
         UniqueID = uniqueID or "DefaultInterface",
         Parent = parentTable or nil
@@ -382,14 +383,17 @@ function FrameworkZ.Interfaces:New(uniqueID, parentTable)
     return object
 end
 
+--! \brief Register an interface definition by key.
+--! \param tbl \table Interface definition table.
+--! \param index \string Registry key.
+--! \return \table The registered interface table (empty if duplicate).
 function FrameworkZ.Interfaces:Register(tbl, index)
-    --! \brief Register an interface definition by key.
-    --! \param tbl \table Interface definition table.
-    --! \param index \string Registry key.
-    --! \return \table The registered interface table (empty if duplicate).
     if self.List[index] then
-        print("[FZ] Interface '" .. index .. "' is already registered. Use 'FrameworkZ.Interfaces:GetInterface(index)' to modify an already existing interface. Re-registration has been aborted.")
-        return {}
+        print("[FZ] Interface '" .. index .. "' is already registered. Override will be reinitialized.")
+
+        self.List[index] = FrameworkZ.Interfaces:Initialize(tbl)
+
+        return self.List[index]
     end
 
     self.List[index] = tbl
@@ -397,10 +401,10 @@ function FrameworkZ.Interfaces:Register(tbl, index)
     return self.List[index]
 end
 
+--! \brief Retrieve a registered interface by key.
+--! \param index \string Interface key.
+--! \return \table|nil The interface table or nil if missing.
 function FrameworkZ.Interfaces:GetInterface(index)
-    --! \brief Retrieve a registered interface by key.
-    --! \param index \string Interface key.
-    --! \return \table|nil The interface table or nil if missing.
     return self.List[index]
 end
 
@@ -428,10 +432,32 @@ end
 --]]
 
 --! \brief Derive registered interfaces from ISPanel and merge definitions at client start.
-function FrameworkZ.Interfaces:Initialize()
+--! \param interface \table Optional specific interface to initialize (by reference or key). If nil, initializes all interfaces.
+function FrameworkZ.Interfaces:Initialize(interface)
     local uiPanel = ISPanel
+
     if not uiPanel or not uiPanel.derive then
         return
+    end
+
+    if interface then
+        if type(interface) == "string" then
+            interface = self.List[interface]
+        end
+
+        if type(interface) == "table" then
+            local name = interface.UniqueID or "UnnamedInterface"
+            local derived = uiPanel:derive(name)
+            FrameworkZ.Utilities:MergeClassDefinition(derived, interface)
+            setmetatable(interface, getmetatable(derived))
+            interface.__index = interface
+            interface.Type = name
+            self.List[name] = interface
+        else
+            print("[FZ][Interfaces] Invalid interface provided for initialization.")
+        end
+
+        return interface
     end
 
     for name, definition in pairs(self.List) do

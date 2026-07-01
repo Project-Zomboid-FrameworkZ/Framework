@@ -6,9 +6,6 @@
 --! Another aspect of items are item bases. A base can be defined and inherited from, allowing for the creation of new item types with shared properties and behaviors. This allows code reuse, a self-explained concept where repitious code is defined at a single source and reused by other different elements.
 
 FrameworkZ = FrameworkZ or {}
-
---! \brief Items module for FrameworkZ. Defines and interacts with ITEM \object.
---! \module FrameworkZ.Items
 FrameworkZ.Items = {}
 
 FZ_EQUIP_TYPE_IDEAL = "Ideal"
@@ -423,8 +420,21 @@ function FrameworkZ.Items:OnDropItemCallback(parameters)
     end
 end
 
+function FrameworkZ.Items:OnPreFillInventoryObjectContextMenu(player, context, items)
+    if not context then return end
+
+    context._fzItemsMenuPhase = "prefill"
+    context._fzItemsMenuBuilt = false
+    context._fzItemsFallbackName = "Fallback"
+end
+
 function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, items)
-    --context:clear()
+    if not context or context._fzItemsMenuBuilt then return end
+
+    context._fzItemsMenuPhase = "filling"
+
+    local vanillaOptions = MenuManager.snapshotOptions(context)
+    context:clear()
 
     local isoPlayer = getSpecificPlayer(player)
     local menuManager = MenuManager.new(context)
@@ -492,7 +502,10 @@ function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, item
 
                     if canContext then
                         if instance.OnContext then
-                            context = instance:OnContext(isoPlayer, v, items, menuManager, uniqueIDCounts[uniqueID])
+                            local returnedContext = instance:OnContext(isoPlayer, v, items, menuManager, uniqueIDCounts[uniqueID])
+                            if returnedContext and (type(returnedContext) == "table" or type(returnedContext) == "userdata") then
+                                context = returnedContext
+                            end
                         end
 
                         if instance.CanUse then
@@ -648,6 +661,10 @@ function FrameworkZ.Items:OnFillInventoryObjectContextMenu(player, context, item
     end
 
     menuManager:buildMenu()
+    menuManager:migrateOptionsToSubMenu(vanillaOptions, "Fallback")
+
+    context._fzItemsMenuBuilt = true
+    context._fzItemsMenuPhase = "done"
 
     if interactSubMenu:getContext():isEmpty() then
         local option = Options.new()

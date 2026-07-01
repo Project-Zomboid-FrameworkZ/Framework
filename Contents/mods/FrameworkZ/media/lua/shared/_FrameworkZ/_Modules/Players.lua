@@ -21,6 +21,7 @@ FrameworkZ.Players = {}
 
 --! \brief List of all instanced players in the game.
 FrameworkZ.Players.List = {}
+FrameworkZ.Players._loadInProgress = {}
 
 --! \brief Roles for players in FrameworkZ.
 FrameworkZ.Players.Roles = {
@@ -893,6 +894,32 @@ function FrameworkZ.Players:SaveCharacterByID(username, characterID)
 
 end
 
+--! \brief Snapshot-save the currently loaded character before switching to another one.
+--! \details Uses a direct SetData write to avoid async callback races in load-switch paths.
+--! \return \boolean Success flag.
+--! \return \string Status message.
+function FrameworkZ.Players:SaveLoadedCharacterSnapshot(player, loadedCharacter)
+    if not player then return false, "Missing player." end
+    if not loadedCharacter then return true, "No loaded character to snapshot-save." end
+
+    local isoPlayer = player:GetIsoPlayer()
+    if not isoPlayer then return false, "Missing IsoPlayer." end
+
+    loadedCharacter:Sync()
+    local saveableData = loadedCharacter:GetSaveableData()
+    if not saveableData then
+        return false, "Failed to gather saveable character data."
+    end
+
+    local characterID = loadedCharacter:GetID() or saveableData[FZ_ENUM_CHARACTER_META_ID]
+    if not characterID then
+        return false, "Failed to resolve loaded character ID for snapshot-save."
+    end
+
+    FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {player:GetUsername(), characterID}, saveableData)
+    return true, "Loaded character snapshot-saved before switch."
+end
+
 function PLAYER:SetModel(characterData)
     if not characterData then return false end
     if not self:GetIsoPlayer() then return false end
@@ -980,9 +1007,18 @@ function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
             return
         end
 
-        local character, message2 = self:OnLoadCharacter(username, characterID, callback) if not character then return false, message2 end
+        local onCharacterInitialized = function(character, message2)
+            if callback then
+                callback(character, message2)
+            end
 
-        FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", character:GetPlayer())
+            if character and type(character) == "table" and character.GetPlayer then
+                FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", character:GetPlayer())
+            end
+        end
+
+        local character, message2 = self:OnLoadCharacter(username, characterID, onCharacterInitialized)
+        if character == false then return false, message2 end
     end
 
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", player)
@@ -994,44 +1030,132 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoaded")
 
 if isServer() then
     function FrameworkZ.Players.LoadCharacter(_data, username, characterID)
-        --FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", FrameworkZ.Players:GetPlayerByID(username))
-        local character, message = FrameworkZ.Players:OnLoadCharacter(username, characterID)
+        if not username then return false, "Missing username." end
+        if not characterID then return false, "Missing character ID." end
 
-        return character and true or false, message
+        if FrameworkZ.Players._loadInProgress[username] then
+            return false, "Character load already in progress."
+        end
+
+        FrameworkZ.Players._loadInProgress[username] = true
+
+        local ok, characterOrMessage, loadMessage = pcall(function()
+            local character, message = FrameworkZ.Players:OnLoadCharacter(username, characterID, nil, {authoritative = true})
+            if not character then
+                return false, message
+            end
+
+            return true, message
+        end)
+
+        FrameworkZ.Players._loadInProgress[username] = nil
+
+        if not ok then
+            return false, "Authoritative load failed: " .. tostring(characterOrMessage)
+        end
+
+        return characterOrMessage, loadMessage
     end
     FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.LoadCharacter", FrameworkZ.Players.LoadCharacter)
 end
 
-function FrameworkZ.Players:OnLoadCharacter(username, characterID, callback)
+function FrameworkZ.Players:OnLoadCharacter(username, characterID, callback, options)
     local player, message = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, message end
+    if type(callback) ~= "function" then
+        callback = nil
+    end
+    local authoritative = options and options.authoritative or false
+
+    if authoritative and isServer() then
+        local currentCharacter = player:GetCharacter()
+        if currentCharacter then
+            local snapshotSaved, snapshotMessage = FrameworkZ.Players:SaveLoadedCharacterSnapshot(player, currentCharacter)
+            if not snapshotSaved then
+                print("[FrameworkZ] Warning: " .. tostring(snapshotMessage or "Failed to snapshot-save loaded character before switch."))
+            end
+        end
+
+        local character, message3 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID, callback)
+        if not character then
+            if callback then callback(false, message3) end
+            return false, message3
+        end
+
+        return character, "Character authoritatively loaded on server."
+    end
 
     -- Stop the auto-save timer to prevent race conditions during character switching
     if isClient() and FrameworkZ.Timers:Exists("FZ_CharacterSaveInterval") then
         FrameworkZ.Timers:Remove("FZ_CharacterSaveInterval")
     end
 
-    -- Save current character before switching
-    if player:GetCharacter() then
-        player:GetCharacter():Save()
-    end
-
-    local characterInitializedCallback = function(character, message2)
-        if callback then
-            callback(character, message2)
+    local function initializeCharacterAfterSave()
+        local characterInitializedCallback = function(character, message2)
+            if callback then
+                callback(character, message2)
+            end
         end
+
+        local character, message3 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID, characterInitializedCallback)
+        if not character then
+            if callback then callback(false, message3) end
+            return false, message3
+        end
+
+        -- Create and start the character save interval timer for the newly loaded character
+        if isClient() then
+            FrameworkZ.Players:CreateCharacterSaveInterval()
+            FrameworkZ.Players:ResetCharacterSaveInterval()
+        end
+
+        -- TODO run first load hook FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", character)
+        return character, "Character preemptively loaded successfully."
     end
 
-    local character, message3 = FrameworkZ.Characters:Initialize(player:GetIsoPlayer(), characterID, characterInitializedCallback) if not character then return false, message3 end
+    -- Save current character before switching and wait for confirmation to avoid stale reload data.
+    local currentCharacter = player:GetCharacter()
+    if currentCharacter then
+        local didContinueLoad = false
+        local continueLoad = function(reason)
+            if didContinueLoad then return end
+            didContinueLoad = true
 
-    -- Create and start the character save interval timer for the newly loaded character
-    if isClient() then
-        FrameworkZ.Players:CreateCharacterSaveInterval()
-        FrameworkZ.Players:ResetCharacterSaveInterval()
+            if reason then
+                print("[FrameworkZ] Continuing character load after save phase via: " .. tostring(reason))
+            end
+
+            initializeCharacterAfterSave()
+        end
+
+        local saveStarted, saveMessage = currentCharacter:Save(function(success, callbackMessage)
+            if not success then
+                print("[FrameworkZ] Warning: Character save failed before load switch: " .. tostring(callbackMessage or "Unknown error"))
+            end
+
+            continueLoad("save_callback")
+        end)
+
+        if not saveStarted then
+            print("[FrameworkZ] Warning: Character save did not start before load switch: " .. tostring(saveMessage or "Unknown error"))
+            continueLoad("save_start_failed")
+            return true, "Character save failed to start; continuing load."
+        end
+
+        local timeoutSeconds = (FrameworkZ.Config and FrameworkZ.Config.Options and FrameworkZ.Config.Options.CharacterLoadDelay and FrameworkZ.Config.Options.CharacterLoadDelay > 0)
+            and (FrameworkZ.Config.Options.CharacterLoadDelay + 2)
+            or 5
+
+        FrameworkZ.Timers:Simple(timeoutSeconds, function()
+            if didContinueLoad then return end
+
+            print("[FrameworkZ] Warning: Character save callback timeout before load switch after " .. tostring(timeoutSeconds) .. "s.")
+            continueLoad("save_timeout")
+        end)
+
+        return true, "Character save requested before load switch."
     end
 
-    -- TODO run first load hook FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", character)
-
-    return character, "Character preemptively loaded successfully."
+    return initializeCharacterAfterSave()
 end
 
 function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)

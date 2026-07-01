@@ -854,83 +854,70 @@ end
 function FrameworkZ.Inventories:Rebuild(isoPlayer, inventory, items)
     if not isoPlayer then return false, "No ISO Player to add items to." end
     if not inventory then return false, "No inventory to rebuild." end
-    if not items then return false, "No items to add to inventory." end
+    if not items or type(items) ~= "table" then return false, "Logical inventory payload is invalid." end
 
-    -- Recursive function to rebuild fields and inherit methods
-    local function rebuildAndInherit(item, definition)
-        -- Ensure item inherits methods and properties from the definition
-        setmetatable(item, { __index = definition })
+    local logicalItems = items.items
+    if type(logicalItems) ~= "table" then return false, "Logical inventory payload is missing items table." end
+    if #logicalItems == 0 then
+        return true, "No logical items to rebuild.", inventory
+    end
 
-        -- Recursively rebuild all fields
-        for key, value in pairs(definition) do
-            if type(value) == "table" then
-                -- Ensure item[key] exists and is a table, then recurse
-                if item[key] == nil then
-                    item[key] = {}
+    local rebuildCount = 0
+
+    for _, itemSnapshot in ipairs(logicalItems) do
+        local uniqueID = itemSnapshot and itemSnapshot.uniqueID
+        if uniqueID then
+            local itemDefinition = FrameworkZ.Items:GetItemByUniqueID(uniqueID)
+            if itemDefinition then
+                local rebuiltItem = FrameworkZ.Utilities:CopyTable(itemDefinition)
+
+                for key, value in pairs(itemSnapshot) do
+                    rebuiltItem[key] = value
                 end
 
-                rebuildAndInherit(item[key], value)
-            elseif type(value) == "function" then
-                -- Ensure functions are inherited and retain their object context
-                item[key] = value
-            elseif item[key] == nil then
-                -- Copy over non-function and non-table fields if missing
-                item[key] = value
+                setmetatable(rebuiltItem, getmetatable(itemDefinition))
+
+                rebuiltItem.instanceID = nil
+                rebuiltItem.owner = nil
+                rebuiltItem.worldItem = nil
+                rebuiltItem.worldItemID = nil
+                rebuiltItem.inventoryIndex = nil
+
+                local fullItemID = rebuiltItem.itemID or itemDefinition.itemID
+                local success, message, worldItem = FrameworkZ.Items:CreateWorldItem(isoPlayer, fullItemID)
+
+                if success and worldItem then
+                    local instanceID, itemInstance = FrameworkZ.Items:AddInstance(rebuiltItem, isoPlayer, worldItem)
+
+                    local instanceData = {
+                        uniqueID = itemInstance.uniqueID,
+                        itemID = worldItem:getFullType(),
+                        instanceID = instanceID,
+                        owner = isoPlayer:getUsername(),
+                        name = itemInstance.name or "Unknown",
+                        description = itemInstance.description or "No description available.",
+                        category = itemInstance.category or "Uncategorized",
+                        shouldConsume = itemInstance.shouldConsume or false,
+                        weight = itemInstance.weight or 1,
+                        useAction = itemInstance.useAction or nil,
+                        useTime = itemInstance.useTime or nil,
+                        customFields = itemInstance.customFields or {}
+                    }
+
+                    FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
+                    inventory:AddItem(itemInstance)
+
+                    if itemInstance.OnInstance then
+                        itemInstance:OnInstance(isoPlayer, inventory, worldItem)
+                    end
+
+                    rebuildCount = rebuildCount + 1
+                end
             end
         end
     end
 
-    -- Rebuild an individual item
-    local function rebuildItem(item)
-        if type(item) ~= "table" then return end -- Ensure item is a table
-
-        -- Fetch the item definition
-        local itemDefinition = FrameworkZ.Items:GetItemByUniqueID(item.uniqueID)
-        if not itemDefinition then return end -- Exit if no definition is found
-
-        -- Rebuild fields and inherit methods
-        rebuildAndInherit(item, itemDefinition)
-
-        -- Create and link the world item
-        local success, message, worldItem = FrameworkZ.Items:CreateWorldItem(isoPlayer, item.itemID)
-        if success and worldItem then
-            local instanceID, itemInstance = FrameworkZ.Items:AddInstance(item, isoPlayer, worldItem)
-
-            -- Define instance data
-            local instanceData = {
-                uniqueID = itemInstance.uniqueID,
-                itemID = worldItem:getFullType(),
-                instanceID = instanceID,
-                owner = isoPlayer:getUsername(),
-                name = itemInstance.name or "Unknown",
-                description = itemInstance.description or "No description available.",
-                category = itemInstance.category or "Uncategorized",
-                shouldConsume = itemInstance.shouldConsume or false,
-                weight = itemInstance.weight or 1,
-                useAction = itemInstance.useAction or nil,
-                useTime = itemInstance.useTime or nil,
-                customFields = itemInstance.customFields or {}
-            }
-
-            -- Link the world item to the instance data
-            FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
-
-            -- Add the item instance to the inventory
-            inventory:AddItem(itemInstance)
-
-            -- Call OnInstance if it exists
-            if item.OnInstance then
-                item:OnInstance(isoPlayer, inventory, worldItem)
-            end
-        end
-    end
-
-    -- Iterate through and rebuild each item
-    for _, item in pairs(items) do
-        rebuildItem(item)
-    end
-
-    return true, "Inventory rebuilt.", inventory
+    return true, "Inventory rebuilt with " .. tostring(rebuildCount) .. " logical items.", inventory
 end
 
 --! \brief Save character inventory and equipment data
@@ -963,8 +950,20 @@ function FrameworkZ.Inventories:Save(character)
     end
     inventoryData.INVENTORY_PHYSICAL = physicalItems
 
-    -- Save logical inventory with equipped state information
-    local logicalInventoryData = character:GetInventory() and character:GetInventory():GetSaveableData() or {}
+    -- Save logical inventory in canonical shape
+    local logicalInventoryData = { items = {}, equippedItems = {} }
+    local logicalInventory = character:GetInventory()
+
+    if logicalInventory and logicalInventory.GetItems then
+        for _, logicalItem in pairs(logicalInventory:GetItems()) do
+            if type(logicalItem) == "table" then
+                local saveableItemData = FrameworkZ.Foundation:ProcessSaveableData(logicalItem)
+                if saveableItemData and saveableItemData.uniqueID then
+                    table.insert(logicalInventoryData.items, saveableItemData)
+                end
+            end
+        end
+    end
     
     -- Capture equipped FrameworkZ items using SlotLookup
     local equippedFrameworkZItems = {}
@@ -986,9 +985,7 @@ function FrameworkZ.Inventories:Save(character)
     end
     
     -- Add equipped state to logical inventory data
-    if logicalInventoryData then
-        logicalInventoryData.equippedItems = equippedFrameworkZItems
-    end
+    logicalInventoryData.equippedItems = equippedFrameworkZItems
     inventoryData.INVENTORY_LOGICAL = logicalInventoryData
 
     -- Save physical equipment (with comprehensive item data) using SlotLookup and O(1) lookup

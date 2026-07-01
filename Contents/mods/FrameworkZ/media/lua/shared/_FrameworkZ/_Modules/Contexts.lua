@@ -45,6 +45,115 @@ function MenuManager:addAggregatedOption(unqiueID, option, target)
     target:addAggregatedOptionWithCallback(unqiueID, option.target, option.text, option.callback, option.callbackParameters, option.addOnTop, option.useMultiple, option.count)
 end
 
+--! \brief Snapshot all options currently in a context menu into a plain list.
+--! Call this BEFORE clearing the context. Returns a list of raw option tables.
+--! \param context \table ISContextMenu to snapshot.
+--! \return \table Array of option tables.
+function MenuManager.snapshotOptions(context)
+    local snapshot = {}
+    if context and context.options then
+        for _, opt in ipairs(context.options) do
+            -- Copy option state but keep original submenu references.
+            local optCopy = {}
+            for key, value in pairs(opt) do
+                if key == "subOption" then
+                    optCopy[key] = value
+                else
+                    optCopy[key] = FrameworkZ.Utilities:CopyTable(value)
+                end
+            end
+
+            table.insert(snapshot, optCopy)
+        end
+    end
+    return snapshot
+end
+
+--! \brief Re-add a list of snapshotted options into a new named submenu appended to the root context.
+--! Preserves callbacks, params, and nested submenus. Call this AFTER buildMenu().
+--! \param optionList \table List returned by snapshotOptions.
+--! \param subMenuName \string Display name for the submenu.
+function MenuManager:migrateOptionsToSubMenu(optionList, subMenuName)
+    if not optionList or #optionList == 0 then return end
+
+    local subMenu = self.context:getNew(self.context)
+    local subMenuOption = self.context:addOption(subMenuName)
+    self.context:addSubMenu(subMenuOption, subMenu)
+
+    local function getOptionText(opt)
+        return opt.name or opt.text or opt.title or opt.displayText
+    end
+
+    local function getOptionCallback(opt)
+        return opt.onmousedown or opt.onSelect or opt.callback or opt.onClick
+    end
+
+    local function getOptionParams(opt)
+        return opt.param or opt.params or opt.callbackParameters or opt.parameters or {}
+    end
+
+    local function isReservedFrameworkZBucket(optionText)
+        if not optionText then return false end
+
+        return optionText == "Interact"
+            or optionText == "Inspect"
+            or optionText == "Equip"
+            or optionText == "Manage"
+            or optionText == subMenuName
+    end
+
+    local function copyOptionState(sourceOption, targetOption)
+        for key, value in pairs(sourceOption) do
+            if key ~= "subOption" and key ~= "name" and key ~= "text" and key ~= "title" and key ~= "displayText"
+                and key ~= "target" and key ~= "callback" and key ~= "callbackParameters" and key ~= "param"
+                and key ~= "params" and key ~= "parameters" and key ~= "onmousedown" and key ~= "onSelect"
+                and key ~= "onClick" then
+                targetOption[key] = value
+            end
+        end
+    end
+
+    local function migrateOptionList(sourceOptions, destinationMenu, visitedSubMenus)
+        visitedSubMenus = visitedSubMenus or {}
+
+        for _, sourceOption in ipairs(sourceOptions) do
+            local optionText = getOptionText(sourceOption)
+            local optionCallback = getOptionCallback(sourceOption)
+
+            -- Preserve any real option we captured, even if it uses a different
+            -- field shape than the FrameworkZ builders.
+            if optionText and optionText ~= "" and not isReservedFrameworkZBucket(optionText) then
+                local newOpt = destinationMenu:addOption(optionText, sourceOption.target, optionCallback, getOptionParams(sourceOption))
+                copyOptionState(sourceOption, newOpt)
+
+                local nestedSubMenu = sourceOption.subOption
+                if nestedSubMenu then
+                    local resolvedSubMenu = nestedSubMenu
+
+                    if type(nestedSubMenu) ~= "table" and destinationMenu.getSubMenu then
+                        resolvedSubMenu = destinationMenu:getSubMenu(nestedSubMenu)
+                    end
+
+                    if type(resolvedSubMenu) == "table" and resolvedSubMenu.options
+                        and resolvedSubMenu ~= destinationMenu and resolvedSubMenu ~= subMenu and resolvedSubMenu ~= self.context
+                        and not visitedSubMenus[resolvedSubMenu] then
+
+                        visitedSubMenus[resolvedSubMenu] = true
+
+                        local clonedSubMenu = destinationMenu:getNew(destinationMenu)
+                        destinationMenu:addSubMenu(newOpt, clonedSubMenu)
+                        migrateOptionList(resolvedSubMenu.options, clonedSubMenu, visitedSubMenus)
+
+                        visitedSubMenus[resolvedSubMenu] = nil
+                    end
+                end
+            end
+        end
+    end
+
+    migrateOptionList(optionList, subMenu)
+end
+
 --! \brief Build all aggregated options for root and nested submenus.
 function MenuManager:buildMenu()
     local function buildSubMenu(subMenuBuilder)
@@ -153,6 +262,18 @@ end
 ContextMenuBuilder = {}
 ContextMenuBuilder.__index = ContextMenuBuilder
 
+local function normalizeCallbackParams(parameters)
+    if parameters == nil then
+        return {}
+    end
+
+    if type(parameters) ~= "table" then
+        return { parameters }
+    end
+
+    return parameters
+end
+
 --! \brief Builder that wraps an ISContextMenu for option aggregation.
 --! \param menuManager \table Owning MenuManager.
 --! \param context \table ISContextMenu being built.
@@ -195,11 +316,12 @@ end
 --! \param addOnTop \boolean Whether to add on top of menu.
 --! \return \table The created option.
 function ContextMenuBuilder:addOption(name, target, callback, parameters, addOnTop)
+    local params = normalizeCallbackParams(parameters)
     local option
     if addOnTop then
-        option = self.context:addOptionOnTop(name, target, callback, parameters)
+        option = self.context:addOptionOnTop(name, target, callback, FrameworkZ.Utilities:Unpack(params))
     else
-        option = self.context:addOption(name, target, callback, parameters)
+        option = self.context:addOption(name, target, callback, FrameworkZ.Utilities:Unpack(params))
     end
 
     -- Track added options for debugging
@@ -214,7 +336,7 @@ end
 --! \return \table The created menu option and submenu builder.
 function ContextMenuBuilder:addSubMenu(name, addOnTop, options)
     -- Create a new context for the submenu
-    local subMenu = ISContextMenu:getNew(self.context)
+    local subMenu = self.context:getNew(self.context)
     local subMenuBuilder = ContextMenuBuilder.new(self.menuManager, subMenu) -- Pass menuManager properly
     subMenuBuilder["name"] = name
 
@@ -283,8 +405,8 @@ function ContextMenuBuilder:buildAggregatedOptions()
                         optionText = optionText .. " (x" .. option:getCount() .. ")"
                     end
 
-                    local callback = function(target, parameters)
-                        option:getCallback()(target, parameters)
+                    local callback = function(target, ...)
+                        option:getCallback()(target, ...)
                     end
 
                     if option:getAddOnTop() then

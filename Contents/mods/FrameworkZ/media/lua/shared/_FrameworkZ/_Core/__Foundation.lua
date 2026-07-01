@@ -1262,6 +1262,17 @@ function FrameworkZ.Foundation.Events:OnPreFillInventoryObjectContextMenu(player
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnPreFillInventoryObjectContextMenu")
 
+--! \brief Called before filling a world object's context menu.
+--! \param playerNumber \integer The player number.
+--! \param context \object The context menu object.
+--! \param worldObjects \table The world objects being examined.
+--! \param test \boolean Test parameter.
+function FrameworkZ.Foundation.Events:OnPreFillWorldObjectContextMenu(playerNumber, context, worldObjects, test)
+    self:ExecuteAllHooks("OnPreFillWorldObjectContextMenu", playerNumber, context, worldObjects, test)
+end
+FrameworkZ.Foundation:AddAllHookHandlers("OnPreFillWorldObjectContextMenu")
+
+
 --! \brief Called when global mod data is received.
 --! \param key \string The key of the data received.
 --! \param data \mixed The data that was received.
@@ -2328,6 +2339,7 @@ function FrameworkZ.Foundation:Initialize()
     events.OnObjectLeftMouseButtonDown.Add(self.Events.OnObjectLeftMouseButtonDown)
     events.OnPlayerDeath.Add(self.Events.OnPlayerDeath)
     events.OnPreFillInventoryObjectContextMenu.Add(self.Events.OnPreFillInventoryObjectContextMenu)
+    events.OnPreFillWorldObjectContextMenu.Add(self.Events.OnPreFillWorldObjectContextMenu)
     events.OnReceiveGlobalModData.Add(self.Events.OnReceiveGlobalModData)
     events.OnServerCommand.Add(self.Events.OnServerCommand)
     events.OnServerStarted.Add(self.Events.OnServerStarted)

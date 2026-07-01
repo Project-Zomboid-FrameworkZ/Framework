@@ -203,50 +203,125 @@ Events.OnObjectAboutToBeRemoved.Add(FrameworkZ.Entities.OnObjectAboutToBeRemoved
 --! \param context \table The context menu being built.
 --! \param worldObjects \table The world objects under the cursor.
 --! \param test \boolean Test flag from PZ hook.
-function FrameworkZ.Entities.OnPreFillWorldObjectContextMenu(player, context, worldObjects, test)
-	local playerObj = getSpecificPlayer(player)
-	
-    local interact = context:addOptionOnTop("Interact")
-    local interactContext = ISContextMenu:getNew(context)
-    context:addSubMenu(interact, interactContext)
+function FrameworkZ.Entities:OnPreFillWorldObjectContextMenu(player, context, worldObjects, test)
+    if type(context) ~= "table" or type(context.clear) ~= "function" then return end
 
-    for k, v in pairs(worldObjects) do
-        if v:getModData()["PFW_ENT"] then
-            local entityID = v:getModData()["PFW_ENT"].id
-            local entity = FrameworkZ.Entities:GetEntityByID(entityID)
+    context._fzEntitiesMenuPhase = "prefill"
+    context._fzEntitiesMenuBuilt = false
+    context._fzEntitiesFallbackName = "Fallback"
+end
+
+--! \brief Build entity options after vanilla options are collected and migrate leftovers to fallback.
+--! \param player \integer The local player index.
+--! \param context \table The context menu being built.
+--! \param worldObjects \table The world objects under the cursor.
+--! \param test \boolean Test flag from PZ hook.
+function FrameworkZ.Entities:OnFillWorldObjectContextMenu(player, context, worldObjects, test)
+    if type(context) ~= "table" or type(context.clear) ~= "function" then return end
+    if context._fzEntitiesMenuBuilt then return end
+    if type(worldObjects) ~= "table" then worldObjects = {} end
+
+    context._fzEntitiesMenuPhase = "filling"
+
+    local vanillaOptions = MenuManager.snapshotOptions(context)
+    context:clear()
+
+    local playerObj = getSpecificPlayer(player)
+    local menuManager = MenuManager.new(context)
+    local interactSubMenu = menuManager:addSubMenu("Interact")
+    local inspectSubMenu = menuManager:addSubMenu("Inspect")
+
+    for _, worldObject in ipairs(worldObjects) do
+        local entityData = nil
+        if worldObject and type(worldObject) == "table" and worldObject.getModData then
+            local modData = worldObject:getModData()
+            entityData = modData and modData["PFW_ENT"]
+        end
+
+        if entityData then
+            local entity = FrameworkZ.Entities:GetEntityByID(entityData.id)
 
             if entity then
-                local canContext = false
+                entity:ValidateEntityData(worldObject)
 
-                entity:ValidateEntityData(v)
-
+                local canContext = true
                 if entity.CanContext then
-                    canContext = entity:CanContext(playerObj, v)
+                    canContext = entity:CanContext(playerObj, worldObject)
                 end
 
                 if canContext then
                     if entity.OnContext then
-                        context = entity:OnContext(playerObj, v, interactContext)
+                        entity:OnContext(playerObj, worldObject, interactSubMenu:getContext())
                     elseif entity.OnUse then
-                        interactContext:addOptionOnTop("Use " .. entity.name, entity, entity.OnUse, playerObj, v)
+                        menuManager:addOption(Options.new("Use " .. entity.name, entity, entity.OnUse, {playerObj, worldObject}, true), interactSubMenu)
                     end
                 end
 
-                interactContext:addOption("Examine " .. entity.name, entity, function(entity, playerObj) playerObj:Say(entity.description) end, playerObj)
+                local inspectOption = Options.new(
+                    "Examine " .. entity.name,
+                    entity,
+                    function(targetEntity, callbackPlayer)
+                        callbackPlayer:Say(targetEntity.description)
+                    end,
+                    {playerObj}
+                )
+                menuManager:addOption(inspectOption, inspectSubMenu)
             else
-                interactContext:addOption("Malformed Entity")
+                menuManager:addOption(Options.new("Malformed Entity"), interactSubMenu)
             end
         end
     end
 
-    if interactContext:isEmpty() then
-        interactContext:addOption("No Interactions Available")
+    menuManager:buildMenu()
+
+    -- Separate vanilla world actions from other options
+    local actionsOptions = {}
+    local otherOptions = {}
+    
+    local vanillaActionNames = {
+        ["Walk to"] = true,
+        ["Sit on ground"] = true,
+        ["Investigate This Area"] = true,
+        ["Disassemble"] = true
+    }
+
+    local function getOptionText(opt)
+        return opt.name or opt.text or opt.title or opt.displayText
+    end
+    
+    for _, opt in ipairs(vanillaOptions) do
+        local optText = getOptionText(opt)
+        if optText and vanillaActionNames[optText] then
+            table.insert(actionsOptions, opt)
+        else
+            table.insert(otherOptions, opt)
+        end
+    end
+    
+    -- Migrate actions and fallback using MenuManager (which skips empty buckets)
+    menuManager:migrateOptionsToSubMenu(actionsOptions, "Actions")
+    menuManager:migrateOptionsToSubMenu(otherOptions, context._fzEntitiesFallbackName or "Fallback")
+
+    context._fzEntitiesMenuBuilt = true
+    context._fzEntitiesMenuPhase = "done"
+
+    if interactSubMenu:getContext():isEmpty() then
+        menuManager:addOption(Options.new("No Interactions Available"), interactSubMenu)
+    end
+
+    if inspectSubMenu:getContext():isEmpty() then
+        menuManager:addOption(Options.new("No Inspections Available"), inspectSubMenu)
     end
 end
 
 --! \brief Register entity context menu hook once the game starts.
 function FrameworkZ.Entities.OnGameStart()
-    Events.OnPreFillWorldObjectContextMenu.Add(FrameworkZ.Entities.OnPreFillWorldObjectContextMenu)
+    Events.OnPreFillWorldObjectContextMenu.Add(function(player, context, worldObjects, test)
+        FrameworkZ.Entities:OnPreFillWorldObjectContextMenu(player, context, worldObjects, test)
+    end)
+    Events.OnFillWorldObjectContextMenu.Add(function(player, context, worldObjects, test)
+        FrameworkZ.Entities:OnFillWorldObjectContextMenu(player, context, worldObjects, test)
+    end)
 end
 
 --! \brief Placeholder for loading entity data on chunk load.
@@ -268,3 +343,5 @@ function FrameworkZ.Entities:LoadGridsquare(square)
     end
 	--]]
 end
+
+FrameworkZ.Foundation:RegisterModule(FrameworkZ.Entities)

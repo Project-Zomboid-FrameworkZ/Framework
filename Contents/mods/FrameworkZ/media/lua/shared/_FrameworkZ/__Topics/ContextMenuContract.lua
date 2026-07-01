@@ -1,0 +1,103 @@
+--[[
+    FrameworkZ - Context Menu Contract
+    Optional standard for world and inventory context menu composition.
+]]
+
+--! \page Context Menu Contract
+--! \brief Optional FrameworkZ standard for predictable context menu behavior.
+--!
+--! \section Intent Intent
+--!
+--! FrameworkZ defines a context menu contract so module and plugin authors can
+--! build menus that remain consistent with core behavior.
+--!
+--! Adoption is optional. If a plugin does not follow this contract, it may still
+--! work, but it owns any sorting, duplication, submenu, or closing issues that follow.
+--!
+--! \section Lifecycle Lifecycle
+--!
+--! Context menus should be built in two phases:
+--! - Prefill: Set state flags only.
+--! - Fill: Snapshot, clear, rebuild framework buckets, then migrate leftovers.
+--!
+--! Recommended flow in Fill phase:
+--! 1. Snapshot existing options with MenuManager.snapshotOptions(context)
+--! 2. context:clear()
+--! 3. Build FrameworkZ-owned buckets with MenuManager
+--! 4. Build aggregated options with menuManager:buildMenu()
+--! 5. Migrate non-owned options with menuManager:migrateOptionsToSubMenu(snapshot, "Fallback")
+--!
+--! \section StateFlags State Flags
+--!
+--! Use context-scoped flags to avoid duplicate builds:
+--! - context._fz<Scope>MenuPhase = "prefill" | "filling" | "done"
+--! - context._fz<Scope>MenuBuilt = true|false
+--! - context._fz<Scope>FallbackName = "Fallback"
+--!
+--! Example scopes:
+--! - Items: _fzItemsMenu...
+--! - Entities: _fzEntitiesMenu...
+--! - Any plugin: _fz<PluginName>Menu...
+--!
+--! \section Buckets Bucket Naming
+--!
+--! Prefer consistent top-level buckets so players can predict where actions live:
+--! - Interact
+--! - Inspect
+--! - Equip (inventory contexts)
+--! - Manage
+--! - (ADMIN) for privileged actions
+--! - Fallback for migrated non-owned options
+--!
+--! \section FallbackBehavior Fallback Behavior
+--!
+--! Fallback should contain options not owned by the current builder.
+--! It is intended to preserve compatibility with vanilla and third-party menus.
+--!
+--! Expectations:
+--! - Preserve callbacks and parameters.
+--! - Preserve nested submenu trees.
+--! - Avoid duplicating FrameworkZ bucket roots.
+--! - Avoid recursive submenu links.
+--!
+--! \section ClosingBehavior Closing Behavior
+--!
+--! Submenus created during migration should be attached to menus created within the
+--! current context lifecycle so selection closes the full menu stack correctly.
+--!
+--! \section Ownership Ownership Model
+--!
+--! FrameworkZ owns standards, not plugin policy.
+--! Plugin authors can choose to adopt this contract.
+--! Non-adoption is valid, but behavior quality is plugin-owned.
+--!
+--! \section MinimalExample Minimal Example
+--!
+--! \code lua
+--! function MyModule.OnPreFillWorldObjectContextMenu(player, context, worldObjects, test)
+--!     if not context then return end
+--!     context._fzMyModuleMenuPhase = "prefill"
+--!     context._fzMyModuleMenuBuilt = false
+--!     context._fzMyModuleFallbackName = "Fallback"
+--! end
+--!
+--! function MyModule.OnFillWorldObjectContextMenu(player, context, worldObjects, test)
+--!     if not context or context._fzMyModuleMenuBuilt then return end
+--!     context._fzMyModuleMenuPhase = "filling"
+--!
+--!     local snapshot = MenuManager.snapshotOptions(context)
+--!     context:clear()
+--!
+--!     local menuManager = MenuManager.new(context)
+--!     local interact = menuManager:addSubMenu("Interact")
+--!     local inspect = menuManager:addSubMenu("Inspect")
+--!
+--!     -- Add your options here.
+--!
+--!     menuManager:buildMenu()
+--!     menuManager:migrateOptionsToSubMenu(snapshot, context._fzMyModuleFallbackName or "Fallback")
+--!
+--!     context._fzMyModuleMenuBuilt = true
+--!     context._fzMyModuleMenuPhase = "done"
+--! end
+--! \endcode

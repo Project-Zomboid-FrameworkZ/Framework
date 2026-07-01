@@ -169,12 +169,45 @@ function FrameworkZ.Overrides.WordWrapText(text)
     return lines
 end
 
+function FrameworkZ.Overrides.GetTooltipTextureDrawSize(item, maxTextureSize)
+    local drawWidth, drawHeight = 64, 64
+    local texture = item and item:getTexture() or nil
+
+    if not texture then
+        return drawWidth, drawHeight
+    end
+
+    local sourceWidth, sourceHeight = nil, nil
+
+    if texture.getWidthOrig and texture.getHeightOrig then
+        sourceWidth = texture:getWidthOrig()
+        sourceHeight = texture:getHeightOrig()
+    elseif texture.getWidth and texture.getHeight then
+        sourceWidth = texture:getWidth()
+        sourceHeight = texture:getHeight()
+    end
+
+    if not sourceWidth or not sourceHeight or sourceWidth <= 0 or sourceHeight <= 0 then
+        return drawWidth, drawHeight
+    end
+
+    local scale = math.min(maxTextureSize / sourceWidth, maxTextureSize / sourceHeight)
+    drawWidth = math.max(1, math.floor((sourceWidth * scale) + 0.5))
+    drawHeight = math.max(1, math.floor((sourceHeight * scale) + 0.5))
+
+    return drawWidth, drawHeight
+end
+
 function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
     local itemData = item:getModData()["FZ_ITM"]
 
     objTooltip:render()
 
-    local textureWidth, textureHeight = 64, 64
+    local textureTop = 5
+    local textureMaxSize = 72
+    local textureWidth, textureHeight = FrameworkZ.Overrides.GetTooltipTextureDrawSize(item, textureMaxSize)
+    local textureX = panel:getWidth() - textureWidth - 15
+    local textureMinTooltipWidth = textureWidth + 190
     local font = objTooltip:getFont()
     local lineSpace = objTooltip:getLineSpacing()
     local yOffset = 5
@@ -187,11 +220,11 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
         objTooltip:adjustWidth(5, itemName)
         yOffset = yOffset + lineSpace + 5
 
-        local yTextureOffset = textureHeight + 10
+        local yTextureOffset = textureTop + textureHeight + 5
         
         -- Get item color and apply to texture using utility function
         local r, g, b, a = FrameworkZ.Utilities:GetItemColor(item)
-        objTooltip:DrawTextureScaledColor(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, r, g, b, 0.75)
+        objTooltip:DrawTextureScaledColor(item:getTexture(), textureX, textureTop, textureWidth, textureHeight, r, g, b, 0.75)
 
         local description = FrameworkZ.Overrides.WordWrapText(itemDescription)
 
@@ -213,11 +246,11 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
         objTooltip:adjustWidth(5, item:getDisplayName())
         yOffset = yOffset + lineSpace + 5
 
-        local yTextureOffset = textureHeight + 10
+        local yTextureOffset = textureTop + textureHeight + 5
         
         -- Get item color and apply to texture using utility function
         local r, g, b, a = FrameworkZ.Utilities:GetItemColor(item)
-        objTooltip:DrawTextureScaledColor(item:getTexture(), panel:getWidth() - textureWidth - 15, 5, textureWidth, textureHeight, r, g, b, 0.75)
+        objTooltip:DrawTextureScaledColor(item:getTexture(), textureX, textureTop, textureWidth, textureHeight, r, g, b, 0.75)
 
         --[[
         local description = FrameworkZ.Overrides.WordWrapText(item:getDescription())
@@ -338,8 +371,9 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
     yOffset = yOffset + 5
     objTooltip:setHeight(yOffset)
 
-    if objTooltip:getWidth() < 256 then
-        objTooltip:setWidth(256)
+    local minTooltipWidth = math.max(256, textureMinTooltipWidth)
+    if objTooltip:getWidth() < minTooltipWidth then
+        objTooltip:setWidth(minTooltipWidth)
     end
 end
 
