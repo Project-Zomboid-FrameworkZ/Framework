@@ -76,8 +76,11 @@ function FrameworkZ.Overrides.onMenuItemMouseDownMainMenu(item, x, y)
                 isDisconnectInProgress = false
             end)
         end)
+    elseif item.internal == "QUIT_TO_DESKTOP" then
+        -- Patch the confirm callback before vanilla creates the dialog so our handler is captured.
+        MainScreen.onConfirmQuitToDesktop = FrameworkZ.Overrides.onConfirmQuitToDesktop
+        FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
     else
-        -- For QUIT_TO_DESKTOP and other items, let vanilla handle it (shows confirmation first)
         FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
     end
 end
@@ -90,20 +93,32 @@ function FrameworkZ.Overrides.onConfirmQuitToDesktop(target, button)
     end
 
     if button.internal == "NO" then
-        target.quitToDesktopDialog:destroy()
+        -- Match vanilla behaviour: nil the dialog reference and restore the bottom panel.
         target.quitToDesktopDialog = nil
+        if MainScreen.instance and MainScreen.instance.bottomPanel then
+            MainScreen.instance.bottomPanel:setVisible(true)
+        end
         return
     end
-    
+
     local isoPlayer = getPlayer()
     if not isoPlayer then
         print("[FZ] No IsoPlayer found; falling back to vanilla quit to desktop")
-        return FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop(target, button)
+        target.quitToDesktopDialog = nil
+        setGameSpeed(1)
+        pauseSoundAndMusic()
+        setShowPausedMessage(true)
+        getCore():quitToDesktop()
+        return
     end
 
     isDisconnectInProgress = true
     print("[FZ] User confirmed quit to desktop. Starting save sequence...")
-    
+
+    -- Capture the dialog reference now — the button/dialog UI may be gone by the time callbacks fire.
+    local dialogRef = target.quitToDesktopDialog
+    target.quitToDesktopDialog = nil
+
     -- Save and destroy player data before quitting
     FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
         if success then
@@ -111,7 +126,7 @@ function FrameworkZ.Overrides.onConfirmQuitToDesktop(target, button)
         else
             print("[FZ] Warning during destroy: " .. (message or "Unknown error"))
         end
-        
+
         -- After save is confirmed, teleport to limbo and quit
         FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limboSuccess)
             if limboSuccess then
@@ -121,9 +136,14 @@ function FrameworkZ.Overrides.onConfirmQuitToDesktop(target, button)
                 print("[FZ] Warning: Failed to teleport player to limbo. Quitting anyway...")
             end
 
-            -- Call the original confirmation handler to actually quit
-            FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop(target, button)
+            -- Call quit directly — do NOT re-invoke the vanilla confirm handler with a
+            -- potentially stale button object (button.internal would be nil by now, causing
+            -- vanilla to take its else-branch and show the bottom panel instead of quitting).
+            setGameSpeed(1)
+            pauseSoundAndMusic()
+            setShowPausedMessage(true)
             isDisconnectInProgress = false
+            getCore():quitToDesktop()
         end)
     end)
 end
@@ -289,9 +309,16 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
                 else
                     layout:setValue("No", 1, 1, 1, 1)
                 end
-            else
-                if v.get then
-                    local values = v.get(itemInstance)
+            elseif type(v) == "table" then
+                -- .get may be stripped when customFields are serialized into mod data;
+                -- fall back to the live item instance's definition which retains the function.
+                local getFunc = v.get
+                if not getFunc and itemInstance and itemInstance.customFields and itemInstance.customFields[k] then
+                    getFunc = itemInstance.customFields[k].get
+                end
+
+                if getFunc then
+                    local values = getFunc(itemInstance)
 
                     if type(values) == "table" then
                         local displayString = ""
@@ -300,13 +327,30 @@ function FrameworkZ.Overrides.DoTooltip(objTooltip, item, panel)
                             displayString = displayString .. tostring(v2) .. "\n"
                         end
 
-                        layout:setValue(displayString, 1, 1, 1, 1)
+                        layout:setValue(displayString ~= "" and displayString or "None", 1, 1, 1, 1)
                     else
-                        layout:setValue(tostring(v.get(itemInstance)), 1, 1, 1, 1)
+                        layout:setValue(tostring(values), 1, 1, 1, 1)
                     end
                 else
-                    layout:setValue(v, 1, 1, 1, 1)
+                    -- No .get available; render from .value (scalar or nested table).
+                    local displayValue = v.value ~= nil and v.value or v
+
+                    if type(displayValue) == "table" then
+                        local parts = {}
+
+                        for _, v2 in pairs(displayValue) do
+                            if v2 ~= nil and v2 ~= 0 then
+                                table.insert(parts, tostring(v2))
+                            end
+                        end
+
+                        layout:setValue(#parts > 0 and table.concat(parts, "\n") or "None", 1, 1, 1, 1)
+                    else
+                        layout:setValue(tostring(displayValue), 1, 1, 1, 1)
+                    end
                 end
+            else
+                layout:setValue(tostring(v), 1, 1, 1, 1)
             end
         end
     end

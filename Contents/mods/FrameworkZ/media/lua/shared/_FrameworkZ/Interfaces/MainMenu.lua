@@ -31,119 +31,6 @@ function FrameworkZ.UI.MainMenu:initialise()
         end
     end)
     --]]
-
-    self.uiHelper = FrameworkZ.UI
-    self.emitter = self.playerObject:getEmitter()
-	local title = FrameworkZ.Config.Options.GamemodeTitle .. " " .. FrameworkZ.Config.Options.Version .. "-" .. FrameworkZ.Config.Options.VersionType
-    local subtitle = FrameworkZ.Config.Options.GamemodeDescription
-    local createCharacterLabel = "Create Character"
-    local loadCharacterLabel = "Load Character"
-    local disconnectLabel = "Disconnect"
-    local middleX = self.width / 2 - 200 / 2
-    local middleY = self.height / 2 + FrameworkZ.UI.GetHeight(UIFont.Title, title) + FrameworkZ.UI.GetHeight(UIFont.Large, subtitle)
-
-    --[[if FrameworkZ.Timers:Exists("FadeOutMainMenuMusic") then
-        FrameworkZ.Timers:Remove("FadeOutMainMenuMusic")
-    end--]]
-
-    if FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"] then
-        self.bgMusicController = FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"]
-        self.bgMusicController:transfer(self)
-        self.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
-    else
-        self.bgMusicController = FrameworkZ.UI.AudioController:new("Main Menu Music Volume", 10, self.height - 85, self.playerObject)
-        self.bgMusicController:initialise()
-        self.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
-        self:addChild(self.bgMusicController)
-    end
-
-    local stepWidth, stepHeight = 600, 700 -- w = 500?
-    local stepX, stepY = self.width / 2 - stepWidth / 2, self.height / 2 - stepHeight / 2
-    self.MainMenu = self
-    self.createCharacterSteps = FrameworkZ.UserInterfaces:New("VanillaCreateCharacter", self)
-    self.createCharacterSteps.onEnterInitialMenu = self.onEnterMainMenu
-    self.createCharacterSteps.onExitInitialMenu = self.onExitMainMenu
-    self.createCharacterSteps:Initialize()
-
-    if FrameworkZ.UI.MainMenu.customSteps then
-        FrameworkZ.UI.MainMenu.customSteps()
-    else
-        self.createCharacterSteps:RegisterNextStep("MainMenu", "SelectFaction", self, FrameworkZ.UI.CreateCharacterFaction, self.onEnterFactionMenu, self.onExitFactionMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("SelectFaction", "EnterInfo", FrameworkZ.UI.CreateCharacterFaction, FrameworkZ.UI.CreateCharacterInfo, self.onEnterInfoMenu, self.onExitInfoMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("EnterInfo", "CustomizeAppearance", FrameworkZ.UI.CreateCharacterInfo, FrameworkZ.UI.CreateCharacterAppearance, self.onEnterAppearanceMenu, self.onExitAppearanceMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-        self.createCharacterSteps:RegisterNextStep("CustomizeAppearance", "MainMenu", FrameworkZ.UI.CreateCharacterAppearance, self, self.onFinalizeCharacter, nil, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = self.playerObject})
-    end
-
-    self.titleY = self.uiHelper.GetHeight(UIFont.Title, title)
-
-    self.title = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2,
-        y = self.titleY,
-        height = 25,
-        text = title,
-        font = FZ_FONT_TITLE,
-        textAlign = FZ_ALIGN_CENTER
-    })
-    self:addChild(self.title)
-
-    self.subtitle = FrameworkZ.Interfaces:CreateLabel({
-        x = self.width / 2,
-        y = self.titleY + self.uiHelper.GetHeight(UIFont.Large, subtitle),
-        height = 25,
-        text = subtitle,
-        font = FZ_FONT_LARGE,
-        textAlign = FZ_ALIGN_CENTER,
-        theme = "Subtle"
-    })
-    self:addChild(self.subtitle)
-
-    self.createCharacterButton = FrameworkZ.Interfaces:CreateButton({
-        x = middleX, y = middleY - 75, width = 200, height = 50,
-        title = createCharacterLabel,
-        target = self.createCharacterSteps,
-        onClick = self.createCharacterSteps.ShowNextStep,
-        font = FZ_FONT_LARGE
-    })
-    self:addChild(self.createCharacterButton)
-
-    self.loadCharacterButton = FrameworkZ.Interfaces:CreateButton({
-        x = middleX, y = middleY, width = 200, height = 50,
-        title = loadCharacterLabel,
-        target = self,
-        onClick = FrameworkZ.UI.MainMenu.onEnterLoadCharacterMenu,
-        font = FZ_FONT_LARGE
-    })
-    self:addChild(self.loadCharacterButton)
-
-    self.disconnectButton = FrameworkZ.Interfaces:CreateButton({
-        x = middleX, y = middleY + 75, width = 200, height = 50,
-        title = disconnectLabel,
-        target = self,
-        onClick = FrameworkZ.UI.MainMenu.onDisconnect,
-        theme = "Danger",
-        font = FZ_FONT_LARGE
-    })
-    self:addChild(self.disconnectButton)
-
-    self.closeButton = FrameworkZ.Interfaces:CreateButton({
-        x = middleX, y = middleY + 150, width = 200, height = 50,
-        title = "Close",
-        target = self,
-        onClick = FrameworkZ.UI.MainMenu.onClose,
-        font = FZ_FONT_LARGE
-    })
-
-    if not FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
-        self.closeButton:setVisible(false)
-    end
-
-    self:addChild(self.closeButton)
-
-    --[[
-    self.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", self, FrameworkZ.UI.MainMenu.onClose)
-    self.closeButton.font = UIFont.Large
-    self:addChild(self.closeButton)
-    --]]
 end
 
 function FrameworkZ.UI.MainMenu:setMainMenuMusicVolume(volume)
@@ -292,7 +179,27 @@ function FrameworkZ.UI.MainMenu:onEnterFactionMenu(menu)
     self:showStepControls(menu, "returnToMainMenu", self.returnToMainMenu, "< Main Menu (Cancel)", "enterInfoForward", self.enterInfoForward, "Info >")
 end
 
-function FrameworkZ.UI.MainMenu:onExitFactionMenu(menu)
+function FrameworkZ.UI.MainMenu:onExitFactionMenu(menu, isForward)
+    if isForward then
+        local player = FrameworkZ.Players:GetPlayerByID(self.playerObject:getUsername())
+        if not player then
+            FrameworkZ.Notifications:AddToQueue("Failed to validate faction selection: Player not found.", FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
+
+        local factionInstance = FrameworkZ.UI.CreateCharacterFaction.instance
+        if not factionInstance then
+            FrameworkZ.Notifications:AddToQueue("Failed to validate faction selection: Faction instance not found.", FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
+
+        local factionID = factionInstance.faction
+        if not player:IsWhitelisted(factionID) then
+            FrameworkZ.Notifications:AddToQueue("You are not whitelisted for this faction.", FrameworkZ.Notifications.Types.Warning, nil, self)
+            return false
+        end
+    end
+
     self:hideStepControls(self.returnToMainMenu, self.enterInfoForward)
 
     return true
@@ -303,12 +210,12 @@ function FrameworkZ.UI.MainMenu:onEnterInfoMenu(menu)
 end
 
 function FrameworkZ.UI.MainMenu:onExitInfoMenu(menu, isForward)
-    local infoInstance = FrameworkZ.UI.CreateCharacterInfo.instance
-    
     if isForward then
+        local infoInstance = FrameworkZ.UI.CreateCharacterInfo.instance
+
         -- Use the enhanced validation system
         local isValid, errors = infoInstance:validateData()
-        
+
         if not isValid then
             local warningMessage = "Cannot proceed: " .. table.concat(errors, ", ")
             FrameworkZ.Notifications:AddToQueue(warningMessage, FrameworkZ.Notifications.Types.Warning, nil, self)
@@ -763,6 +670,139 @@ function FrameworkZ.UI.MainMenu:new(x, y, width, height, playerObject)
 	FrameworkZ.UI.MainMenu.instance = o
 
 	return o
+end
+
+function FrameworkZ.UI.MainMenu:Initialize(instance)
+    instance.uiHelper = FrameworkZ.UI
+    instance.emitter = instance.playerObject:getEmitter()
+	local title = FrameworkZ.Config.Options.GamemodeTitle .. " " .. FrameworkZ.Config.Options.Version .. "-" .. FrameworkZ.Config.Options.VersionType
+    local subtitle = FrameworkZ.Config.Options.GamemodeDescription
+    local createCharacterLabel = "Create Character"
+    local loadCharacterLabel = "Load Character"
+    local disconnectLabel = "Disconnect"
+    local middleX = instance.width / 2 - 200 / 2
+    local middleY = instance.height / 2 + FrameworkZ.UI.GetHeight(UIFont.Title, title) + FrameworkZ.UI.GetHeight(UIFont.Large, subtitle)
+
+    --[[if FrameworkZ.Timers:Exists("FadeOutMainMenuMusic") then
+        FrameworkZ.Timers:Remove("FadeOutMainMenuMusic")
+    end--]]
+
+    if FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"] then
+        instance.bgMusicController = FrameworkZ.UI.AudioController.instances["Main Menu Music Volume"]
+        instance.bgMusicController:transfer(instance)
+        instance.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
+    else
+        instance.bgMusicController = FrameworkZ.UI.AudioController:new("Main Menu Music Volume", 10, instance.height - 85, instance.playerObject)
+        instance.bgMusicController:initialise()
+        instance.bgMusicController:playTrack(FrameworkZ.Config:GetOption("MainMenuMusic"))
+        instance:addChild(instance.bgMusicController)
+    end
+
+    local stepWidth, stepHeight = 600, 700 -- w = 500?
+    local stepX, stepY = instance.width / 2 - stepWidth / 2, instance.height / 2 - stepHeight / 2
+    instance.MainMenu = instance
+    instance.createCharacterSteps = FrameworkZ.UserInterfaces:New("VanillaCreateCharacter", instance)
+    instance.createCharacterSteps.onEnterInitialMenu = instance.onEnterMainMenu
+    instance.createCharacterSteps.onExitInitialMenu = instance.onExitMainMenu
+    instance.createCharacterSteps:Initialize()
+
+    if FrameworkZ.UI.MainMenu.customSteps then
+        FrameworkZ.UI.MainMenu.customSteps()
+    else
+        instance.createCharacterSteps:RegisterNextStep("MainMenu", "SelectFaction", instance, FrameworkZ.UI.CreateCharacterFaction, instance.onEnterFactionMenu, instance.onExitFactionMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = instance.playerObject})
+        instance.createCharacterSteps:RegisterNextStep("SelectFaction", "EnterInfo", FrameworkZ.UI.CreateCharacterFaction, FrameworkZ.UI.CreateCharacterInfo, instance.onEnterInfoMenu, instance.onExitInfoMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = instance.playerObject})
+        instance.createCharacterSteps:RegisterNextStep("EnterInfo", "CustomizeAppearance", FrameworkZ.UI.CreateCharacterInfo, FrameworkZ.UI.CreateCharacterAppearance, instance.onEnterAppearanceMenu, instance.onExitAppearanceMenu, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = instance.playerObject})
+        instance.createCharacterSteps:RegisterNextStep("CustomizeAppearance", "MainMenu", FrameworkZ.UI.CreateCharacterAppearance, instance, instance.onFinalizeCharacter, nil, {x = stepX, y = stepY, width = stepWidth, height = stepHeight, playerObject = instance.playerObject})
+    end
+
+    instance.titleY = instance.uiHelper.GetHeight(UIFont.Title, title)
+
+    instance.title = FrameworkZ.Interfaces:CreateLabel({
+        x = instance.width / 2,
+        y = instance.titleY,
+        height = 25,
+        text = title,
+        font = FZ_FONT_TITLE,
+        textAlign = FZ_ALIGN_CENTER
+    })
+    instance:addChild(instance.title)
+
+    instance.subtitle = FrameworkZ.Interfaces:CreateLabel({
+        x = instance.width / 2,
+        y = instance.titleY + instance.uiHelper.GetHeight(UIFont.Large, subtitle),
+        height = 25,
+        text = subtitle,
+        font = FZ_FONT_LARGE,
+        textAlign = FZ_ALIGN_CENTER,
+        theme = "Subtle"
+    })
+    instance:addChild(instance.subtitle)
+
+    instance.createCharacterButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY - 75, width = 200, height = 50,
+        title = createCharacterLabel,
+        target = instance.createCharacterSteps,
+        onClick = instance.createCharacterSteps.ShowNextStep,
+        font = FZ_FONT_LARGE
+    })
+    instance:addChild(instance.createCharacterButton)
+
+    instance.loadCharacterButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY, width = 200, height = 50,
+        title = loadCharacterLabel,
+        target = instance,
+        onClick = FrameworkZ.UI.MainMenu.onEnterLoadCharacterMenu,
+        font = FZ_FONT_LARGE
+    })
+    instance:addChild(instance.loadCharacterButton)
+
+    instance.disconnectButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY + 75, width = 200, height = 50,
+        title = disconnectLabel,
+        target = instance,
+        onClick = FrameworkZ.UI.MainMenu.onDisconnect,
+        theme = "Danger",
+        font = FZ_FONT_LARGE
+    })
+    instance:addChild(instance.disconnectButton)
+
+    instance.closeButton = FrameworkZ.Interfaces:CreateButton({
+        x = middleX, y = middleY + 150, width = 200, height = 50,
+        title = "Close",
+        target = instance,
+        onClick = FrameworkZ.UI.MainMenu.onClose,
+        font = FZ_FONT_LARGE
+    })
+
+    if not FrameworkZ.Players:GetLoadedCharacterByID(instance.playerObject:getUsername()) then
+        instance.closeButton:setVisible(false)
+    end
+
+    instance:addChild(instance.closeButton)
+
+    --[[
+    instance.closeButton = ISButton:new(middleX, middleY + 150, 200, 50, "Close", instance, FrameworkZ.UI.MainMenu.onClose)
+    instance.closeButton.font = UIFont.Large
+    instance:addChild(instance.closeButton)
+    --]]
+end
+
+function FrameworkZ.UI.MainMenu:Create(x, y, width, height, playerObject)
+    local instance = ISPanel.new(self, x, y, width, height)
+    instance.backgroundImageOpacity = 1
+	instance.backgroundColor = {r=0, g=0, b=0, a=1}
+	instance.borderColor = {r=0, g=0, b=0, a=0}
+	instance.moveWithMouse = false
+	instance.playerObject = playerObject
+
+    FrameworkZ.UI.MainMenu.instance = instance
+    --FrameworkZ.Themes:ApplyPanelTheme(instance, "Default")
+    instance:initialise()
+    instance:addToUIManager()
+
+    self:Initialize(instance)
+
+    return instance
 end
 
 return FrameworkZ.UI.MainMenu

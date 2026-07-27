@@ -213,11 +213,17 @@ function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
     if button.internal == "CLOSE" then
         self:close()
     elseif button.internal == "CHARACTERS" then
+        self.characterSelect = FrameworkZ.Interfaces:GetInterface("MainMenu"):Create(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.isoPlayer)
+        self.characterSelect.backgroundImageOpacity = 0.5
+        self.characterSelect.backgroundColor = {r=0, g=0, b=0, a=0}
+
+        --[[
         self.characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.isoPlayer)
         self.characterSelect.backgroundImageOpacity = 0.5
         self.characterSelect.backgroundColor = {r=0, g=0, b=0, a=0}
         self.characterSelect:initialise()
         self.characterSelect:addToUIManager()
+        --]]
 
         self:close()
     elseif button.internal == "MY_CHARACTER" then

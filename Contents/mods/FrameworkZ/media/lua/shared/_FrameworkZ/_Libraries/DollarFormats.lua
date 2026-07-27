@@ -12,7 +12,7 @@ FrameworkZ.DollarFormats = FrameworkZ.Foundation:NewModule(FrameworkZ.DollarForm
 -- 
 function FrameworkZ.DollarFormats:CommaValue(amount)
   local formatted = amount
-  while true do  
+  while true do
     formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
     if (k==0) then
       break
@@ -37,7 +37,7 @@ end
 -- and rounded to given decimal places
 --
 --
-function FrameworkZ.DollarFormats:Get(amount, decimal, prefix, neg_prefix)
+function FrameworkZ.DollarFormats:Get(amount, decimal, prefix, neg_prefix, suffix)
   local str_amount,  formatted, famount, remain
 
   decimal = decimal or 2  -- default 2 decimal places
@@ -69,6 +69,9 @@ function FrameworkZ.DollarFormats:Get(amount, decimal, prefix, neg_prefix)
       formatted = neg_prefix .. formatted 
     end
   end
+
+        -- attach suffix string e.g ' USD'
+  formatted = formatted .. (suffix or "")
 
   return formatted
 end

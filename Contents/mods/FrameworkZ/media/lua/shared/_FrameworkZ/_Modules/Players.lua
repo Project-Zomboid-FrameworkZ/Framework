@@ -438,6 +438,7 @@ end
 --! \return boolean True if whitelisted, false otherwise.
 function PLAYER:IsWhitelisted(factionID)
     if not factionID then return false end
+    if FrameworkZ.Factions:GetFactionByID(factionID).requiresWhitelist == false then return true end
 
     return self.Whitelists[factionID] or false
 end

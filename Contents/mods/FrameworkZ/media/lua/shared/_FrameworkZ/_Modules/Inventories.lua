@@ -872,7 +872,20 @@ function FrameworkZ.Inventories:Rebuild(isoPlayer, inventory, items)
                 local rebuiltItem = FrameworkZ.Utilities:CopyTable(itemDefinition)
 
                 for key, value in pairs(itemSnapshot) do
-                    rebuiltItem[key] = value
+                    if key == "customFields" and type(value) == "table" and type(rebuiltItem.customFields) == "table" then
+                        -- ProcessSaveableData strips functions, so the snapshot's customFields have no .get/.set.
+                        -- Merge only the saved .value into each definition field to preserve the live functions.
+                        for fieldName, savedField in pairs(value) do
+                            local defField = rebuiltItem.customFields[fieldName]
+                            if type(defField) == "table" and defField.value ~= nil and type(savedField) == "table" and savedField.value ~= nil then
+                                defField.value = savedField.value
+                            else
+                                rebuiltItem.customFields[fieldName] = savedField
+                            end
+                        end
+                    else
+                        rebuiltItem[key] = value
+                    end
                 end
 
                 setmetatable(rebuiltItem, getmetatable(itemDefinition))

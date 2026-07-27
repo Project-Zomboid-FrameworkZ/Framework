@@ -266,7 +266,7 @@ function FrameworkZ.UI.Introduction:initialise()
 									FrameworkZ.Timers:Simple(0.1, function()
 										self.backgroundColor = {r=0, g=0, b=0, a=1}
 
-										local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+										local characterSelect = FrameworkZ.Interfaces:GetInterface("MainMenu"):Create(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
 										characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 										characterSelect:initialise()
 										-- Pass music volume settings to main menu immediately after initialization
@@ -300,7 +300,7 @@ function FrameworkZ.UI.Introduction:initialise()
 					end)
 				else
 					FrameworkZ.Timers:Remove("IntroTick")
-					local characterSelect = FrameworkZ.UI.MainMenu:new(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
+					local characterSelect = FrameworkZ.Interfaces:GetInterface("MainMenu"):Create(0, 0, getCore():getScreenWidth(), getCore():getScreenHeight(), self.playerObject)
 					characterSelect:addChild(FrameworkZ.Foundation.InitializationNotification)
 					characterSelect:initialise()
 					-- Pass music volume settings to main menu immediately after initialization

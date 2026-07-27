@@ -145,7 +145,7 @@ function FrameworkZ.UI.CreateCharacterFaction:initialise()
 
     -- Collect available factions
     for k, v in pairs(factionsList) do
-        if not v.requiresWhitelist then
+        if not v.isSecret then
             table.insert(availableFactions, {id = k, data = v})
         end
     end
