@@ -1,7 +1,9 @@
 --! \page Features
 --! \section Inventories Inventories
 --! Inventories are used to store items for characters, containers, vehicles, and other entities. Each inventory can hold multiple items, and each item can have its own unique properties and data.
---! An inventory object is broken down into two key elements: The logical inventory, and the "physical" inventory. A logical inventory is composed of items that are directly implemented with FrameworkZ. Whereas a physical inventory is composed of regular Project Zomboid items. These two distinctions were made to provide better organization and management of items within the game considering that not all items would be implemented into FrameworkZ.
+--! Character persistence uses one InventoryData payload. Every live Project Zomboid item is
+--! serialized once, with an optional worn-slot or hand-state marker. FrameworkZ logical items
+--! are reconstructed as runtime links from each restored item's FZ_ITM ModData.
 
 --! \page Global Variables
 --! \section Inventories Inventories
@@ -34,6 +36,54 @@ local function tableHasEntries(tbl)
     return false
 end
 
+-- sendServerCommand/sendClientCommand round-trip numeric table keys as strings, so a manifest
+-- built server-side with itemManifest[1..n] can come back client-side as itemManifest["1".."n"].
+-- Re-key it by number so itemManifest[itemIndex] lookups against ipairs(itemsData) still work.
+local function normalizeItemManifest(manifest)
+    if type(manifest) ~= "table" then return manifest end
+
+    local normalized = {}
+    for key, value in pairs(manifest) do
+        local numericKey = tonumber(key)
+        if numericKey then
+            normalized[numericKey] = value
+        end
+    end
+
+    return normalized
+end
+
+local function countInventoryPayload(items)
+    local total, frameworkItems = 0, 0
+
+    for _, itemData in ipairs(items or {}) do
+        total = total + 1
+        local frameworkData = itemData.modData and itemData.modData["FZ_ITM"] or nil
+        if type(frameworkData) == "table" and frameworkData.uniqueID then
+            frameworkItems = frameworkItems + 1
+        end
+
+        local nestedTotal, nestedFrameworkItems = countInventoryPayload(itemData.containerItems)
+        total = total + nestedTotal
+        frameworkItems = frameworkItems + nestedFrameworkItems
+    end
+
+    return total, frameworkItems
+end
+
+-- Mirrors Items.lua's GiveItem/CreateWorldItemsBatch pattern: instanceItem() constructs the
+-- item object first, then AddItem(object) adds it. AddItem(typeString) directly (letting the
+-- inventory construct the item itself) does not register it for replication the same way, which
+-- left items unable to be dropped/unequipped -- any server-validated action on them silently failed.
+local function createWorldItem(inventory, itemType)
+    if not inventory or not itemType or type(instanceItem) ~= "function" then return nil end
+
+    local worldItem = instanceItem(itemType)
+    if not worldItem then return nil end
+
+    return inventory:AddItem(worldItem)
+end
+
 -- O(1) lookup table for enum to slot name conversion - uses Characters.SlotList for proper PZ compatibility
 -- Build SlotLookup using available data without relying on undefined FZ_SLOT_* globals.
 -- Priority:
@@ -57,16 +107,6 @@ do
         end
     end
     FrameworkZ.Inventories.SlotLookup = slotLookup
-end
-
--- O(1) reverse lookup table for slot name to enum conversion - uses proper FZ_SLOT constants
--- Build reverse lookup from the resolved SlotLookup
-do
-    local reverse = {}
-    for enumKey, slotName in pairs(FrameworkZ.Inventories.SlotLookup) do
-        reverse[slotName] = enumKey
-    end
-    FrameworkZ.Inventories.SlotNameLookup = reverse
 end
 
 -- O(1) lookup table for FrameworkZ item type checking - populated at runtime
@@ -188,7 +228,6 @@ function FrameworkZ.Inventories:ExtractColorData(item, itemData)
                         a = 1.0
                     }
                     print("[FrameworkZ] Saved equipment color for " .. (item.getName and item:getName() or "item") .. ": r=" .. r .. ", g=" .. g .. ", b=" .. b)
-                    return
                 end
             end
         end
@@ -365,7 +404,7 @@ function FrameworkZ.Inventories:ExtractContainerProperties(item, itemData)
         end
         
         -- Save container inventory ModData (e.g., Tetris grid layouts)
-        local containerModData = containerItems:getModData()
+        local containerModData = containerItems and containerItems.getModData and containerItems:getModData() or nil
         if containerModData then
             local hasData = false
             for _ in pairs(containerModData) do hasData = true break end
@@ -412,6 +451,15 @@ end
 --! \return \table Comprehensive item data
 function FrameworkZ.Inventories:ExtractItemData(item)
     if not item then return nil end
+
+    local modData = item.getModData and item:getModData() or nil
+    local frameworkItemData = modData and modData["FZ_ITM"] or nil
+    if type(frameworkItemData) == "table" and frameworkItemData.instanceID ~= nil then
+        local liveInstance = FrameworkZ.Items:GetInstance(frameworkItemData.instanceID)
+        if type(liveInstance) == "table" then
+            modData["FZ_ITM"] = FrameworkZ.Items:BuildInstanceData(liveInstance, item, liveInstance.owner)
+        end
+    end
     
     local itemData = {
         id = item:getFullType(),
@@ -436,6 +484,38 @@ function FrameworkZ.Inventories:ExtractItemData(item)
     return itemData
 end
 
+local function applyItemColor(item, colorData)
+    if not item or not colorData or type(colorData) ~= "table" then return false end
+
+    local visual = item.getVisual and item:getVisual() or nil
+    local clothingItem = item.getClothingItem and item:getClothingItem() or nil
+    local r = tonumber(colorData.r)
+    local g = tonumber(colorData.g)
+    local b = tonumber(colorData.b)
+    local a = tonumber(colorData.a) or 1.0
+
+    if type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" then
+        return false
+    end
+
+    if clothingItem and clothingItem.getAllowRandomTint and clothingItem:getAllowRandomTint() and visual and visual.setTint and ImmutableColor and ImmutableColor.new then
+        local immutableColor = ImmutableColor.new(r, g, b, a)
+        visual:setTint(immutableColor)
+        return true
+    end
+
+    if item.setCustomColor then item:setCustomColor(true) end
+    if item.setColor and Color and Color.new then
+        item:setColor(Color.new(r, g, b, a))
+    end
+
+    if visual and visual.setTint and ImmutableColor and ImmutableColor.new then
+        visual:setTint(ImmutableColor.new(r, g, b, a))
+    end
+
+    return true
+end
+
 --! \brief Apply equipment visuals AFTER equipping to prevent randomization override
 --! \param item \InventoryItem The equipped item
 --! \param itemData \table The item data containing color/decal information
@@ -452,27 +532,13 @@ function FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
             visual:setTextureChoice(itemData.textureChoice)
         end)
         if ok then
-            if item.synchWithVisual and type(item.synchWithVisual) == "function" then
-                pcall(function()
-                    item:synchWithVisual()
-                end)
-            end
             applied = true
         end
     end
 
     -- Validate color is a proper table with required fields
     if itemData.color and type(itemData.color) == "table" and itemData.color.r and itemData.color.g and itemData.color.b then
-        -- Apply color using proper PZ pattern
-        if item.setColor and item.setCustomColor then
-            local color = Color.new(itemData.color.r, itemData.color.g, itemData.color.b, itemData.color.a or 1.0)
-            item:setColor(color)
-
-            if visual and visual.setTint and ImmutableColor and ImmutableColor.new then
-                visual:setTint(ImmutableColor.new(color))
-            end
-
-            item:setCustomColor(true)
+        if applyItemColor(item, itemData.color) then
             applied = true
         end
     end
@@ -486,6 +552,12 @@ function FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
             visual:setDecal(decalStr)
             applied = true
         end
+    end
+
+    if applied and item.synchWithVisual and type(item.synchWithVisual) == "function" then
+        pcall(function()
+            item:synchWithVisual()
+        end)
     end
 
     return applied
@@ -510,19 +582,23 @@ function FrameworkZ.Inventories:RestoreItemData(item, itemData)
     -- Restore color/tint
     -- NOTE: For equipped items, color should be applied AFTER setWornItem() to override randomization
     -- This function handles non-equipped items. For equipment, see ApplyEquipmentColor() method.
-    if itemData.color and type(itemData.color) == "table" and item.setColor then
-        local r, g, b, a = itemData.color.r, itemData.color.g, itemData.color.b, itemData.color.a or 1.0
-        -- Validate all color components are numbers before applying
-        if type(r) == "number" and type(g) == "number" and type(b) == "number" and type(a) == "number" then
-            local color = Color.new(r, g, b, a)
-            item:setColor(color)
-            if item.getVisual and item.setCustomColor then
-                local visual = item:getVisual()
-                if visual and visual.setTint and ImmutableColor and ImmutableColor.new then
-                    visual:setTint(ImmutableColor.new(color))
-                end
+    if itemData.color and type(itemData.color) == "table" then
+        applyItemColor(item, itemData.color)
+    end
 
-                item:setCustomColor(true)
+    -- Restore texture choice for items that use IconsForTexture / WorldStaticModelsByIndex
+    -- This is especially important for wallets and other non-clothing inventory items.
+    if itemData.textureChoice ~= nil then
+        local visual = item.getVisual and item:getVisual() or nil
+        if visual and visual.setTextureChoice and type(visual.setTextureChoice) == "function" then
+            local ok = pcall(function()
+                visual:setTextureChoice(itemData.textureChoice)
+            end)
+
+            if ok and item.synchWithVisual and type(item.synchWithVisual) == "function" then
+                pcall(function()
+                    item:synchWithVisual()
+                end)
             end
         end
     end
@@ -582,7 +658,7 @@ function FrameworkZ.Inventories:RestoreItemData(item, itemData)
                 if bullets then
                     bullets:clear()
                     for _, bulletData in ipairs(itemData.bullets) do
-                        local bullet = item:getInventory():AddItem(bulletData.type)
+                        local bullet = createWorldItem(item:getInventory(), bulletData.type)
                         if bullet and bulletData.condition and bullet.setCondition then
                             bullet:setCondition(bulletData.condition)
                         end
@@ -648,7 +724,7 @@ function FrameworkZ.Inventories:RestoreItemData(item, itemData)
             
             -- Now restore the items with the grid data intact
             for _, containerItemData in ipairs(itemData.containerItems) do
-                local containerItem = containerInventory:AddItem(containerItemData.id)
+                local containerItem = createWorldItem(containerInventory, containerItemData.id)
                 if containerItem then
                     self:RestoreItemData(containerItem, containerItemData)
                 end
@@ -692,6 +768,9 @@ local function resolveBodyLocation(slot)
             return ItemBodyLocation.get(ResourceLocation.of(slot))
         end)
         if ok and location then return location end
+        print("[FrameworkZ] DEBUG: resolveBodyLocation('" .. tostring(slot) .. "') via ItemBodyLocation.get failed (ok=" .. tostring(ok) .. ", location=" .. tostring(location) .. ")")
+    else
+        print("[FrameworkZ] DEBUG: resolveBodyLocation('" .. tostring(slot) .. "') skipped ItemBodyLocation.get: ItemBodyLocation=" .. tostring(ItemBodyLocation) .. ", ResourceLocation=" .. tostring(ResourceLocation))
     end
 
     if ItemBodyLocation and type(ItemBodyLocation) == "table" then
@@ -701,18 +780,18 @@ local function resolveBodyLocation(slot)
         end
     end
 
+    print("[FrameworkZ] DEBUG: resolveBodyLocation('" .. tostring(slot) .. "') could not resolve to ItemBodyLocation, falling back to raw string")
     return slot
 end
 
 local function safeGetWornItem(isoPlayer, slot)
     if not isoPlayer or not slot then return nil end
-    
-    -- Handle special cases and common slot variations
-    local actualSlot = slot
-    
-    -- Try different slot name variations if needed
+
+    -- NOTE: this build's getWornItem() requires an actual ItemBodyLocation object -- passing a
+    -- plain String throws "expected argument of type ItemBodyLocation, got String". Always resolve
+    -- first; do not attempt the plain string (see CharacterView.lua for the same requirement).
     local function tryGet(location)
-        if not isoPlayer.getWornItem then return nil end
+        if not location or not isoPlayer.getWornItem then return nil end
         local ok, value = pcall(function()
             return isoPlayer:getWornItem(location)
         end)
@@ -720,8 +799,9 @@ local function safeGetWornItem(isoPlayer, slot)
         return nil
     end
 
-    local result = tryGet(resolveBodyLocation(actualSlot))
+    local result = tryGet(resolveBodyLocation(slot))
     if result then return result end
+
     -- Try alternative slot names for compatibility
     local alternativeSlots = {
         ["TorsoExtraVest"] = "TorsoExtra",
@@ -737,17 +817,27 @@ end
 local function safeSetWornItem(isoPlayer, slot, item)
     if not isoPlayer or not slot or not item then return false end
 
+    -- NOTE: pcall only proves setWornItem() didn't throw -- PZ can silently no-op on a
+    -- bad/wrong-type location without erroring. Always verify the item actually landed in the
+    -- slot via getWornItem(), otherwise callers report "success" while equipping nothing.
+    -- Also: this build's setWornItem() requires an actual ItemBodyLocation object, not a String
+    -- (see CharacterView.lua) -- resolveBodyLocation() must always be applied before calling.
     local function trySet(location, targetItem)
-        if not isoPlayer.setWornItem then return false end
+        if not location or not isoPlayer.setWornItem then return false end
         local ok = pcall(function()
             isoPlayer:setWornItem(location, targetItem)
         end)
-        return ok
+        if not ok then return false end
+
+        local ok2, wornNow = pcall(function()
+            return isoPlayer:getWornItem(location)
+        end)
+        return ok2 and wornNow == targetItem
     end
-    
+
     -- For items with specific body locations, prefer that
     if item.getBodyLocation and item:getBodyLocation() then
-        if trySet(item:getBodyLocation(), item) then
+        if trySet(resolveBodyLocation(item:getBodyLocation()), item) then
             return true
         end
     end
@@ -762,7 +852,8 @@ local function safeSetWornItem(isoPlayer, slot, item)
         ["TorsoExtra"] = "TorsoExtraVest"
     }
     if alternativeSlots[slot] then
-        return trySet(resolveBodyLocation(alternativeSlots[slot]), item)
+        local altSlot = alternativeSlots[slot]
+        return trySet(resolveBodyLocation(altSlot), item)
     end
 
     return false
@@ -969,73 +1060,6 @@ function FrameworkZ.Inventories:GetItemCountByID(inventoryID, uniqueID)
     return countOrSuccess, countMessage
 end
 
---! \brief Recursively traverses the inventory table for missing data while referencing the item definitions to rebuild the inventory.
---! \param inventory \table The inventory to rebuild.
---! \return \table The rebuilt inventory.
-function FrameworkZ.Inventories:Rebuild(isoPlayer, inventory, items)
-    if not isoPlayer then return false, "No ISO Player to add items to." end
-    if not inventory then return false, "No inventory to rebuild." end
-    if not items or type(items) ~= "table" then return false, "Logical inventory payload is invalid." end
-
-    local logicalItems = items.items
-    if type(logicalItems) ~= "table" then return false, "Logical inventory payload is missing items table." end
-    if #logicalItems == 0 then
-        return true, "No logical items to rebuild.", inventory
-    end
-
-    local rebuildRequests = {}
-
-    for _, itemSnapshot in ipairs(logicalItems) do
-        local uniqueID = itemSnapshot and itemSnapshot.uniqueID or nil
-        if uniqueID and FrameworkZ.Items:GetItemByUniqueID(uniqueID) then
-            table.insert(rebuildRequests, {
-                uniqueID = uniqueID,
-                quantity = 1,
-                snapshot = itemSnapshot
-            })
-        end
-    end
-
-    if #rebuildRequests == 0 then
-        return true, "No valid logical items to rebuild.", inventory
-    end
-
-    local success, message, manifest, instances, _worldItems = FrameworkZ.Items:CreateWorldItemsBatch(isoPlayer, rebuildRequests)
-    if not success then
-        return false, message
-    end
-
-    local rebuildCount = 0
-
-    if type(manifest) == "table" then
-        for _, itemManifest in ipairs(manifest) do
-            local worldItemID = itemManifest and itemManifest.worldItemID or nil
-            local instanceData = itemManifest and itemManifest.instanceData or nil
-            local worldItem = worldItemID and isoPlayer:getInventory():getItemById(worldItemID) or nil
-
-            if worldItem and type(instanceData) == "table" then
-                FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
-                local itemInstance = FrameworkZ.Items:HydrateClientInstanceFromData(isoPlayer, worldItem, instanceData)
-
-                if type(itemInstance) == "table" then
-                    inventory:AddItem(itemInstance)
-                    rebuildCount = rebuildCount + 1
-                end
-            end
-        end
-    elseif type(instances) == "table" then
-        -- Fallback for direct server-side call path where instances are already returned.
-        for _, itemInstance in ipairs(instances) do
-            if type(itemInstance) == "table" then
-                inventory:AddItem(itemInstance)
-                rebuildCount = rebuildCount + 1
-            end
-        end
-    end
-
-    return true, "Inventory rebuilt with " .. tostring(rebuildCount) .. " logical items.", inventory
-end
-
 --! \brief Save character inventory and equipment data
 --! \param character \table The character object with inventory
 --! \return \table The complete inventory data including equipment
@@ -1049,117 +1073,44 @@ function FrameworkZ.Inventories:Save(character)
         return nil, "Character has no IsoPlayer"
     end
 
-    -- Ensure FZ world items are linked to live logical instances before building
-    -- logical/physical save payloads; otherwise reconnects can degrade to physical-only.
-    self:RepairFrameworkZInventoryIntegrity(character)
+    local inventoryData = { items = {} }
+    local inventory = isoPlayer:getInventory():getItems()
 
-    local inventoryData = {}
-    
-    -- Save logical inventory in canonical shape
-    local logicalInventoryData = { items = {}, equippedItems = {} }
-    local logicalInstanceIDs = {}
-    local logicalInventory = character:GetInventory()
-
-    if logicalInventory and logicalInventory.GetItems then
-        for _, logicalItem in pairs(logicalInventory:GetItems()) do
-            if type(logicalItem) == "table" then
-                local saveableItemData = FrameworkZ.Foundation:ProcessSaveableData(logicalItem)
-                if saveableItemData and saveableItemData.uniqueID then
-                    table.insert(logicalInventoryData.items, saveableItemData)
-
-                    if saveableItemData.instanceID ~= nil then
-                        logicalInstanceIDs[tostring(saveableItemData.instanceID)] = true
-                    end
-                end
-            end
-        end
+    local equippedSlots = {}
+    for _, slotName in pairs(self.SlotLookup) do
+        local wornItem = safeGetWornItem(isoPlayer, slotName)
+        if wornItem then equippedSlots[wornItem] = slotName end
     end
 
-    -- Save physical inventory (with comprehensive item data).
-    -- FZ_ITM items are usually represented by logical inventory snapshots.
-    -- If logical tracking is missing, keep a physical fallback copy to prevent loss on reconnect.
-    local physicalItems = {}
-    local inventory = isoPlayer:getInventory():getItems()
+    local primaryItem = isoPlayer.getPrimaryHandItem and isoPlayer:getPrimaryHandItem() or nil
+    local secondaryItem = isoPlayer.getSecondaryHandItem and isoPlayer:getSecondaryHandItem() or nil
+
     for i = 0, inventory:size() - 1 do
         local item = inventory:get(i)
-        local fzData = item:getModData()["FZ_ITM"]
-        local includePhysical = false
-
-        if not fzData then
-            includePhysical = true
+        local serialized, itemData = pcall(self.ExtractItemData, self, item)
+        if serialized and itemData then
+            itemData.equippedSlot = equippedSlots[item]
+            if item == primaryItem then itemData.primaryHand = true end
+            if item == secondaryItem then itemData.secondaryHand = true end
+            table.insert(inventoryData.items, itemData)
         else
-            local logicalKey = fzData.instanceID and tostring(fzData.instanceID) or nil
-            includePhysical = logicalKey == nil or not logicalInstanceIDs[logicalKey]
-        end
-
-        if includePhysical then
-            local itemData = self:ExtractItemData(item)
-            if itemData then
-                table.insert(physicalItems, itemData)
-            end
+            local itemType = item and item.getFullType and item:getFullType() or "<unknown>"
+            return nil, "Failed to serialize inventory item '" .. tostring(itemType) .. "': " .. tostring(itemData)
         end
     end
-    inventoryData.INVENTORY_PHYSICAL = physicalItems
-    
-    -- Capture equipped FrameworkZ items using SlotLookup
-    local equippedFrameworkZItems = {}
-    for slotEnum, slotName in pairs(self.SlotLookup) do
-        if slotName then
-            local equippedItem = safeGetWornItem(isoPlayer, slotName)
-            if equippedItem and equippedItem:getModData()["FZ_ITM"] then
-                local fzItemData = equippedItem:getModData()["FZ_ITM"]
-                if fzItemData and fzItemData.instanceID then
-                    equippedFrameworkZItems[fzItemData.instanceID] = {
-                        slot = slotName,
-                        slotName = slotName,
-                        slotEnum = slotEnum
-                    }
-                    print("[FrameworkZ] Found equipped FrameworkZ item '" .. (fzItemData.name or "Unknown") .. "' in slot " .. slotName .. " (enum: " .. slotEnum .. ")")
-                end
-            end
-        end
-    end
-    
-    -- Add equipped state to logical inventory data
-    logicalInventoryData.equippedItems = equippedFrameworkZItems
-    inventoryData.INVENTORY_LOGICAL = logicalInventoryData
 
-    -- Save physical equipment (with comprehensive item data) using SlotLookup and O(1) lookup
-    local function saveEquipmentSlot(slotName, slotEnum)
-        local equippedItem = safeGetWornItem(isoPlayer, slotName)
-        if equippedItem then
-            local itemType = equippedItem:getFullType()
-            
-            -- O(1) check if item is FrameworkZ type
-            if self:IsFrameworkZItemType(itemType) then
-                print("[FrameworkZ] Skipping FrameworkZ item in equipment slot " .. slotName .. " (enum: " .. slotEnum .. "). Logical inventory handles this.")
-                return nil
-            else
-                -- Use enhanced item data extraction for equipment
-                return self:ExtractItemData(equippedItem)
-            end
-        end
-        return nil
-    end
-
-    -- Store equipment in Equipment sub-table for consistency
-    local equipmentData = {}
-    for slotEnum, slotName in pairs(self.SlotLookup) do
-        if slotName then
-            -- Use enum as primary key for consistency with character creation
-            equipmentData[slotEnum] = saveEquipmentSlot(slotName, slotEnum)
-        end
-    end
-    inventoryData.Equipment = equipmentData
-
-    return inventoryData, "Character inventory data saved successfully"
+    local total, frameworkItems = countInventoryPayload(inventoryData.items)
+    local message = "Saved " .. tostring(total) .. " inventory item(s), including " .. tostring(frameworkItems) .. " FrameworkZ item(s)."
+    print("[FrameworkZ] " .. message)
+    return inventoryData, message
 end
 
 --! \brief Restore character inventory and equipment data
 --! \param character \table The character object
 --! \param inventoryData \table The saved inventory data
+--! \param itemManifest \table Optional server-created item IDs to bind on the client
 --! \return \boolean Whether restoration was successful
-function FrameworkZ.Inventories:Restore(character, inventoryData)
+function FrameworkZ.Inventories:Restore(character, inventoryData, itemManifest)
     if not character then
         return false, "Missing character parameter"
     end
@@ -1173,603 +1124,291 @@ function FrameworkZ.Inventories:Restore(character, inventoryData)
         return false, "Character has no IsoPlayer"
     end
 
-    local onServer = type(isServer) == "function" and isServer() or false
+    local itemsData = inventoryData.items
+    if type(itemsData) ~= "table" then
+        return false, "Inventory payload is missing its items list."
+    end
 
-    local success = true
-    local messages = {}
-
-    if onServer then
-        -- Server path: authoritative. Clear was done at restore boundary; add physical and rebuild logical.
-        if inventoryData.INVENTORY_PHYSICAL then
-            for _, itemData in pairs(inventoryData.INVENTORY_PHYSICAL) do
-                if itemData.id then
-                    local restoredItem = isoPlayer:getInventory():AddItem(itemData.id)
-                    if restoredItem then
-                        self:RestoreItemData(restoredItem, itemData)
-                    end
-                end
-            end
-            table.insert(messages, "Physical inventory restored")
+    pcall(function()
+        if isoPlayer and isoPlayer.clearWornItems then
+            isoPlayer:clearWornItems()
         end
+    end)
 
-        if inventoryData.INVENTORY_LOGICAL then
-            local newInventory = FrameworkZ.Inventories:New(isoPlayer:getUsername())
-            local rebuildSuccess, rebuildMessage, rebuiltInventory = self:Rebuild(isoPlayer, newInventory, inventoryData.INVENTORY_LOGICAL)
-
-            if rebuildSuccess and rebuiltInventory then
-                character:SetInventory(rebuiltInventory)
-                character.InventoryID = rebuiltInventory.id
-                rebuiltInventory:Initialize()
-                table.insert(messages, "Logical inventory restored")
-            else
-                success = false
-                table.insert(messages, "Failed to rebuild logical inventory: " .. (rebuildMessage or "Unknown error"))
-            end
-        end
-
-        -- Run integrity repair immediately on server since all items are present.
-        local repairedCount, repairedMessage = self:RepairFrameworkZInventoryIntegrity(character)
-        if repairedCount and repairedCount > 0 then
-            table.insert(messages, "Repaired " .. tostring(repairedCount) .. " link(s)")
-            print("[FrameworkZ] " .. tostring(repairedMessage))
-        end
-
-        -- Notify the owning client that inventory is fully built so it can run its own repair
-        -- once PZ has replicated the physical items.  sendClientCommand is server-only.
-        if type(sendClientCommand) == "function" then
-            sendClientCommand(isoPlayer, "FZ", "InventoryRestored", {uid = character:GetUID()})
-        end
+    local useSynchronizedItems = type(itemManifest) == "table"
+    if useSynchronizedItems then
+        itemManifest = normalizeItemManifest(itemManifest)
     else
-        -- Client path: rebuild the saved logical inventory from the character snapshot so
-        -- reconnects restore FrameworkZ items even before server-authoritative world sync.
-        local existingInventory = character.GetInventory and character:GetInventory() or nil
-        if not existingInventory or type(existingInventory.AddItem) ~= "function" then
-            existingInventory = FrameworkZ.Inventories:New(isoPlayer:getUsername())
-            character:SetInventory(existingInventory)
-            character.InventoryID = existingInventory.id
-            existingInventory:Initialize()
-        end
-
-        if inventoryData.INVENTORY_LOGICAL then
-            local rebuildSuccess, rebuildMessage, rebuiltInventory = self:Rebuild(isoPlayer, existingInventory, inventoryData.INVENTORY_LOGICAL)
-            if rebuildSuccess and rebuiltInventory then
-                character:SetInventory(rebuiltInventory)
-                character.InventoryID = rebuiltInventory.id
-                rebuiltInventory:Initialize()
-                table.insert(messages, "Logical inventory rebuilt from saved data")
-            else
-                table.insert(messages, "Logical inventory rebuild from saved data failed: " .. tostring(rebuildMessage or "Unknown error"))
+        pcall(function()
+            local inventory = isoPlayer and isoPlayer.getInventory and isoPlayer:getInventory()
+            if inventory and inventory.clear then
+                inventory:clear()
             end
-        end
+        end)
+    end
 
-        -- Run repair immediately to link any physical items that may already be present.
-        local immediateRepaired, immediateMsg = self:RepairFrameworkZInventoryIntegrity(character)
-        if immediateRepaired and immediateRepaired > 0 then
-            table.insert(messages, "Immediate client repair: linked " .. tostring(immediateRepaired) .. " item(s)")
-        end
+    local runtimeInventory = FrameworkZ.Inventories:New(isoPlayer:getUsername())
+    character:SetInventory(runtimeInventory)
+    character:SetInventoryID(runtimeInventory.id)
+    runtimeInventory:Initialize()
 
-        if not inventoryData.INVENTORY_LOGICAL then
-            table.insert(messages, "No logical inventory payload available for client rebuild")
+    -- The server is the sole authority for creating character equipment. The client only ever
+    -- binds to items the server already created and networked -- it never fabricates its own,
+    -- because a client-created item has no server-assigned ID and can never be validated for
+    -- equip/unequip/drop, leaving a permanent duplicate "ghost" item behind.
+    local isAuthoritative = type(isServer) == "function" and isServer()
+
+    local resolvedItems = {}
+    local pendingLookups = {}
+    local claimedItemIDs = {}
+
+    for itemIndex, itemData in ipairs(itemsData) do
+        local manifestEntry = useSynchronizedItems and itemManifest[itemIndex] or nil
+
+        if manifestEntry and manifestEntry.worldItemID then
+            local found = isoPlayer:getInventory():getItemById(manifestEntry.worldItemID)
+            if found then
+                claimedItemIDs[found:getID()] = true
+                resolvedItems[itemIndex] = found
+            else
+                pendingLookups[itemIndex] = manifestEntry.worldItemID
+            end
+        elseif isAuthoritative and itemData.id then
+            local created = createWorldItem(isoPlayer:getInventory(), itemData.id)
+            if created then
+                claimedItemIDs[created:getID()] = true
+                resolvedItems[itemIndex] = created
+            end
         end
     end
 
-    return success, table.concat(messages, "; ")
+    -- Batch-wait once for every still-pending item instead of racing each one against its own
+    -- short timeout. The engine's own container sync for a brand-new character's starting items
+    -- lags behind spawn/teleport until network interest catches up with the new position -- it's
+    -- slow, not instantaneous, so give it a real window. Client-only: the server always resolves
+    -- (or creates) its own items directly above and never has a manifest to wait on, and WaitUntil
+    -- itself requires a running Awaits coroutine, which this server-side RPC handler is not.
+    if tableHasEntries(pendingLookups) and type(isClient) == "function" and isClient() then
+        FrameworkZ.Awaits:WaitUntil(function()
+            local stillPending = false
+            for itemIndex, worldItemID in pairs(pendingLookups) do
+                local found = isoPlayer:getInventory():getItemById(worldItemID)
+                if found then
+                    claimedItemIDs[found:getID()] = true
+                    resolvedItems[itemIndex] = found
+                    pendingLookups[itemIndex] = nil
+                else
+                    stillPending = true
+                end
+            end
+            return not stillPending
+        end, 300)
+    end
+
+    -- Fallback: a worldItemID may not survive identically to the client (e.g. reassigned on
+    -- sync). Claim the first as-yet-unclaimed item of the same type before giving up -- this
+    -- still only binds to a real, server-created item, it never fabricates one.
+    for itemIndex, worldItemID in pairs(pendingLookups) do
+        local itemData = itemsData[itemIndex]
+        local liveItems = isoPlayer:getInventory():getItems()
+        for i = 0, liveItems:size() - 1 do
+            local candidate = liveItems:get(i)
+            if candidate:getFullType() == itemData.id and not claimedItemIDs[candidate:getID()] then
+                claimedItemIDs[candidate:getID()] = true
+                resolvedItems[itemIndex] = candidate
+                pendingLookups[itemIndex] = nil
+                break
+            end
+        end
+    end
+
+    local restoredItems = {}
+    local restoredManifest = {}
+    local restored, failed, pending = 0, 0, 0
+
+    for itemIndex, itemData in ipairs(itemsData) do
+        local restoredItem = resolvedItems[itemIndex]
+
+        if restoredItem then
+            self:RestoreItemData(restoredItem, itemData)
+            -- Indexed by itemIndex (not appended) so a failure anywhere doesn't shift every
+            -- later entry out of alignment with itemsData when this manifest is replayed.
+            table.insert(restoredItems, { item = restoredItem, data = itemData })
+            restoredManifest[itemIndex] = {
+                id = itemData.id,
+                worldItemID = restoredItem:getID()
+            }
+            restored = restored + 1
+        elseif pendingLookups[itemIndex] then
+            -- The server already confirmed this item exists (and it stays in restoredManifest
+            -- for the next restore attempt); the client just hasn't seen the engine's own sync
+            -- for it yet. That's a timing issue, not a data problem, so don't fail the whole
+            -- character load over it -- and don't fabricate a duplicate to paper over it either.
+            pending = pending + 1
+            restoredManifest[itemIndex] = useSynchronizedItems and itemManifest[itemIndex] or nil
+            print("[FrameworkZ] Notice: Saved item #" .. tostring(itemIndex) .. " ('" .. tostring(itemData.id) .. "') confirmed by the server but not yet visible locally; it will appear once the engine's item sync catches up.")
+        else
+            failed = failed + 1
+
+            if useSynchronizedItems then
+                print("[FrameworkZ] Warning: Could not bind saved item #" .. tostring(itemIndex) .. " ('" .. tostring(itemData.id) .. "') to a manifest entry.")
+            end
+        end
+    end
+
+    local equipped, equipmentFailed = 0, 0
+    for _, entry in ipairs(restoredItems) do
+        if entry.data.equippedSlot then
+            if safeSetWornItem(isoPlayer, entry.data.equippedSlot, entry.item) then
+                equipped = equipped + 1
+                self:ApplyEquipmentColor(entry.item, entry.data)
+            else
+                equipmentFailed = equipmentFailed + 1
+                print("[FrameworkZ] Warning: Failed to equip '" .. tostring(entry.data.id) .. "' in slot '" .. tostring(entry.data.equippedSlot) .. "'.")
+            end
+        end
+        if entry.data.primaryHand then isoPlayer:setPrimaryHandItem(entry.item) end
+        if entry.data.secondaryHand then isoPlayer:setSecondaryHandItem(entry.item) end
+    end
+
+    if equipped > 0 and isoPlayer.resetModel then
+        isoPlayer:resetModel()
+    end
+
+    local logicalRestored, logicalFailed = self:RebuildFrameworkZRuntimeIndex(character)
+    local synchronized, synchronizationFailed = 0, 0
+    if isAuthoritative then
+        -- The very first sync right after spawn/teleport is often dropped because the client's
+        -- network interest hasn't caught up with the new position yet -- resend a few times over
+        -- the next couple of seconds instead of trusting a single fire-and-forget attempt.
+        local function resendAll()
+            for _, entry in ipairs(restoredItems) do
+                if type(sendAddItemToContainer) == "function" then
+                    pcall(function()
+                        sendAddItemToContainer(isoPlayer:getInventory(), entry.item)
+                    end)
+                end
+            end
+        end
+
+        local sentFirstRound = pcall(resendAll)
+        synchronized = sentFirstRound and #restoredItems or 0
+        synchronizationFailed = sentFirstRound and 0 or #restoredItems
+
+        local resendRoundsRemaining = 6
+        local ticksPerRound = 10
+        local ticksUntilNextRound = ticksPerRound
+        local resendCallback
+
+        resendCallback = function()
+            ticksUntilNextRound = ticksUntilNextRound - 1
+
+            if ticksUntilNextRound <= 0 then
+                resendRoundsRemaining = resendRoundsRemaining - 1
+                pcall(resendAll)
+                ticksUntilNextRound = ticksPerRound
+
+                if resendRoundsRemaining <= 0 then
+                    Events.OnTick.Remove(resendCallback)
+                end
+            end
+        end
+
+        Events.OnTick.Add(resendCallback)
+    end
+
+    local expectedTotal, expectedFrameworkItems = countInventoryPayload(itemsData)
+    local message = "Restored " .. tostring(restored) .. " top-level item(s) from " .. tostring(expectedTotal) .. " total saved item(s), " .. tostring(failed) .. " failed, " .. tostring(pending) .. " pending sync; equipped " .. tostring(equipped) .. " item(s), " .. tostring(equipmentFailed) .. " failed; indexed " .. tostring(logicalRestored) .. " of " .. tostring(expectedFrameworkItems) .. " FrameworkZ item(s), " .. tostring(logicalFailed) .. " failed."
+    if isAuthoritative then
+        message = message .. " Synchronized " .. tostring(synchronized) .. " item(s), " .. tostring(synchronizationFailed) .. " failed."
+    end
+    print("[FrameworkZ] " .. message)
+    return failed == 0 and logicalFailed == 0 and logicalRestored == expectedFrameworkItems and synchronizationFailed == 0, message, restoredManifest
 end
 
-function FrameworkZ.Inventories:RepairFrameworkZInventoryIntegrity(character)
+--! \brief Rebuild the derived FrameworkZ runtime index from restored world items.
+--! \details InventoryData remains the only persisted source of truth. Runtime instance IDs are
+--! recreated on every restore and are never read from the save as authoritative identifiers.
+function FrameworkZ.Inventories:RebuildFrameworkZRuntimeIndex(character)
     if not character then
-        return 0, "Skipped integrity repair: missing character."
+        return 0, 1
     end
 
     local isoPlayer = character.GetIsoPlayer and character:GetIsoPlayer() or nil
     if not isoPlayer or not isoPlayer.getInventory then
-        return 0, "Skipped integrity repair: missing player inventory."
+        return 0, 1
     end
 
     local inventoryObj = character.GetInventory and character:GetInventory() or nil
     if not inventoryObj or type(inventoryObj.AddItem) ~= "function" then
-        inventoryObj = FrameworkZ.Inventories:New(isoPlayer:getUsername())
-        if character.SetInventory then
-            character:SetInventory(inventoryObj)
-        end
-        if character.SetInventoryID then
-            character:SetInventoryID(inventoryObj.id)
-        else
-            character.InventoryID = inventoryObj.id
-        end
-        inventoryObj:Initialize()
+        return 0, 1
     end
 
-    local repaired = 0
-    local items = isoPlayer:getInventory():getItems()
-    if not items then
-        return repaired, "No physical inventory found for integrity repair."
+    local rootInventory = isoPlayer:getInventory()
+    local rootItems = rootInventory and rootInventory:getItems() or nil
+    if not rootItems then
+        return 0, 1
     end
 
-    local function inventoryAlreadyHasInstance(targetInventory, instanceID)
-        if not targetInventory or not instanceID then
-            return false
-        end
+    local username = isoPlayer:getUsername()
+    FrameworkZ.Items:ClearOwnerInstances(username)
 
-        local logicalItems = targetInventory.GetItems and targetInventory:GetItems() or nil
-        if type(logicalItems) ~= "table" then
-            return false
-        end
-
-        for _, logicalItem in pairs(logicalItems) do
-            if type(logicalItem) == "table" and logicalItem.instanceID == instanceID then
-                return true
-            end
-
-            local logicalModData = logicalItem and logicalItem.getModData and logicalItem:getModData() or nil
-            local logicalFZData = logicalModData and logicalModData["FZ_ITM"] or nil
-            if type(logicalFZData) == "table" and logicalFZData.instanceID == instanceID then
-                return true
-            end
-        end
-
-        return false
-    end
-
-    -- Refresh type lookup every time: plugin items are registered after module load,
-    -- so the lookup built at startup may be empty or stale. Cost is just one table pass.
-    initializeFrameworkZItemLookup()
-
-    for i = 0, items:size() - 1 do
-        local worldItem = items:get(i)
-        if worldItem and worldItem.getFullType and worldItem.getModData then
-            local fullType = worldItem:getFullType()
-            local modData = worldItem:getModData()
-            local linkedData = modData and modData["FZ_ITM"] or nil
-
-            -- Prefer uniqueID from existing FZ_ITM mod data (always present on server-replicated FZ items).
-            -- Fall back to the type lookup for items that are FZ-type but not yet tagged (world pickups).
-            local uniqueID = (type(linkedData) == "table" and linkedData.uniqueID) or self.FrameworkZItemTypeLookup[fullType]
-
-            if uniqueID then
-                local hasValidLink = false
-
-                if type(linkedData) == "table" and linkedData.instanceID ~= nil then
-                    local liveInstance = FrameworkZ.Items:GetInstance(linkedData.instanceID)
-                    hasValidLink = tableHasEntries(liveInstance)
-                end
-
-                if not hasValidLink then
-                    local definition = FrameworkZ.Items:GetItemByUniqueID(uniqueID)
-                    if definition then
-                        local instanceID, itemInstance = FrameworkZ.Items:AddInstance(definition, isoPlayer, worldItem)
-                        if itemInstance and instanceID then
-                            if type(linkedData) == "table" then
-                                itemInstance.customFields = linkedData.customFields or itemInstance.customFields
-                                itemInstance.name = linkedData.name or itemInstance.name
-                                itemInstance.description = linkedData.description or itemInstance.description
-                                itemInstance.category = linkedData.category or itemInstance.category
-                                if linkedData.weight ~= nil then
-                                    itemInstance.weight = linkedData.weight
-                                end
-                            end
-
-                            -- Run base-inherited OnInstanced if not yet initialized.
-                            -- Denomination items store a placeholder name in their definition;
-                            -- OnInstanced (copied from the base) computes the real display name.
-                            -- The definition always has wasInitialized=false so this is safe to call.
-                            if itemInstance.OnInstanced and not itemInstance.wasInitialized then
-                                itemInstance:OnInstanced(isoPlayer, worldItem)
-                            end
-
-                            local instanceData = {
-                                uniqueID = itemInstance.uniqueID,
-                                itemID = worldItem:getFullType(),
-                                instanceID = instanceID,
-                                owner = isoPlayer:getUsername(),
-                                name = itemInstance.name or "Unknown",
-                                description = itemInstance.description or "No description available.",
-                                category = itemInstance.category or "Uncategorized",
-                                shouldConsume = itemInstance.shouldConsume or false,
-                                weight = itemInstance.weight or 1,
-                                useAction = itemInstance.useAction or nil,
-                                useTime = itemInstance.useTime or nil,
-                                customFields = itemInstance.customFields or {}
-                            }
-
-                            FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
-
-                            if not inventoryAlreadyHasInstance(inventoryObj, instanceID) then
-                                inventoryObj:AddItem(itemInstance)
-                                repaired = repaired + 1
-                            end
+    local worldItems = {}
+    local pendingContainers = { rootInventory }
+    local visitedContainers = {}
+    while #pendingContainers > 0 do
+        local container = table.remove(pendingContainers)
+        if container and not visitedContainers[container] then
+            visitedContainers[container] = true
+            local containerItems = container.getItems and container:getItems() or nil
+            if containerItems then
+                for i = 0, containerItems:size() - 1 do
+                    local worldItem = containerItems:get(i)
+                    if worldItem then
+                        table.insert(worldItems, worldItem)
+                        local nestedContainer = worldItem.getItemContainer and worldItem:getItemContainer() or nil
+                        if not nestedContainer and worldItem.getItems then
+                            nestedContainer = worldItem:getItems()
                         end
+                        if nestedContainer then table.insert(pendingContainers, nestedContainer) end
                     end
                 end
             end
         end
     end
 
-    if repaired > 0 then
-        return repaired, "Repaired " .. tostring(repaired) .. " FrameworkZ item(s) with missing or stale FZ_ITM links."
-    end
-
-    return 0, "No FrameworkZ item integrity repairs were needed."
-end
-
---! \brief Restore all equipment (both physical and logical) for a character
---! \param character \table The character object
---! \param inventoryData \table The complete inventory data containing equipment info
---! \return \boolean Whether restoration was successful
-function FrameworkZ.Inventories:RestoreEquipment(character, inventoryData)
-    if not character then
-        return false, "Missing character parameter"
-    end
-
-    local isoPlayer = character:GetIsoPlayer()
-    if not isoPlayer then
-        return false, "Character has no IsoPlayer"
-    end
-
-    if not inventoryData then
-        return false, "Missing inventory data"
-    end
-
-    local restoredPhysical = 0
-    local restoredLogical = 0
-    local failedCount = 0
-
-    -- Get equipment from Equipment sub-table
-    local equipmentTable = inventoryData.Equipment or {}
-
-    -- Clear stale currently-worn items before restoring saved equipment.
-    -- This strips temporary limbo outfit pieces and removes mismatched items from slots
-    -- that are about to be restored with different saved equipment.
-    local function getSavedEquipmentForLocation(locationName)
-        if not locationName then return nil end
-
-        local key = tostring(locationName)
-        local slotEnum = self.SlotNameLookup[key] or key
-
-        local slotData = equipmentTable[slotEnum]
-        if slotData and slotData.id then
-            return slotData
-        end
-
-        local legacyKey = "EQUIPMENT_SLOT_" .. string.upper(key:gsub("([A-Z])", "_%1"):gsub("^_", ""))
-        local legacyData = inventoryData[legacyKey] or inventoryData[key]
-        if legacyData and legacyData.id then
-            return legacyData
-        end
-
-        return nil
-    end
-
-    local wornItems = isoPlayer:getWornItems()
-    if wornItems and wornItems.size and wornItems.get then
-        local staleWornEntries = {}
-
-        for i = 0, wornItems:size() - 1 do
-            local wornEntry = wornItems:get(i)
-            local wornItem = wornEntry and wornEntry.getItem and wornEntry:getItem() or nil
-
-            if wornItem then
-                local locationName = wornItem.getBodyLocation and wornItem:getBodyLocation() or nil
-                local savedSlotData = getSavedEquipmentForLocation(locationName)
-                local shouldClear = false
-
-                if not savedSlotData then
-                    shouldClear = true
-                elseif wornItem.getFullType and savedSlotData.id and wornItem:getFullType() ~= savedSlotData.id then
-                    shouldClear = true
-                end
-
-                if shouldClear then
-                    table.insert(staleWornEntries, {
-                        location = locationName,
-                        item = wornItem,
-                    })
-                end
-            end
-        end
-
-        for _, staleEntry in ipairs(staleWornEntries) do
-            if staleEntry.location then
-                pcall(function()
-                    isoPlayer:setWornItem(resolveBodyLocation(staleEntry.location), nil)
-                end)
-            end
-
-            local inventory = isoPlayer:getInventory()
-            if inventory and staleEntry.item then
-                pcall(function()
-                    inventory:Remove(staleEntry.item)
-                end)
-            end
-        end
-    end
-
-    -- First, restore physical equipment (non-FrameworkZ items) using SlotLookup
-    for slotEnum, slotName in pairs(self.SlotLookup) do
-        if slotName then
-            -- Get equipment from Equipment sub-table using enum key
-            local equipmentData = equipmentTable[slotEnum]
-            
-            if equipmentData and equipmentData.id then
-                -- O(1) check if this equipment item is a FrameworkZ item
-                if not self:IsFrameworkZItemType(equipmentData.id) then
-                    local inventory = isoPlayer:getInventory()
-                    local items = inventory:getItems()
-                    local foundItem = nil
-                    
-                    -- Look for this item type in the player's inventory (should already be there from physical inventory restoration)
-                    for i = 0, items:size() - 1 do
-                        local item = items:get(i)
-                        if item:getFullType() == equipmentData.id and not item:getModData()["FZ_ITM"] then
-                            foundItem = item
-                            break
-                        end
-                    end
-                    
-                    -- If not found in inventory, create the item (this handles default clothing that might not have been saved)
-                    if not foundItem then
-                        foundItem = inventory:AddItem(equipmentData.id)
-                        if foundItem then
-                            print("[FrameworkZ] Created missing physical item '" .. equipmentData.id .. "' for equipment restoration")
-                        end
-                    end
-                    
-                    -- If found or created, restore properties and equip it
-                    if foundItem then
-                        -- Restore all item data EXCEPT color (which must be applied after equipping)
-                        local colorBackup = equipmentData.color
-                        equipmentData.color = nil
-                        self:RestoreItemData(foundItem, equipmentData)
-                        equipmentData.color = colorBackup
-                        
-                        -- Equip the item
-                        if safeSetWornItem(isoPlayer, slotName, foundItem) then
-                            -- Apply color AFTER equipping to override randomization from setWornItem
-                            if self:ApplyEquipmentColor(foundItem, equipmentData) then
-                                print("[FrameworkZ] Applied color to '" .. equipmentData.id .. "': r=" .. (equipmentData.color and equipmentData.color.r or "nil"))
-                            else
-                                print("[FrameworkZ] Warning: Failed to apply color to '" .. equipmentData.id .. "'")
-                            end
-                            restoredPhysical = restoredPhysical + 1
-                            print("[FrameworkZ] Equipped physical item '" .. equipmentData.id .. "' to slot " .. slotName .. " (enum: " .. slotEnum .. ") with detailed properties")
-                        else
-                            failedCount = failedCount + 1
-                            print("[FrameworkZ] Warning: Failed to equip physical item '" .. equipmentData.id .. "' to slot " .. slotName)
-                        end
+    local indexed, failed = 0, 0
+    for _, worldItem in ipairs(worldItems) do
+        local modData = worldItem.getModData and worldItem:getModData() or nil
+        local storedData = modData and modData["FZ_ITM"] or nil
+        if type(storedData) == "table" and storedData.uniqueID then
+            local runtimeItem = FrameworkZ.Items:BuildTransientInstanceFromStoredData(storedData, worldItem)
+            if type(runtimeItem) == "table" then
+                local instanceID, instance = FrameworkZ.Items:AddInstance(runtimeItem, isoPlayer, worldItem)
+                if instance and instanceID then
+                    local initialized, initializeError = pcall(instance.OnInstanced, instance, isoPlayer, worldItem)
+                    if initialized then
+                        -- OnInstanced rebuilds runtime-only state, but persisted identity and
+                        -- custom values remain authoritative across reconnects and transfers.
+                        FrameworkZ.Items:ApplyStoredInstanceData(instance, storedData)
+                        local instanceData = FrameworkZ.Items:BuildInstanceData(instance, worldItem, username)
+                        FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
+                        inventoryObj:AddItem(instance)
+                        indexed = indexed + 1
                     else
-                        failedCount = failedCount + 1
-                        print("[FrameworkZ] Warning: Could not create or find physical item '" .. equipmentData.id .. "' for slot " .. slotName)
+                        failed = failed + 1
+                        print("[FrameworkZ] Failed to initialize restored item '" .. tostring(instance.uniqueID) .. "': " .. tostring(initializeError))
                     end
-                end
-            end
-        end
-    end
-
-    -- Then, restore logical equipment (FrameworkZ items) using SlotLookup
-    for slotEnum, slotName in pairs(self.SlotLookup) do
-        if slotName then
-            -- Try enum key first (from character creation), then legacy string key for backward compatibility
-            local equipmentData = inventoryData[slotEnum] or inventoryData["EQUIPMENT_SLOT_" .. string.upper(slotName:gsub("([A-Z])", "_%1"):gsub("^_", ""))]
-            
-            if equipmentData and equipmentData.id then
-                -- O(1) check if this equipment item is a FrameworkZ item
-                local fzItemUniqueID = self:IsFrameworkZItemType(equipmentData.id)
-                
-                -- Only restore FrameworkZ equipment here
-                if fzItemUniqueID then
-                    -- Find the instance from logical inventory data
-                    local instanceID = nil
-                    local logicalInventoryData = inventoryData.INVENTORY_LOGICAL
-                    if logicalInventoryData and logicalInventoryData.equippedItems then
-                        for instID, equipInfo in pairs(logicalInventoryData.equippedItems) do
-                            if equipInfo.slot == slotName then
-                                instanceID = instID
-                                break
-                            end
-                        end
-                    end
-                    
-                    if instanceID then
-                        local fzItem = FrameworkZ.Items:GetInstance(instanceID)
-                        if fzItem then
-                            -- Create a world item for this FrameworkZ item
-                            local worldItem = isoPlayer:getInventory():AddItem(fzItem.itemID)
-                            if worldItem then
-                                -- Link the world item to the FrameworkZ instance data
-                                FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, fzItem)
-                                
-                                -- Equip the item to its saved slot
-                                local equipSuccess = false
-                                if worldItem:IsClothing() then
-                                    equipSuccess = safeSetWornItem(isoPlayer, slotName, worldItem)
-                                elseif worldItem:getCategory() == "Weapon" then
-                                    if slotName == "TwoHands" or worldItem:isTwoHandWeapon() then
-                                        isoPlayer:setPrimaryHandItem(worldItem)
-                                        isoPlayer:setSecondaryHandItem(worldItem)
-                                        equipSuccess = true
-                                    elseif slotName == "Primary" then
-                                        isoPlayer:setPrimaryHandItem(worldItem)
-                                        equipSuccess = true
-                                    elseif slotName == "Secondary" then
-                                        isoPlayer:setSecondaryHandItem(worldItem)
-                                        equipSuccess = true
-                                    end
-                                else
-                                    -- Try as regular equipment for other item types
-                                    equipSuccess = safeSetWornItem(isoPlayer, slotName, worldItem)
-                                end
-                                
-                                if equipSuccess then
-                                    restoredLogical = restoredLogical + 1
-                                    print("[FrameworkZ] Restored equipped FrameworkZ item '" .. (fzItem.name or fzItem.uniqueID) .. "' to slot " .. slotName .. " (enum: " .. slotEnum .. ")")
-                                else
-                                    failedCount = failedCount + 1
-                                    print("[FrameworkZ] Warning: Failed to equip FrameworkZ item '" .. (fzItem.name or fzItem.uniqueID) .. "' to slot " .. slotName)
-                                end
-                            else
-                                failedCount = failedCount + 1
-                                print("[FrameworkZ] Warning: Failed to create world item for FrameworkZ item instance " .. instanceID)
-                            end
-                        else
-                            failedCount = failedCount + 1
-                            print("[FrameworkZ] Warning: Could not find FrameworkZ item instance " .. instanceID .. " for equipment restoration")
-                        end
-                    else
-                        print("[FrameworkZ] Warning: Found FrameworkZ item '" .. fzItemUniqueID .. "' in saved equipment slot " .. slotName .. " but no instance data found. Skipping restoration.")
-                    end
-                end
-            end
-        end
-    end
-
-    local message = string.format("Restored %d physical and %d logical equipment items", restoredPhysical, restoredLogical)
-    if failedCount > 0 then
-        message = message .. string.format(" (%d failed)", failedCount)
-    end
-
-    -- Apply colors to all inventory items (equipment and inventory) for consistency and future-proofing
-    local colorsApplied = 0
-    
-    -- Apply colors directly from the inventoryData that was passed in (already has the correct structure)
-    if inventoryData then
-        -- Get equipment from Equipment sub-table
-        local equipmentTable = inventoryData.Equipment or {}
-        
-        -- Apply colors to equipped items using resolved SlotLookup mapping
-        for slotEnum, slotName in pairs(self.SlotLookup) do
-            -- Get equipment data from Equipment sub-table
-            local slotData = equipmentTable[slotEnum]
-            if slotName and slotData and slotData.color then
-                print("[FrameworkZ] Re-applying color from inventoryData for slot " .. slotName .. ": r=" .. slotData.color.r)
-                local wornItem = safeGetWornItem(isoPlayer, slotName)
-                if wornItem and wornItem.getVisual and type(wornItem.getVisual) == "function" then
-                    if wornItem.setCustomColor then wornItem:setCustomColor(true) end
-                    if Color and Color.new and wornItem.setColor then
-                        wornItem:setColor(Color.new(slotData.color.r, slotData.color.g, slotData.color.b, slotData.color.a or 1))
-                    end
-                    local vis = wornItem:getVisual()
-                    if vis and vis.setTint and ImmutableColor and ImmutableColor.new then
-                        vis:setTint(ImmutableColor.new(slotData.color.r, slotData.color.g, slotData.color.b, slotData.color.a or 1))
-                    end
-                    colorsApplied = colorsApplied + 1
-                    print("[FrameworkZ] Applied equipment color to " .. tostring(slotName) .. " slot")
-                end
-            end
-        end
-        
-        -- Apply colors to all inventory items (future-proofing for when inventory items have colors)
-        local inventory = isoPlayer:getInventory():getItems()
-        for i = 0, inventory:size() - 1 do
-            local item = inventory:get(i)
-            if item and item.getVisual and type(item.getVisual) == "function" then
-                -- For now, inventory items might not have specific color data stored,
-                -- but this structure allows for easy expansion when that feature is added
-                local itemType = item:getFullType()
-                
-                -- Check if this item has stored color data (could be expanded in the future)
-                -- For now, we'll skip non-equipped items unless they have specific color data
-                -- This is prepared for future expansion of the color system
-                
-                -- Example structure for future inventory item colors:
-                -- if characterData.INVENTORY_ITEM_COLORS and characterData.INVENTORY_ITEM_COLORS[itemType] then
-                --     local colorData = characterData.INVENTORY_ITEM_COLORS[itemType]
-                --     item:setCustomColor(true)
-                --     local colorObj = Color.new(colorData.r, colorData.g, colorData.b, colorData.a)
-                --     item:setColor(colorObj)
-                --     local immutableColor = ImmutableColor.new(colorData.r, colorData.g, colorData.b, colorData.a)
-                --     item:getVisual():setTint(immutableColor)
-                --     colorsApplied = colorsApplied + 1
-                --     print("[FrameworkZ] Applied inventory item color to " .. itemType)
-                -- end
-            end
-        end
-        
-        if colorsApplied > 0 then
-            message = message .. string.format(" (applied %d item colors)", colorsApplied)
-            print("[FrameworkZ] Applied colors to " .. colorsApplied .. " items total")
-        end
-    end
-
-    return failedCount == 0, message
-end
-
---! \brief Restore equipped FrameworkZ items (logical items) - DEPRECATED: Use RestoreEquipment instead
---! \param character \table The character object  
---! \param logicalInventoryData \table The logical inventory data containing equipped items
---! \return \boolean Whether restoration was successful
-function FrameworkZ.Inventories:RestoreLogicalItems(character, logicalInventoryData)
-    if not character then
-        return false, "Missing character parameter"
-    end
-
-    local isoPlayer = character:GetIsoPlayer()
-    if not isoPlayer then
-        return false, "Character has no IsoPlayer"
-    end
-
-    -- Extract equipped items from logical inventory data
-    local equippedItems = nil
-    if logicalInventoryData and logicalInventoryData.equippedItems then
-        equippedItems = logicalInventoryData.equippedItems
-    end
-
-    if not equippedItems then 
-        return true, "No equipped FrameworkZ items to restore" 
-    end
-
-    local restoredCount = 0
-    local failedCount = 0
-
-    for instanceID, equipmentInfo in pairs(equippedItems) do
-        local fzItem = FrameworkZ.Items:GetInstance(instanceID)
-        if fzItem then
-            -- Create a world item for this FrameworkZ item
-            local worldItem = isoPlayer:getInventory():AddItem(fzItem.itemID)
-            if worldItem then
-                -- Link the world item to the FrameworkZ instance data
-                FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, fzItem)
-                
-                -- Equip the item to its saved slot
-                local equipSuccess = false
-                if worldItem:IsClothing() then
-                    equipSuccess = safeSetWornItem(isoPlayer, equipmentInfo.slot, worldItem)
-                elseif worldItem:getCategory() == "Weapon" then
-                    if equipmentInfo.slot == "TwoHands" or worldItem:isTwoHandWeapon() then
-                        isoPlayer:setPrimaryHandItem(worldItem)
-                        isoPlayer:setSecondaryHandItem(worldItem)
-                        equipSuccess = true
-                    elseif equipmentInfo.slot == "Primary" then
-                        isoPlayer:setPrimaryHandItem(worldItem)
-                        equipSuccess = true
-                    elseif equipmentInfo.slot == "Secondary" then
-                        isoPlayer:setSecondaryHandItem(worldItem)
-                        equipSuccess = true
-                    end
-                end
-                
-                if equipSuccess then
-                    restoredCount = restoredCount + 1
-                    print("[FrameworkZ] Restored equipped FrameworkZ item '" .. (fzItem.name or fzItem.uniqueID) .. "' to slot " .. equipmentInfo.slotName)
                 else
-                    failedCount = failedCount + 1
-                    print("[FrameworkZ] Warning: Failed to equip FrameworkZ item '" .. (fzItem.name or fzItem.uniqueID) .. "' to slot " .. equipmentInfo.slotName)
+                    failed = failed + 1
                 end
             else
-                failedCount = failedCount + 1
-                print("[FrameworkZ] Warning: Failed to create world item for FrameworkZ item instance " .. instanceID)
+                failed = failed + 1
             end
-        else
-            failedCount = failedCount + 1
-            print("[FrameworkZ] Warning: Could not find FrameworkZ item instance " .. instanceID .. " for equipment restoration")
         end
     end
 
-    local message = string.format("Restored %d equipped FrameworkZ items", restoredCount)
-    if failedCount > 0 then
-        message = message .. string.format(" (%d failed)", failedCount)
-    end
-
-    return failedCount == 0, message
+    return indexed, failed
 end
 
 FrameworkZ.Foundation:RegisterModule(FrameworkZ.Inventories)

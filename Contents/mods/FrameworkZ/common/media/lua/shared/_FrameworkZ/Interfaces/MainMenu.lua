@@ -106,8 +106,11 @@ function FrameworkZ.UI.MainMenu:onEnterMainMenu()
     self.loadCharacterButton:setVisible(true)
     self.disconnectButton:setVisible(true)
 
-    if FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
-        self.closeButton:setVisible(true)
+    local username = self.playerObject and self.playerObject:getUsername() or nil
+    if username and FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID then
+        if FrameworkZ.Players:GetLoadedCharacterByID(username) then
+            self.closeButton:setVisible(true)
+        end
     end
 end
 
@@ -120,8 +123,11 @@ function FrameworkZ.UI.MainMenu:onExitMainMenu()
         self.loadCharacterButton:setVisible(false)
         self.disconnectButton:setVisible(false)
 
-        if FrameworkZ.Players:GetLoadedCharacterByID(self.playerObject:getUsername()) then
-            self.closeButton:setVisible(false)
+        local username = self.playerObject and self.playerObject:getUsername() or nil
+        if username and FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID then
+            if FrameworkZ.Players:GetLoadedCharacterByID(username) then
+                self.closeButton:setVisible(false)
+            end
         end
 
         return true
@@ -264,7 +270,9 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
     local appearanceInstance = FrameworkZ.UI.CreateCharacterAppearance.instance
 
     local faction = factionInstance.faction
-    local gender = infoInstance.genderDropdown:getSelectedText()
+    -- Use the tracked field (same source onEnterAppearanceMenu already used to build the 3D
+    -- preview), not a second independent read of the raw dropdown - avoids the two ever disagreeing.
+    local gender = infoInstance.gender
     local name = infoInstance.nameEntry:getText()
     local description = infoInstance.descriptionEntry:getText()
     local age = infoInstance.ageSlider:getCurrentValue()
@@ -318,6 +326,10 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
             if clothingData.textureChoice ~= nil then
                 itemEquipment.textureChoice = clothingData.textureChoice
             end
+
+            if clothingData.condition ~= nil then
+                itemEquipment.condition = clothingData.condition
+            end
             
             equipmentData[location] = itemEquipment
             print("  " .. location .. ": " .. tostring(clothingData.id) .. " (with color data)")
@@ -325,6 +337,7 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
     end
 
     -- Prepare creation data for centralized data manager
+    --local creationData = FrameworkZ.Utilities:CopyTable(FrameworkZ.Characters.DefaultCharacterData)
     local creationData = {
         [FZ_ENUM_CHARACTER_INFO_FACTION] = faction,
         [FZ_ENUM_CHARACTER_INFO_GENDER] = gender,
@@ -358,8 +371,16 @@ function FrameworkZ.UI.MainMenu:onFinalizeCharacter(menu)
         [FZ_ENUM_CHARACTER_HEALTH_BODY_PARTS] = {},
         [FZ_ENUM_CHARACTER_XP_SKILLS] = {},
         [FZ_ENUM_CHARACTER_TRAITS] = {},
-        [FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = equipmentData -- Store equipment in standard format
+        [FZ_ENUM_CHARACTER_INVENTORY] = { items = {} }
     }
+
+    for slotName, itemData in pairs(equipmentData) do
+        if type(itemData) == "table" and itemData.id then
+            local inventoryItem = FrameworkZ.Utilities:CopyTable(itemData)
+            inventoryItem.equippedSlot = slotName
+            table.insert(creationData[FZ_ENUM_CHARACTER_INVENTORY].items, inventoryItem)
+        end
+    end
 
     -- Initialize body parts with default healthy state
     local defaultBodyPart = {
@@ -593,19 +614,28 @@ FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterReady")
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterSpawned")
 
 function FrameworkZ.UI.MainMenu:onDisconnect()
-    local isoPlayer = self.playerObject
-    
+    local isoPlayer = self.playerObject or getPlayer()
+
     if not isoPlayer then
         self:setVisible(false)
         self:removeFromUIManager()
         getCore():exitToMenu()
         return
     end
-    
+
+    local username = isoPlayer:getUsername()
+    if FrameworkZ.Players._destroyInProgress[username] then
+        print("[FZ] Skipping duplicate main-menu disconnect save for: " .. tostring(username))
+        self:setVisible(false)
+        self:removeFromUIManager()
+        getCore():exitToMenu()
+        return
+    end
+
     print("[FZ] Starting disconnect sequence from Main Menu...")
 
     if not FrameworkZ.Awaits then
-        FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
+        FrameworkZ.Players:Destroy(username, function(success, message)
             if success then
                 print("[FZ] Character data saved successfully: " .. (message or ""))
             else
@@ -622,7 +652,7 @@ function FrameworkZ.UI.MainMenu:onDisconnect()
 
     FrameworkZ.Awaits:Run(function()
         local success, message = FrameworkZ.Awaits:Await(function(resolve)
-            FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(saveSuccess, saveMessage)
+            FrameworkZ.Players:Destroy(username, function(saveSuccess, saveMessage)
                 resolve(saveSuccess, saveMessage)
             end)
         end)
@@ -635,12 +665,16 @@ function FrameworkZ.UI.MainMenu:onDisconnect()
                 self
             )
             print("[FZ] Warning during save: " .. (message or "Unknown error"))
+            self:setVisible(false)
+            self:removeFromUIManager()
+            getCore():exitToMenu()
             return
         end
 
         print("[FZ] Character data saved successfully: " .. (message or ""))
 
-        local _, limbSuccess = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo")
+        -- OnTeleportToLimbo's subscriber returns a single boolean, so Awaits:SendFire only yields one value here.
+        local limbSuccess = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo")
         if limbSuccess then
             FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
             print("[FZ] Player teleported to limbo. Disconnecting now...")
@@ -717,7 +751,7 @@ end
 function FrameworkZ.UI.MainMenu:Initialize(instance)
     instance.uiHelper = FrameworkZ.UI
     instance.emitter = instance.playerObject:getEmitter()
-	local title = FrameworkZ.Config.Options.GamemodeTitle .. " " .. FrameworkZ.Config.Options.Version .. "-" .. FrameworkZ.Config.Options.VersionType
+	local title = FrameworkZ.Config.Options.GamemodeTitle --[[ .. " " .. FrameworkZ.Config.Options.Version .. "-" .. FrameworkZ.Config.Options.VersionType--]]
     local subtitle = FrameworkZ.Config.Options.GamemodeDescription
     local createCharacterLabel = "Create Character"
     local loadCharacterLabel = "Load Character"
@@ -818,7 +852,12 @@ function FrameworkZ.UI.MainMenu:Initialize(instance)
         font = FZ_FONT_LARGE
     })
 
-    if not FrameworkZ.Players:GetLoadedCharacterByID(instance.playerObject:getUsername()) then
+    local username = instance.playerObject and instance.playerObject:getUsername() or nil
+    if username and FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID then
+        if not FrameworkZ.Players:GetLoadedCharacterByID(username) then
+            instance.closeButton:setVisible(false)
+        end
+    else
         instance.closeButton:setVisible(false)
     end
 

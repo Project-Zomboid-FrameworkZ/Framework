@@ -3,7 +3,7 @@
     Everything a server owner needs to know to get FrameworkZ up and running
 ]]
 
---! \page _For Server Owners
+--! \page For Server Owners
 --! \brief A complete guide for server owners on installing and configuring FrameworkZ. FrameworkZ is a roleplay framework for Project Zomboid. On its own it provides the core systems (characters, factions, inventories, plugins, hooks, etc.) but does not define a specific gamemode. A typical FrameworkZ server consists of three layers:
 --!
 --! - **FrameworkZ**: The core framework. Always required.

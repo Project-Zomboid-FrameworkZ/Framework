@@ -1,56 +1,4 @@
---! \page AwaitsExamples Await Usage Examples
---! \section AwaitsOverview Coroutine-Based Network Requests
---! FrameworkZ.Awaits wraps FrameworkZ's existing callback-based request flow so you can write sequential coroutine code for networked requests.
---! Use `FrameworkZ.Awaits:Run()` to enter a managed coroutine, then call `FrameworkZ.Awaits:SendFire()`, `FrameworkZ.Awaits:GetData()`, or `FrameworkZ.Awaits:SetData()` from inside it.
---!
---! \code lua
---! if isServer() then
---!     FrameworkZ.Foundation:Subscribe("MyPlugin.GetGreeting", function(data, targetName)
---!         if not data.isoPlayer then return false, "Missing player." end
---!
---!         return true, "Hello, " .. tostring(targetName) .. "."
---!     end)
---! end
---!
---! if isClient() then
---!     FrameworkZ.Awaits:Run(function()
---!         local success, message = FrameworkZ.Awaits:SendFire(getPlayer(), "MyPlugin.GetGreeting", "Citizen")
---!
---!         if not success then
---!             print("[MyPlugin] Request failed: " .. tostring(message))
---!             return
---!         end
---!
---!         print("[MyPlugin] Server replied: " .. tostring(message))
---!     end)
---! end
---! \endcode
---!
---! \section AwaitsPersistence Awaiting Persistence Requests
---! Await helpers also work with FrameworkZ.Foundation data access wrappers.
---!
---! \code lua
---! if isClient() then
---!     FrameworkZ.Awaits:Run(function()
---!         local _, namespace, keys, value = FrameworkZ.Awaits:GetData(getPlayer(), "Players", getPlayer():getUsername())
---!
---!         if not value then
---!             print("[MyPlugin] No player data returned.")
---!             return
---!         end
---!
---!         value.LastGreeting = "Welcome back"
---!         local ok, err = FrameworkZ.Awaits:SetData(getPlayer(), "Players", getPlayer():getUsername(), value)
---!
---!         if not ok then
---!             print("[MyPlugin] Failed to save player data: " .. tostring(err))
---!         end
---!     end)
---! end
---! \endcode
---!
---! Awaited requests must run inside `FrameworkZ.Awaits:Run()` and require a valid player object when a server confirmation is expected.
---!
+
 ---@diagnostic disable: undefined-global, deprecated
 local Events = Events
 local coroutine_create = coroutine.create
@@ -159,7 +107,15 @@ function FrameworkZ.Awaits:Await(requestStarter, timeout, ...)
 	end
 
 	local awaitID = self:GenerateAwaitID()
-	local expiresAt = timeout == 0 and nil or (getTimestamp() + (timeout or self.DefaultTimeout))
+	-- NOTE: "timeout == 0 and nil or (...)" is broken on purpose-built Lua and/or ternaries --
+	-- since the true-branch value (nil) is falsy, that pattern always evaluates the else-branch,
+	-- so timeout=0 never actually disabled the deadline. Also, 0 is truthy in Lua, so
+	-- "(timeout or self.DefaultTimeout)" returned 0 (not DefaultTimeout) anyway, producing an
+	-- already-expired deadline instead of no deadline at all.
+	local expiresAt = nil
+	if timeout ~= 0 then
+		expiresAt = getTimestamp() + (timeout or self.DefaultTimeout)
+	end
 
 	self.Pending[awaitID] = {
 		Thread = thread,
@@ -169,7 +125,16 @@ function FrameworkZ.Awaits:Await(requestStarter, timeout, ...)
 		Description = nil
 	}
 
+	local resolved = false
+	local resolvedValues = nil
+
 	local function resolve(...)
+		if not self.Pending[awaitID] then
+			resolved = true
+			resolvedValues = FrameworkZ.Utilities:Pack(...)
+			return true
+		end
+
 		return self:ResumePending(awaitID, true, ...)
 	end
 
@@ -183,11 +148,20 @@ function FrameworkZ.Awaits:Await(requestStarter, timeout, ...)
 	local pending = self.Pending[awaitID]
 
 	if not pending then
+		if resolved then
+			return unpackFrom(resolvedValues, 1)
+		end
+
 		return false, "Await request resolved before it could be yielded."
 	end
 
 	pending.RequestID = requestID or awaitID
 	pending.Description = requestID or awaitID
+
+	if resolved then
+		self.Pending[awaitID] = nil
+		return unpackFrom(resolvedValues, 1)
+	end
 
 	local resumedValues = FrameworkZ.Utilities:Pack(coroutine_yield(awaitID))
 
@@ -199,12 +173,21 @@ function FrameworkZ.Awaits:Await(requestStarter, timeout, ...)
 end
 
 --! \brief Run a function inside a managed coroutine.
---! \param callback \function The function to execute inside the coroutine.
+--! If already executing inside a coroutine, the existing coroutine is reused.
+--! This allows nested Await-aware functions and nested Run() calls to remain
+--! part of the same await chain.
+--! \param callback \function The function to execute.
 --! \param ... \multiple Arguments forwarded to the callback.
---! \return \mixed Returns the coroutine thread when suspended, or the callback return values if it completed immediately.
+--! \return \mixed Returns the coroutine thread when suspended, or the callback return values.
 function FrameworkZ.Awaits:Run(callback, ...)
 	if type(callback) ~= "function" then
 		return false, "Invalid callback supplied to FrameworkZ.Awaits:Run()."
+	end
+
+	local currentThread, isMain = coroutine_running()
+
+	if currentThread and not isMain then
+		return callback(...)
 	end
 
 	local thread = coroutine_create(callback)
@@ -233,7 +216,15 @@ function FrameworkZ.Awaits:SendFire(isoPlayer, subscriptionID, ...)
 	end
 
 	return self:Await(function(resolve, ...)
-		return FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, resolve, ...)
+		-- ConfirmFire always calls back as (data, ...actualReturnValues) per the standard
+		-- FrameworkZ.Foundation subscription convention. Strip the leading diagnostic "data"
+		-- table here so awaited callers get exactly the subscriber's own return values (as
+		-- documented above), instead of everything being shifted one position to the right.
+		local function stripDiagnosticData(_data, ...)
+			return resolve(...)
+		end
+
+		return FrameworkZ.Foundation:SendFire(isoPlayer, subscriptionID, stripDiagnosticData, ...)
 	end, self.DefaultTimeout, ...)
 end
 
@@ -286,6 +277,66 @@ function FrameworkZ.Awaits:SetData(isoPlayer, namespace, keys, value, subscripti
 		FrameworkZ.Foundation:SetData(isoPlayer, namespace, keys, value, subscriptionID, broadcast, resolve)
 		return namespace
 	end, self.DefaultTimeout)
+end
+
+--! \brief Poll a predicate once per tick until it returns a truthy value or maxTicks elapse.
+--! \details Useful for bridging the gap between a server-authoritative action (e.g. creating and
+--! networking an item) and the client-side engine sync that delivers it, which does not complete
+--! within the same network round trip used to confirm the action itself.
+--! \param predicate \function Called with no arguments; return a truthy value to resolve the wait.
+--! \param maxTicks \number? Maximum ticks to poll before giving up (default 180).
+--! \return \multiple The predicate's own return value(s) on success, or false and a timeout message.
+function FrameworkZ.Awaits:WaitUntil(predicate, maxTicks)
+	if type(predicate) ~= "function" then
+		return false, "Invalid predicate supplied to FrameworkZ.Awaits:WaitUntil()."
+	end
+
+	local immediate = FrameworkZ.Utilities:Pack(predicate())
+
+	if immediate[1] then
+		return unpackFrom(immediate, 1)
+	end
+
+	if not coroutine_running() then
+		print("[FZ] WaitUntil: bailing out, not called from a running coroutine.")
+		return false, "FrameworkZ.Awaits:WaitUntil() must be called from a running coroutine."
+	end
+
+	local ticksRemaining = maxTicks or 180
+	local startedTicks = ticksRemaining
+
+	-- Counts ticks rather than comparing getTimestamp() against a deadline: getTimestamp()'s
+	-- units are not seconds here, so "+ timeout" previously expired on the very first re-check.
+	local result, message = self:Await(function(resolve)
+		local tickCallback
+
+		tickCallback = function()
+			local results = FrameworkZ.Utilities:Pack(predicate())
+
+			if results[1] then
+				Events.OnTick.Remove(tickCallback)
+				resolve(unpackFrom(results, 1))
+				return
+			end
+
+			ticksRemaining = ticksRemaining - 1
+
+			if ticksRemaining <= 0 then
+				Events.OnTick.Remove(tickCallback)
+				resolve(false, "FrameworkZ.Awaits:WaitUntil() timed out after " .. tostring(startedTicks) .. " ticks.")
+			end
+		end
+
+		Events.OnTick.Add(tickCallback)
+
+		return "WaitUntil"
+	end, 0)
+
+	if not result then
+		print("[FZ] WaitUntil: " .. tostring(message))
+	end
+
+	return result, message
 end
 
 --! \brief Update pending awaits and fail any that have timed out.

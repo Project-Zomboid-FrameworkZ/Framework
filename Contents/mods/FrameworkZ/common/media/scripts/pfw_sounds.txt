@@ -5,7 +5,7 @@ module Base {
     }
 	
 	sound pfw_lightswitch2 {
-        category = PFW, loop = false, is3D = true,
+    category = PFW, loop = false, is3D = false,
         clip { file = media/sound/lightswitch2.wav, distanceMax = 10, reverbFactor = 0.1, volume = 0.5, }
     }
 }

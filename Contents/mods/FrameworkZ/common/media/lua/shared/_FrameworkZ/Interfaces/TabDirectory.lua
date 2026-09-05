@@ -1,4 +1,4 @@
-FrameworkZ.UI.TabDirectory = FrameworkZ.UI.TabDirectory or {}
+FrameworkZ.UI.TabDirectory = FrameworkZ.Interfaces:New("TabDirectory", FrameworkZ.UI)
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabDirectory, "TabDirectory")
 
 local PANEL_WIDTH = getCore():getScreenWidth() * 0.3  -- 30% width positioned after TabPanel
@@ -17,7 +17,7 @@ local DIR_HUGE_HOVER_COLOR = {r=1, g=0.84, b=0, a=1}
 
 function FrameworkZ.UI.TabDirectory:new(isoPlayer)
     -- Calculate position: 20% of screen (after TabPanel which is 0-20%)
-    local tabPanelWidth = getCore():getScreenWidth() * 0.2
+    local tabPanelWidth = PANEL_WIDTH
     local tabPanelX = 0
     if FrameworkZ.UI.TabPanel and FrameworkZ.UI.TabPanel.instance then
         if FrameworkZ.UI.TabPanel.instance.getWidth then
@@ -27,8 +27,8 @@ function FrameworkZ.UI.TabDirectory:new(isoPlayer)
             tabPanelX = FrameworkZ.UI.TabPanel.instance:getX()
         end
     end
-    local panelWidth = getCore():getScreenWidth() * 0.3
-    local o = ISPanel:new(tabPanelX + tabPanelWidth, 0, panelWidth, getCore():getScreenHeight())
+    local panelWidth = PANEL_WIDTH
+    local o = ISPanel:new(tabPanelX + tabPanelWidth, 0, panelWidth, PANEL_HEIGHT)
     setmetatable(o, self)
     self.__index = self
     o.backgroundColor = {r=0.15, g=0.15, b=0.15, a=0.9}

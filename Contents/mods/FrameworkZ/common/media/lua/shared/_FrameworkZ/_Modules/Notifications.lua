@@ -27,36 +27,44 @@ FrameworkZ.Notifications.Colors = {
 }
 FrameworkZ.Notifications = FrameworkZ.Foundation:NewModule(FrameworkZ.Notifications, "Notifications")
 
+function FrameworkZ.Notifications:DisplayNextNotification()
+    if #self.Queue == 0 then return false end
+
+    local queuedNotification = table.remove(self.Queue, 1)
+
+    queuedNotification:initialise()
+
+    if queuedNotification.parentUI then
+        queuedNotification.parentUI:addChild(queuedNotification)
+    else
+        queuedNotification:addToUIManager()
+    end
+
+    local getUISoundManager = rawget(_G, "getSoundManager")
+    local soundManager = getUISoundManager and getUISoundManager()
+    if soundManager then soundManager:playUISound("pfw_lightswitch2") end
+
+    table.insert(self.List, 1, queuedNotification)
+
+    if #self.List > 1 then
+        for i = 2, #self.List, 1 do
+            local position = i - 1
+            local topNotification = self.List[1]
+            local notification = self.List[i]
+            notification:setY(topNotification:getY() + notification:getHeight() * position + 10 * position)
+        end
+    end
+
+    return true
+end
+
 function FrameworkZ.Notifications:ProcessQueue(isProcessingContinued)
     if not (isProcessingContinued or not self.isProcessing) and not (#self.Queue > 0 or #self.List > 0) then return false end
 
     if isProcessingContinued or not self.isProcessing then
         if #self.Queue > 0 then
             self.isProcessing = true
-            local queuedNotification = self.Queue[1]
-
-            queuedNotification:initialise()
-
-            if queuedNotification.parentUI then
-                queuedNotification.parentUI:addChild(queuedNotification)
-            else
-                queuedNotification:addToUIManager()
-            end
-
-            local player = FrameworkZ.Players:GetPlayerByID(getPlayer():getUsername())
-            if player then player:PlayLocalSound("pfw_lightswitch2") end
-
-            table.remove(self.Queue, 1)
-            table.insert(self.List, 1, queuedNotification)
-
-            if #self.List > 1 then
-                for i = 2, #self.List, 1 do
-                    local position = i - 1
-                    local topNotification = self.List[1]
-                    local notification = self.List[i]
-                    notification:setY(topNotification:getY() + notification:getHeight() * position + 10 * position)
-                end
-            end
+            self:DisplayNextNotification()
 
             FrameworkZ.Timers:Simple(1, function()
                 self.isProcessing = self:ProcessQueue(true)
@@ -138,13 +146,20 @@ function FrameworkZ.Notifications:AddToQueue(message, notificationType, duration
     -- Notifications are client-side UI only; ISPanel and UI globals are nil on the server.
     if not isClient() then return end
 
-    local notification = FrameworkZ.UI.Notification:new(notificationType or FrameworkZ.Notifications.Types.Default, message, duration or 10, getPlayer())
+    local safeType = notificationType and type(notificationType) == "string" and notificationType or FrameworkZ.Notifications.Types.Default
+    local safeDuration = tonumber(duration) or 10
+    local color = FrameworkZ.Notifications.Colors[safeType] or FrameworkZ.Notifications.Colors.Default
+
+    local notification = FrameworkZ.UI.Notification:new(safeType, message, safeDuration, getPlayer())
+    notification.backgroundColor = {r = color.r, g = color.g, b = color.b, a = color.a}
+    notification.borderColor = {r = 1, g = 1, b = 1, a = color.a}
 
     if ui then
         notification.parentUI = ui
     end
 
     table.insert(self.Queue, notification)
+    self:DisplayNextNotification()
 
     if not self.isProcessing then
         self.isProcessing = self:ProcessQueue(false)

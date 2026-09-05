@@ -1,9 +1,11 @@
+local getTextManager = getTextManager
+
 FrameworkZ.UI.TabPanel = FrameworkZ.UI.TabPanel or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabPanel, "TabPanel")
 
 local PANEL_X = 0
 local PANEL_Y = 0
-local PANEL_WIDTH = getCore():getScreenWidth() * 0.2  -- Increased to accommodate larger Directory panel
+local PANEL_WIDTH = getCore():getScreenWidth() * 0.1  -- Increased to accommodate larger Directory panel
 local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
@@ -16,9 +18,9 @@ function FrameworkZ.UI.TabPanel:initialise()
     local TITLE_HEIGHT = getTextManager():MeasureStringY(FONT_TITLE, TITLE_TEXT)
     local TITLE_PADDING_TOP = 50
     local TITLE_PADDING_BOTTOM = 50
-    local BUTTON_PADDING_BOTTOM = 30
+    local BUTTON_PADDING_BOTTOM = 5
     local CATEGORY_PADDING_BOTTOM = 15
-    local CATEGORY_LABEL_PADDING_BOTTOM = 8
+    local CATEGORY_LABEL_PADDING_BOTTOM = 5
     local SEPARATOR_HEIGHT = 3
     local TITLE_X = (PANEL_WIDTH - TITLE_WIDTH) / 2
     local TITLE_Y = PANEL_MARGIN_Y + TITLE_PADDING_TOP
@@ -96,8 +98,28 @@ function FrameworkZ.UI.TabPanel:initialise()
 
             -- Add buttons for this category
             for _, buttonData in ipairs(categoryGroups[category]) do
+                local font = FrameworkZ.Themes:GetFont(FZ_FONT_LARGE)
+                local width = getTextManager():MeasureStringX(font, buttonData.text)
+                local height = getTextManager():MeasureStringY(font, buttonData.text)
+                local button = FrameworkZ.Interfaces:CreateButton({
+                    x = PANEL_MARGIN_X,
+                    y = mainYOffset,
+                    width = width,
+                    height = height,
+                    title = buttonData.text,
+                    onClick = buttonData.callback,
+                    target = self,
+                    parent = self.contentPanel,
+                    theme = "Basic",
+                    font = FZ_FONT_LARGE
+                })
+
+                button.internal = buttonData.internal
+
+                --[[
                 local button = FrameworkZ.UserInterfaces:CreateHugeButton(self.contentPanel, PANEL_MARGIN_X, mainYOffset, buttonData.text, self, buttonData.callback)
                 button.internal = buttonData.internal
+                --]]
 
                 table.insert(self.buttons, button)
                 mainYOffset = mainYOffset + button:getHeight() + BUTTON_PADDING_BOTTOM
@@ -145,6 +167,16 @@ end
 function FrameworkZ.UI.TabPanel:slideIn()
     FrameworkZ.Timers:Remove("TabPanelSlideIn")
 
+    -- Clear the instance reference as soon as closing begins (not only once the slide
+    -- animation finishes). If the animation is ever interrupted (game hitch during a
+    -- character load, an unrelated timer erroring out for a tick, etc.) the panel must
+    -- not be left in a state where FrameworkZ.UI.TabPanel.instance is stuck non-nil while
+    -- the panel itself is already invisible/detached - that would permanently block the
+    -- tab icon from ever reopening the menu since its toggle only checks .instance.
+    if FrameworkZ.UI.TabPanel.instance == self then
+        FrameworkZ.UI.TabPanel.instance = nil
+    end
+
     FrameworkZ.Timers:Create("TabPanelSlideIn", 0, 0, function()
         local fps = getAverageFPS() or 60
         local dt = 1 / fps
@@ -158,7 +190,6 @@ function FrameworkZ.UI.TabPanel:slideIn()
             FrameworkZ.Timers:Remove("TabPanelSlideIn")
             self:setVisible(false)
             self:removeFromUIManager()
-            FrameworkZ.UI.TabPanel.instance = nil
         end
     end)
 end
@@ -172,6 +203,22 @@ function FrameworkZ.UI.TabPanel:prerender()
 end
 
 function FrameworkZ.UI.TabPanel:update()
+    -- Force-close if MainMenu becomes visible while this is open (e.g. clicking "Characters" to
+    -- switch characters re-opens MainMenu on top). Track the transition instead of just checking
+    -- mainMenuVisible every frame, otherwise close()'s own slide-in timer would get truncated and
+    -- restarted every single frame and never actually complete.
+    local mainMenu = FrameworkZ.UI.MainMenu and FrameworkZ.UI.MainMenu.instance
+    local mainMenuVisible = mainMenu ~= nil and mainMenu.isVisible and mainMenu:isVisible()
+
+    if mainMenuVisible then
+        if not self._forcedClosedForMainMenu then
+            self._forcedClosedForMainMenu = true
+            self:close()
+        end
+    else
+        self._forcedClosedForMainMenu = false
+    end
+
     ISPanel.update(self)
 end
 
@@ -227,7 +274,22 @@ function FrameworkZ.UI.TabPanel:onMenuSelect(button, x, y)
 
         self:close()
     elseif button.internal == "MY_CHARACTER" then
-        print("Opening My Character Menu")
+        if FrameworkZ.UI.TabCharacter.instance then
+            FrameworkZ.UI.TabCharacter.instance:close()
+        elseif FrameworkZ.UI.TabMenu.instance then
+            if FrameworkZ.UI.TabPanel.instance and FrameworkZ.UI.TabPanel.instance.currentPanel then
+                FrameworkZ.UI.TabPanel.instance.currentPanel:close()
+            end
+
+            local characterPanel = FrameworkZ.UI.TabCharacter:new(self.isoPlayer)
+
+            if characterPanel then
+                characterPanel:initialise()
+                characterPanel:addToUIManager()
+
+                FrameworkZ.UI.TabPanel.instance.currentPanel = characterPanel
+            end
+        end
     elseif button.internal == "SESSION" then
         if FrameworkZ.UI.TabSession.instance then
             FrameworkZ.UI.TabSession.instance:close()
@@ -274,20 +336,19 @@ FrameworkZ.UI.TabPanel.buttons = {
     {category = "Character", text = "My Character", internal = "MY_CHARACTER", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
 
     -- Tools & Services
-    {category = "Tools", text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {category = "Tools", text = "Directory", internal = "DIRECTORY", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Tools", text = "Session", internal = "SESSION", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
 
     -- Settings
-    {category = "Settings", text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {category = "Settings", text = "Info", internal = "INFO", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Settings", text = "Config", internal = "CONFIG", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
 
     -- Admin
-    {category = "Admin", text = "Server Settings", internal = "SERVER_SETTINGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {category = "Admin", text = "Roles", internal = "ROLES", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {category = "Admin", text = "Logs", internal = "LOGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {category = "Admin", text = "Players", internal = "PLAYERS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Roles", internal = "ROLES", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
+    {category = "Admin", text = "Settings", internal = "SERVER_SETTINGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
     {category = "Admin", text = "Whitelist", internal = "WHITELIST", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
-    {category = "Admin", text = "Announcements", internal = "ANNOUNCEMENTS", callback = FrameworkZ.UI.TabPanel.onMenuSelect}
+    {category = "Admin", text = "Logs", internal = "LOGS", callback = FrameworkZ.UI.TabPanel.onMenuSelect},
 }
 
 function FrameworkZ.UI.TabPanel:new(isoPlayer)

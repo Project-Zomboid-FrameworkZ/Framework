@@ -596,3 +596,44 @@ function FrameworkZ.Utilities:MeasureStringY(textOrElement, font)
     if not textManager then return 0 end
     return textManager:MeasureStringY(resolvedFont, text)
 end
+
+function FrameworkZ.Utilities:Serialize(value, visited)
+    local valueType = type(value)
+
+    -- Functions cannot be transmitted.
+    if valueType == "function" then
+        return nil
+    end
+
+    -- Non-table values can be transmitted directly.
+    if valueType ~= "table" then
+        return value
+    end
+
+    visited = visited or {}
+
+    -- Prevent infinitely recursive/cyclic tables.
+    if visited[value] then
+        error("Cannot serialize cyclic table.")
+    end
+
+    visited[value] = true
+
+    local serialized = {}
+
+    for key, data in pairs(value) do
+        -- Function keys cannot meaningfully survive serialization either.
+        if type(key) ~= "function" then
+            local serializedKey = self:Serialize(key, visited)
+            local serializedValue = self:Serialize(data, visited)
+
+            if serializedKey ~= nil and serializedValue ~= nil then
+                serialized[serializedKey] = serializedValue
+            end
+        end
+    end
+
+    visited[value] = nil
+
+    return serialized
+end

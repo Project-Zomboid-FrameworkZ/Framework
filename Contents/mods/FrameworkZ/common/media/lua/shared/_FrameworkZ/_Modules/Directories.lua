@@ -2,7 +2,7 @@ FrameworkZ.Directories = FrameworkZ.Directories or {}
 FrameworkZ.Directories.__index = FrameworkZ.Directories
 FrameworkZ.Directories = FrameworkZ.Foundation:NewModule(FrameworkZ.Directories, "Directories")
 
-function FrameworkZ.Directories:PostInitializeClient()
+function FrameworkZ.Directories:InitializeClient()
     self:InitializeDirectoryStructure()
 end
 
@@ -79,6 +79,7 @@ function FrameworkZ.Directories:InitializeDirectoryStructure()
     TabDir:AddFolder({}, "Gamemode")
     
     -- Add Gamemode/Guides (placeholder)
+    --[[
     TabDir:AddFile(
         {"Gamemode"},
         "Guides",
@@ -93,6 +94,7 @@ function FrameworkZ.Directories:InitializeDirectoryStructure()
             {type = "italic", text = "Load a gamemode plugin to see available guides."},
         }
     )
+    --]]
 end
 
 function FrameworkZ.Directories:GeneratePluginList()
@@ -143,3 +145,5 @@ function FrameworkZ.Directories:GeneratePluginList()
 
     return list
 end
+
+FrameworkZ.Foundation:RegisterModule(FrameworkZ.Directories) -- without this, InitializeClient() never gets hooked and folders never get created

@@ -17,6 +17,7 @@ FZ_EQUIP_TYPE_BOTH_HANDS = "BothHands"
 FrameworkZ.Items.List = {}
 FrameworkZ.Items.Bases = {}
 FrameworkZ.Items.Instances = {}
+FrameworkZ.Items.NextInstanceID = 0
 FrameworkZ.Items.Subscriptions = {
     consumeOwnedInstances = "FZ_ITEMS.ConsumeOwnedInstances"
 }
@@ -24,6 +25,48 @@ FrameworkZ.Items.Subscriptions = {
 --! \brief An instance map. Contains references to item instances indexed by an item's unique ID and instance ID as a string for optimized lookups. Instance Map is structured as follows: [uniqueID][username][#index] = instance
 FrameworkZ.Items.InstanceMap = {}
 FrameworkZ.Items = FrameworkZ.Foundation:NewModule(FrameworkZ.Items, "Items")
+
+local function patchDropWorldItemAction()
+    local dropActionClass = rawget(_G, "ISDropWorldItemAction")
+    if not dropActionClass or dropActionClass.__fzPatched then
+        return
+    end
+
+    local originalGetDuration = dropActionClass.getDuration
+    local originalNew = dropActionClass.new
+
+    function dropActionClass:getDuration()
+        if not self.item or type(self.item) ~= "table" or type(self.item.getActualWeight) ~= "function" then
+            return 1
+        end
+
+        return originalGetDuration(self)
+    end
+
+    function dropActionClass:new(character, item, sq, xoffset, yoffset, zoffset, rotation, isMultiple)
+        if not item or type(item) ~= "table" or type(item.getActualWeight) ~= "function" then
+            local o = ISBaseTimedAction.new(self, character)
+            o.character = character
+            o.item = item
+            o.sq = sq
+            o.xoffset = xoffset
+            o.yoffset = yoffset
+            o.zoffset = zoffset
+            o.rotation = rotation
+            o.stopOnWalk = false
+            o.stopOnRun = false
+            o.maxTime = 1
+            o.isMultiple = isMultiple
+            return o
+        end
+
+        return originalNew(self, character, item, sq, xoffset, yoffset, zoffset, rotation, isMultiple)
+    end
+
+    dropActionClass.__fzPatched = true
+end
+
+patchDropWorldItemAction()
 
 local ITEM = {}
 ITEM.__index = ITEM
@@ -38,6 +81,82 @@ ITEM.useTime = 1
 ITEM.weight = 1
 ITEM.shouldConsume = true
 ITEM.skin = nil
+ITEM.icon = nil
+ITEM.texture = nil
+ITEM.persistentData = {}
+
+local function copyPersistentValue(value, visited, path)
+    local valueType = type(value)
+
+    if valueType == "nil" or valueType == "boolean" or valueType == "number" or valueType == "string" then
+        return value
+    end
+
+    if valueType ~= "table" then
+        return nil, "Unsupported value type '" .. valueType .. "' at " .. path .. "."
+    end
+
+    visited = visited or {}
+    if visited[value] then
+        return nil, "Cyclic table at " .. path .. "."
+    end
+
+    visited[value] = true
+    local copy = {}
+
+    for key, nestedValue in pairs(value) do
+        local keyType = type(key)
+        if keyType ~= "string" and keyType ~= "number" then
+            visited[value] = nil
+            return nil, "Unsupported key type '" .. keyType .. "' at " .. path .. "."
+        end
+
+        local nestedCopy, nestedError = copyPersistentValue(nestedValue, visited, path .. "." .. tostring(key))
+        if nestedError then
+            visited[value] = nil
+            return nil, nestedError
+        end
+        copy[key] = nestedCopy
+    end
+
+    visited[value] = nil
+    return copy
+end
+
+--! \brief Copy and validate data for item persistence.
+--! \param value \any A scalar or table containing only string/number keys and serializable values.
+--! \return \any A detached copy of the value.
+--! \return \string Error message when the value cannot be persisted.
+function FrameworkZ.Items:CopyPersistentData(value)
+    return copyPersistentValue(value, {}, "persistentData")
+end
+
+local function overlayPersistentData(target, source)
+    for key, sourceValue in pairs(source or {}) do
+        if type(sourceValue) == "table" and type(target[key]) == "table" then
+            local success, message = overlayPersistentData(target[key], sourceValue)
+            if not success then return false, message end
+        else
+            local copy, message = FrameworkZ.Items:CopyPersistentData(sourceValue)
+            if message then return false, message end
+            target[key] = copy
+        end
+    end
+
+    return true
+end
+
+function FrameworkZ.Items:MergePersistentData(defaults, storedData)
+    local merged, message = self:CopyPersistentData(defaults or {})
+    if message then return nil, message end
+
+    local storedCopy, storedError = self:CopyPersistentData(storedData or {})
+    if storedError then return nil, storedError end
+
+    local success, overlayError = overlayPersistentData(merged, storedCopy)
+    if not success then return nil, overlayError end
+    return merged
+end
 
 function ITEM:Initialize()
     return FrameworkZ.Items:Initialize(self)
@@ -81,6 +200,65 @@ function ITEM:OnUse(isoPlayer, worldItem) end
 
 function ITEM:GetName()
     return self.name or "Unnamed Item"
+end
+
+--! \brief Get this item's mutable persistent plugin data.
+--! \return \table Plain serializable state restored before OnInstanced runs.
+function ITEM:GetPersistentData()
+    local data = rawget(self, "persistentData")
+    if type(data) ~= "table" then
+        data = {}
+        self.persistentData = data
+    end
+    return data
+end
+
+--! \brief Get a persistent item value.
+--! \param key \string|\number State key.
+--! \param default \any Value returned when the key is absent.
+function ITEM:GetPersistentValue(key, default)
+    local value = self:GetPersistentData()[key]
+    if value == nil then return default end
+    return value
+end
+
+--! \brief Replace all persistent item data with a validated detached copy.
+--! \param data \table Plain serializable state.
+--! \return \boolean Success flag.
+--! \return \string Status message.
+function ITEM:SetPersistentData(data)
+    local copy, message = FrameworkZ.Items:CopyPersistentData(data or {})
+    if message then return false, message end
+    self.persistentData = copy
+    return self:SyncPersistentData()
+end
+
+--! \brief Set and immediately synchronize one persistent item value.
+--! \param key \string|\number State key.
+--! \param value \any Plain serializable value; nil removes the key.
+--! \return \boolean Success flag.
+--! \return \string Status message.
+function ITEM:SetPersistentValue(key, value)
+    if type(key) ~= "string" and type(key) ~= "number" then
+        return false, "Persistent item keys must be strings or numbers."
+    end
+
+    local copy, message = FrameworkZ.Items:CopyPersistentData(value)
+    if message then return false, message end
+    self:GetPersistentData()[key] = copy
+    return self:SyncPersistentData()
+end
+
+--! \brief Synchronize this instance's persistent snapshot to its world item.
+--! \return \boolean Success flag.
+--! \return \string Status message.
+function ITEM:SyncPersistentData()
+    if not self.worldItem then return false, "Item has no world item to synchronize." end
+
+    local built, instanceData = pcall(FrameworkZ.Items.BuildInstanceData, FrameworkZ.Items, self, self.worldItem, self.owner)
+    if not built then return false, tostring(instanceData) end
+    FrameworkZ.Items:LinkWorldItemToInstanceData(self.worldItem, instanceData)
+    return true, "Persistent item data synchronized."
 end
 
 function ITEM:Remove()
@@ -173,6 +351,40 @@ function FrameworkZ.Items:RestoreCustomFields(itemDefinition, customFieldData)
     end
 
     return restoredCustomFields
+end
+
+function FrameworkZ.Items:SnapshotCustomFields(customFields)
+    local snapshot = {}
+
+    for fieldName, field in pairs(customFields or {}) do
+        if type(field) == "function" then
+            -- Runtime behavior comes from the registered item definition.
+        elseif type(field) == "table" and (field.value ~= nil or type(field.get) == "function" or type(field.set) == "function") then
+            local fieldSnapshot = {}
+
+            if field.value ~= nil then
+                local value, message = self:CopyPersistentData(field.value)
+                if message then return nil, "Custom field '" .. tostring(fieldName) .. "': " .. message end
+                fieldSnapshot.value = value
+            end
+
+            for metadataKey, metadataValue in pairs(field) do
+                if metadataKey ~= "get" and metadataKey ~= "set" and metadataKey ~= "value" and type(metadataValue) ~= "function" then
+                    local value, message = self:CopyPersistentData(metadataValue)
+                    if message then return nil, "Custom field '" .. tostring(fieldName) .. "': " .. message end
+                    fieldSnapshot[metadataKey] = value
+                end
+            end
+
+            snapshot[fieldName] = fieldSnapshot
+        else
+            local value, message = self:CopyPersistentData(field)
+            if message then return nil, "Custom field '" .. tostring(fieldName) .. "': " .. message end
+            snapshot[fieldName] = value
+        end
+    end
+
+    return snapshot
 end
 
 local function applySnapshotToItemDefinition(itemDefinition, itemSnapshot)
@@ -274,6 +486,66 @@ local function normalizeSkinValue(skin)
     return nil
 end
 
+function FrameworkZ.Items:ApplyTextureChoice(worldItem, textureChoice)
+    if not worldItem then
+        return false
+    end
+
+    
+
+    --[[
+    local normalizedChoice = nil
+    if type(textureChoice) == "number" then
+        normalizedChoice = math.floor(textureChoice)
+    elseif type(textureChoice) == "string" then
+        local numeric = tonumber(textureChoice)
+        if numeric ~= nil then
+            normalizedChoice = math.floor(numeric)
+        end
+    end
+
+    if normalizedChoice == nil then
+        return false
+    end
+
+    local visual = worldItem.getVisual and worldItem:getVisual() or nil
+    local applied = false
+
+    if visual and visual.setTextureChoice and type(visual.setTextureChoice) == "function" then
+        applied = pcall(function()
+            visual:setTextureChoice(normalizedChoice)
+        end)
+    end
+
+    if type(worldItem.setTextureChoice) == "function" then
+        local itemApplied = pcall(function()
+            worldItem:setTextureChoice(normalizedChoice)
+        end)
+        applied = applied or itemApplied
+    end
+    --]]
+
+    --[[
+    if type(worldItem.setIcon) == "function" then
+        local iconApplied = pcall(function()
+            worldItem:setIcon(normalizedChoice)
+        end)
+
+        applied = applied or iconApplied
+    end
+    --]]
+
+    --[[
+    if applied and type(worldItem.synchWithVisual) == "function" then
+        pcall(function()
+            worldItem:synchWithVisual()
+        end)
+    end
+    --]]
+
+    return true
+end
+
 function FrameworkZ.Items:ApplyDeterministicSkin(worldItem, skin)
     if not worldItem then
         return false
@@ -291,10 +563,11 @@ function FrameworkZ.Items:ApplyDeterministicSkin(worldItem, skin)
 
     local applied = false
 
-    if type(normalizedSkin) == "number" and type(visual.setTextureChoice) == "function" then
-        applied = pcall(function()
-            visual:setTextureChoice(normalizedSkin)
-        end)
+    if type(normalizedSkin) == "number" then
+        applied = self:ApplyTextureChoice(worldItem, normalizedSkin)
+        if type(worldItem) == "table" then
+            worldItem.textureChoice = normalizedSkin
+        end
     elseif type(normalizedSkin) == "string" then
         if type(visual.setClothingItemName) == "function" then
             applied = pcall(function()
@@ -319,6 +592,12 @@ function FrameworkZ.Items:ApplyDeterministicSkin(worldItem, skin)
 end
 
 function FrameworkZ.Items:BuildInstanceData(instance, worldItem, owner)
+    local persistentData, persistentError = self:CopyPersistentData(instance.persistentData or {})
+    if persistentError then error("Invalid persistent item data: " .. persistentError) end
+
+    local customFields, customFieldsError = self:SnapshotCustomFields(instance.customFields)
+    if customFieldsError then error("Invalid custom item data: " .. customFieldsError) end
+
     return {
         uniqueID = instance.uniqueID,
         itemID = worldItem:getFullType(),
@@ -328,11 +607,14 @@ function FrameworkZ.Items:BuildInstanceData(instance, worldItem, owner)
         description = instance.description or "No description available.",
         category = instance.category or "Uncategorized",
         shouldConsume = instance.shouldConsume or false,
+        texture = instance.texture,
         skin = instance.skin,
+        textureChoice = instance.textureChoice,
         weight = instance.weight or 1,
         useAction = instance.useAction or nil,
         useTime = instance.useTime or nil,
-        customFields = instance.customFields or {}
+        persistentData = persistentData,
+        customFields = customFields
     }
 end
 
@@ -358,35 +640,23 @@ function FrameworkZ.Items:HydrateClientInstanceFromData(isoPlayer, worldItem, in
         self.Instances[instanceID] = instance
     end
 
+    self:ApplyStoredInstanceData(instance, instanceData)
     instance.instanceID = instanceID
     instance.owner = instanceData.owner or isoPlayer:getUsername()
     instance.worldItem = worldItem
     instance.worldItemID = worldItem.getID and worldItem:getID() or instance.worldItemID
-    instance.name = instanceData.name or instance.name
-    instance.description = instanceData.description or instance.description
-    instance.category = instanceData.category or instance.category
-    if instanceData.shouldConsume ~= nil then
-        instance.shouldConsume = instanceData.shouldConsume
-    end
-    if instanceData.skin ~= nil then
-        instance.skin = instanceData.skin
-    end
-    instance.weight = instanceData.weight or instance.weight
-    if instanceData.useAction ~= nil then
-        instance.useAction = instanceData.useAction
-    end
-    if instanceData.useTime ~= nil then
-        instance.useTime = instanceData.useTime
-    end
-    if instanceData.customFields ~= nil then
-        instance.customFields = self:RestoreCustomFields(instance, instanceData.customFields)
-    elseif instance.customFields == nil then
-        instance.customFields = {}
-    end
 
+    --[[
     if instance.skin ~= nil then
         self:ApplyDeterministicSkin(worldItem, instance.skin)
     end
+
+    if instanceData.texture ~= nil then
+        self:ApplyTextureChoice(worldItem, instanceData.texture)
+    elseif instance.skin ~= nil then
+        self:ApplyTextureChoice(worldItem, instance.skin)
+    end
+    --]]
 
     if not self.InstanceMap[instance.uniqueID] then
         self.InstanceMap[instance.uniqueID] = {}
@@ -418,8 +688,9 @@ function FrameworkZ.Items:CreateWorldItemsBatch(isoPlayer, requests)
     if type(requests) ~= "table" then return false, "Missing create requests." end
 
     local onServer = type(isServer) == "function" and isServer() or false
-    if not onServer then
-        return false, "CreateWorldItemsBatch is server-authoritative and must run on server."
+    local onClient = type(isClient) == "function" and isClient() or false
+    if not onServer and not onClient then
+        return false, "CreateWorldItemsBatch requires a server or client execution context."
     end
 
     local manifest = {}
@@ -430,6 +701,9 @@ function FrameworkZ.Items:CreateWorldItemsBatch(isoPlayer, requests)
         local uniqueID = request and request.uniqueID or nil
         local quantity = tonumber(request and request.quantity) or 1
         local requestedItemType = request and request.fullItemID or nil
+        if not requestedItemType and request and request.snapshot then
+            requestedItemType = request.snapshot.itemID or request.snapshot.fullItemID or nil
+        end
         local itemDefinition = uniqueID and self:GetItemByUniqueID(uniqueID) or nil
         if not itemDefinition and requestedItemType then
             itemDefinition = getItemDefinitionByItemType(requestedItemType)
@@ -448,6 +722,7 @@ function FrameworkZ.Items:CreateWorldItemsBatch(isoPlayer, requests)
 
                 if selectedSkin ~= nil then
                     sourceItem.skin = selectedSkin
+                    sourceItem.textureChoice = selectedSkin
                     self:ApplyDeterministicSkin(worldItem, selectedSkin)
                 end
 
@@ -510,71 +785,92 @@ if isServer() then
     FrameworkZ.Foundation:Subscribe("FrameworkZ.Items.CreateWorldItems", FrameworkZ.Items.CreateWorldItems)
 end
 
+if isServer() then
+    function FrameworkZ.Items.OnCreateItem(data, uniqueID, isLogical)
+        if not uniqueID then return false, "Missing unique ID." end
+        local item = isLogical and FrameworkZ.Items:GetItemByUniqueID(uniqueID) or true if not item then return false, "Item not found." end
+        local worldItem = instanceItem(isLogical and item.itemID or uniqueID) if not worldItem then return false, "Failed to create world item '" .. tostring(item.itemID) .. "'." end
+
+        local instanceID, instance = FrameworkZ.Items:AddInstance(isLogical and item or {uniqueID = uniqueID}, data.isoPlayer, worldItem)
+
+        if instance and instance.OnInstanced then
+            instance:OnInstanced(data.isoPlayer, worldItem)
+        end
+
+        local instanceData = FrameworkZ.Items:BuildInstanceData(instance, worldItem, data.isoPlayer:getUsername())
+        FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
+
+        if worldItem then
+            data.isoPlayer:getInventory():AddItem(worldItem)
+            sendAddItemToContainer(data.isoPlayer:getInventory(), worldItem)
+        end
+
+        return FrameworkZ.Utilities:Serialize(instance)
+    end
+    FrameworkZ.Foundation:Subscribe("FrameworkZ.Items.OnCreateItem", FrameworkZ.Items.OnCreateItem)
+end
+
 --! \brief Creates an item instance and links it to a world item.
 --! \param uniqueID \string The unique ID of the item to create.
 --! \param isoPlayer \object The ISO Player to create the item for.
---! \param callback \function (Optional) A callback function to execute after the item is created but before OnInstanced is called.
---! \return \boolean \string \object \object Success status and message, also the item instance and world item.
-function FrameworkZ.Items:CreateItem(uniqueID, quantity, isoPlayer, callback)
-    if not uniqueID then return false, "Missing item ID." end
-    quantity = tonumber(quantity) or 1 if quantity < 1 then return false, "Quantity must be at least 1." end
-    if not isoPlayer then return false, "Missing Iso Player: FrameworkZ.Items.CreateItem" end
-    local item = self:GetItemByUniqueID(uniqueID) if not item then return false, "Item not found." end
+--! \param uniqueID \string The unique ID of the logical item of item ID of the basic Project Zomboid item.
+--! \param isLogical \boolean Whether or not the item is a logical item (i.e. based in FrameworkZ).
+--! \return \boolean|/object \string The object for the created instance, or false and a message if it failed to create the item.
+function FrameworkZ.Items:CreateItem(isoPlayer, uniqueID, isLogical)
+    return FrameworkZ.Awaits:Run(function()
+        if not uniqueID then return false, "Missing unique ID." end
+        local item = isLogical and FrameworkZ.Items:GetItemByUniqueID(uniqueID) or true if not item then return false, "Item not found." end
+        local instance, message = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Items.OnCreateItem", uniqueID, isLogical) if not instance then return false, "Failed to create server side item: " .. message end
 
-    local requests = {
-        {
-            uniqueID = uniqueID,
-            quantity = quantity
-        }
-    }
-
-    if isServer() then
-        local success, message, _manifest, instances, worldItems = self:CreateWorldItemsBatch(isoPlayer, requests)
-        if callback then
-            callback(instances or {}, message, worldItems or {})
-        end
-        return success, message, instances, worldItems
-    end
-
-    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Items.CreateWorldItems", function(_data, success, message, manifest)
-        if not success or type(manifest) ~= "table" then
-            if callback then callback({}, message, {}) end
-            return false, message
+        local sourceInstance = instance and type(instance) == "table" and instance or {}
+        if isLogical and item and type(item) == "table" then
+            sourceInstance = FrameworkZ.Utilities:MergeTables(sourceInstance, item)
         end
 
-        local instances = {}
-        local worldItems = {}
-        for _, itemManifest in ipairs(manifest) do
-            local worldItemID = itemManifest and itemManifest.worldItemID or nil
-            local instanceData = itemManifest and itemManifest.instanceData or nil
-            local worldItem = worldItemID and isoPlayer:getInventory():getItemById(worldItemID) or nil
+        local worldItem = isoPlayer:getInventory():getItemById(instance.worldItemID)
+        local canonicalInstance = FrameworkZ.Items:RegisterInstance(sourceInstance.instanceID, sourceInstance, isoPlayer, worldItem)
+        local liveInstance = FrameworkZ.Items:GetInstance(sourceInstance.instanceID) or canonicalInstance
 
-            if worldItem and type(instanceData) == "table" then
-                self:LinkWorldItemToInstanceData(worldItem, instanceData)
-                local hydrated = self:HydrateClientInstanceFromData(isoPlayer, worldItem, instanceData)
-                if type(hydrated) == "table" then
-                    table.insert(instances, hydrated)
-                end
-                table.insert(worldItems, worldItem)
-            end
+        if liveInstance and type(liveInstance) == "table" and liveInstance.OnInstanced then
+            liveInstance:OnInstanced(isoPlayer, worldItem)
         end
 
-        if callback then
-            return callback(instances, "Created " .. tostring(#instances) .. " items.", worldItems)
-        end
-    end, requests)
+        local instanceData = FrameworkZ.Items:BuildInstanceData(liveInstance or sourceInstance, worldItem, isoPlayer:getUsername())
+        FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
 
-    return true, "Item creation request sent."
+        if liveInstance and type(liveInstance) == "table" then
+            liveInstance.worldItem = worldItem
+            liveInstance.worldItemID = worldItem and worldItem.getID and worldItem:getID() or liveInstance.worldItemID
+        end
+
+        return liveInstance or sourceInstance
+    end)
 end
 
 function FrameworkZ.Items:AddInstance(item, isoPlayer, worldItem)
-    local instanceID = #self.Instances + 1
+    self.NextInstanceID = self.NextInstanceID + 1
+    local instanceID = self.NextInstanceID
+    local itemInstance = FrameworkZ.Items:RegisterInstance(instanceID, item, isoPlayer, worldItem)
+
+    return instanceID, itemInstance
+end
+
+function FrameworkZ.Items:RegisterInstance(instanceID, item, isoPlayer, worldItem)
+    local numericInstanceID = tonumber(instanceID)
+    if numericInstanceID and numericInstanceID > self.NextInstanceID then
+        self.NextInstanceID = numericInstanceID
+    end
+
     local itemInstance = FrameworkZ.Utilities:CopyTable(item)
+    local persistentData, persistentError = self:CopyPersistentData(item.persistentData or {})
+    if persistentError then error("Invalid persistent item data: " .. persistentError) end
 
     itemInstance["instanceID"] = instanceID
     itemInstance["owner"] = isoPlayer:getUsername()
     itemInstance["worldItemID"] = worldItem:getID()
     itemInstance["worldItem"] = worldItem
+    itemInstance["texture"] = item.texture or nil
+    itemInstance["persistentData"] = persistentData
     self.Instances[instanceID] = itemInstance
 
     if not self.InstanceMap[item.uniqueID] then
@@ -587,7 +883,21 @@ function FrameworkZ.Items:AddInstance(item, isoPlayer, worldItem)
 
     table.insert(self.InstanceMap[item.uniqueID][isoPlayer:getUsername()], itemInstance)
 
-    return instanceID, itemInstance
+    return itemInstance
+end
+
+function FrameworkZ.Items:ClearOwnerInstances(owner)
+    if not owner then return end
+
+    for instanceID, instance in pairs(self.Instances) do
+        if type(instance) == "table" and instance.owner == owner then
+            self.Instances[instanceID] = nil
+        end
+    end
+
+    for _, ownerMap in pairs(self.InstanceMap) do
+        ownerMap[owner] = nil
+    end
 end
 
 function FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
@@ -595,8 +905,8 @@ function FrameworkZ.Items:LinkWorldItemToInstanceData(worldItem, instanceData)
     worldItem:setName(instanceData.name)
     worldItem:setActualWeight(instanceData.weight)
 
-    if instanceData and instanceData.skin ~= nil then
-        self:ApplyDeterministicSkin(worldItem, instanceData.skin)
+    if instanceData.texture then
+        worldItem:setTexture(getTexture(instanceData.texture))
     end
 
     if isServer() and type(sendItemStats) == "function" then
@@ -614,6 +924,35 @@ function FrameworkZ.Items:GetStoredData(worldItem)
     return itemData or false, "No stored item data found."
 end
 
+function FrameworkZ.Items:ApplyStoredInstanceData(instance, itemData)
+    if type(instance) ~= "table" or type(itemData) ~= "table" then return instance end
+
+    local storedFields = {
+        "name",
+        "description",
+        "category",
+        "shouldConsume",
+        "texture",
+        "skin",
+        "textureChoice",
+        "weight",
+        "useAction",
+        "useTime"
+    }
+
+    for _, fieldName in ipairs(storedFields) do
+        if itemData[fieldName] ~= nil then
+            instance[fieldName] = itemData[fieldName]
+        end
+    end
+
+    local persistentData, persistentError = self:MergePersistentData(instance.persistentData or {}, itemData.persistentData or {})
+    if persistentError then error("Invalid stored persistent item data: " .. persistentError) end
+    instance.persistentData = persistentData
+    instance.customFields = self:RestoreCustomFields(instance, itemData.customFields or instance.customFields or {})
+    return instance
+end
+
 function FrameworkZ.Items:BuildTransientInstanceFromStoredData(itemData, worldItem)
     if not itemData or not itemData.uniqueID then return false, "Missing stored item data." end
 
@@ -622,13 +961,12 @@ function FrameworkZ.Items:BuildTransientInstanceFromStoredData(itemData, worldIt
 
     local transient = FrameworkZ.Utilities:CopyTable(definition)
     setmetatable(transient, getmetatable(definition))
+    self:ApplyStoredInstanceData(transient, itemData)
 
     transient.instanceID = itemData.instanceID
     transient.owner = itemData.owner
     transient.worldItem = worldItem
     transient.worldItemID = worldItem and worldItem.getID and worldItem:getID() or nil
-    transient.skin = itemData.skin or transient.skin
-    transient.customFields = self:RestoreCustomFields(transient, itemData.customFields or transient.customFields or {})
 
     return transient
 end

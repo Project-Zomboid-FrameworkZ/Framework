@@ -118,7 +118,7 @@ FrameworkZ.Meta.Version = "1.0.0"
 FrameworkZ.Config = {}
 FrameworkZ.Config.Options = {
     SkipIntro = true,
-    Version = "14.10.4",
+    Version = "15.10.4",
     VersionType = "Pre-Alpha (Preview)",
 
     -- When true, server stdout is redirected to frameworkz.txt and console input

@@ -1,6 +1,13 @@
 FrameworkZ.UI.CharacterView = FrameworkZ.UI.CharacterView or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.CharacterView, "CharacterView")
 
+local function createPreviewSurvivor(character)
+    local isFemale = (character and character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female") or false
+    local survivor = SurvivorFactory.CreateSurvivor(SurvivorType.Neutral, isFemale)
+    survivor:setFemale(isFemale)
+    return survivor
+end
+
 function FrameworkZ.UI.CharacterView:initialise()
     ISPanel.initialise(self)
 
@@ -26,12 +33,10 @@ function FrameworkZ.UI.CharacterView:initialise()
     self.uiHelper = FrameworkZ.UI
     local descriptionLines = self:getDescriptionLines(self.description)
     local descriptionHeight = FONT_HEIGHT_SMALL * 4
-    local isFemale = (self.character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female" and true) or (self.character[FZ_ENUM_CHARACTER_INFO_GENDER] == "Male" and false)
     local x = self.uiHelper.GetMiddle(self.width, UIFont.Medium, self.name)
     local y = 0
 
-    self.survivor = SurvivorFactory.CreateSurvivor(SurvivorType.Neutral, isFemale)
-    self.survivor:setFemale(isFemale)
+    self.survivor = createPreviewSurvivor(self.character)
 
     self.characterNameLabel = ISLabel:new(x, 0, FONT_HEIGHT_MEDIUM, self.name, 1, 1, 1, 1, UIFont.Medium, true)
     self.characterNameLabel:initialise()
@@ -89,8 +94,16 @@ function FrameworkZ.UI.CharacterView:render()
 end
 
 function FrameworkZ.UI.CharacterView:updateAppearance()
-    local survivor = self.survivor
     local character = self.character
+    if not character then
+        print("[CharacterView] Error: No character data provided")
+        return
+    end
+
+    -- Rebuild the preview survivor from scratch each time so stale worn-item/tint state from a
+    -- prior character cannot bleed into the next preview refresh when the load menu is reopened.
+    self.survivor = createPreviewSurvivor(character)
+    local survivor = self.survivor
 
     if not character then
         print("[CharacterView] Error: No character data provided")
@@ -150,8 +163,15 @@ function FrameworkZ.UI.CharacterView:updateAppearance()
         survivor:setWornItem(resolvedSlot, nil)
     end
     
-    -- Restore equipment from Equipment table
-    local equipment = character[FZ_ENUM_CHARACTER_INFO_EQUIPMENT]
+    -- The preview receives stored character data, not a CHARACTER object. Build its
+    -- equipped lookup directly from the canonical inventory payload.
+    local equipment = {}
+    local inventoryData = character[FZ_ENUM_CHARACTER_INVENTORY]
+    for _, itemData in ipairs(inventoryData and inventoryData.items or {}) do
+        if itemData.equippedSlot then
+            equipment[itemData.equippedSlot] = itemData
+        end
+    end
     if equipment then
         for slot, itemData in pairs(equipment) do
             local itemType, itemColor, itemCondition
@@ -177,7 +197,7 @@ function FrameworkZ.UI.CharacterView:updateAppearance()
                     local resolvedSlot = ItemBodyLocation and ItemBodyLocation.get(ResourceLocation.of(slot)) or slot
                     survivor:setWornItem(resolvedSlot, item)
                     
-                    -- Apply color after equipping using Inventories method (handles edge cases)
+                    -- Apply the saved appearance data using the same fields that character creation writes.
                     FrameworkZ.Inventories:ApplyEquipmentColor(item, itemData)
                 end
             end
@@ -201,7 +221,8 @@ function FrameworkZ.UI.CharacterView:setDescription(description)
 end
 
 function FrameworkZ.UI.CharacterView:reinitialize(character)
-    -- Light-weight reinit: reuse existing preview/survivor; update fields and appearance without rebuilding UI
+    -- Rebuild the preview survivor from scratch each time so reopen/recycle flows do not preserve
+    -- stale wear/tint state from a previously previewed character.
     self:setCharacter(character)
     self:setName(character[FZ_ENUM_CHARACTER_INFO_NAME])
     self:setDescription(character[FZ_ENUM_CHARACTER_INFO_DESCRIPTION])

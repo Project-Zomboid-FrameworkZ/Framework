@@ -1,4 +1,4 @@
---! \page Hooks
+--! \page List of Hooks
 --! \brief These are the available hooks in FrameworkZ that modules, plugins, and other scripts can use to extend functionality.
 --!
 --! \section PlayerInitializationHooks Player Initialization Hooks

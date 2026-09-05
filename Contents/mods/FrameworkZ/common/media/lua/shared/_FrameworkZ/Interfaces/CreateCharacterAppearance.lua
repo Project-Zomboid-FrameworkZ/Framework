@@ -1218,6 +1218,16 @@ function FrameworkZ.UI.CreateCharacterAppearance:addClothingOption(x, y, height,
             tooltipSelf:drawText(tooltipSelf.tooltipText, 6, 3, 1.0, 1.0, 1.0, 1.0, tooltipSelf.tooltipFont)
         end
         
+        -- Keep the tooltip visible, but allow clicks to pass through to the clothing grid underneath.
+        -- This prevents the tooltip layer from stealing hover/click interaction while the item is still hovered.
+        self2.tooltipUI.onMouseDown = function() return false end
+        self2.tooltipUI.onMouseUp = function() return false end
+        self2.tooltipUI.onRightMouseDown = function() return false end
+        self2.tooltipUI.onRightMouseUp = function() return false end
+        self2.tooltipUI.onMouseMove = function() return false end
+        self2.tooltipUI.mouseOver = false
+        self2.tooltipUI.isMouseOver = false
+
         -- Add to UI manager and set always on top
         self2.tooltipUI:addToUIManager()
         self2.tooltipUI:setAlwaysOnTop(true)
@@ -2292,6 +2302,14 @@ function FrameworkZ.UI.CreateCharacterAppearance:resetHairStyles()
     if self.survivor then
         local hairStyles = getAllHairStyles(self.survivor:isFemale())
 
+        -- Remember what was picked before the rebuild below wipes .selected, so a revisit of this
+        -- step (e.g. navigating back to Info and forward again) without an actual gender change
+        -- doesn't silently fall back to whatever the freshly repopulated list defaults to.
+        local previousHairData = nil
+        if self.hairDropdown and self.hairDropdown.selected and self.hairDropdown.selected > 0 then
+            previousHairData = self.hairDropdown:getOptionData(self.hairDropdown.selected)
+        end
+
         self.hairDropdown:clear()
 
         for i = 1, hairStyles:size() do
@@ -2310,8 +2328,27 @@ function FrameworkZ.UI.CreateCharacterAppearance:resetHairStyles()
             end
         end
 
-        if self.wasGenderUpdated then
-            self.hairDropdown:select("Bald")
+        local reselected = false
+        if not self.wasGenderUpdated and previousHairData ~= nil then
+            for i = 1, #self.hairDropdown.options do
+                if self.hairDropdown:getOptionData(i) == previousHairData then
+                    self.hairDropdown.selected = i
+                    reselected = true
+                    break
+                end
+            end
+        end
+
+        if not reselected then
+            -- Select by underlying data ("" = bald), not the localized label text - select("Bald")
+            -- silently fails to match whenever getText("IGUI_Hair_Bald") isn't literally "Bald",
+            -- leaving the dropdown on whatever style the freshly populated list defaulted to.
+            for i = 1, #self.hairDropdown.options do
+                if self.hairDropdown:getOptionData(i) == "" then
+                    self.hairDropdown.selected = i
+                    break
+                end
+            end
         end
 
         self:onHairChanged(self.hairDropdown)
@@ -2325,6 +2362,14 @@ function FrameworkZ.UI.CreateCharacterAppearance:resetBeardStyles()
         if not isFemale then
             local beardStyles = getAllBeardStyles()
 
+            -- Same reasoning as resetHairStyles: preserve the prior selection across a revisit
+            -- of this step when gender didn't actually change, instead of losing it to whatever
+            -- the rebuilt list defaults to.
+            local previousBeardData = nil
+            if self.beardDropdown and self.beardDropdown.selected and self.beardDropdown.selected > 0 then
+                previousBeardData = self.beardDropdown:getOptionData(self.beardDropdown.selected)
+            end
+
             self.beardDropdown:clear()
 
             for i = 1, beardStyles:size() do
@@ -2337,6 +2382,28 @@ function FrameworkZ.UI.CreateCharacterAppearance:resetBeardStyles()
                 end
 
                 self.beardDropdown:addOptionWithData(label, beardStyles:get(i - 1))
+            end
+
+            local reselected = false
+            if not self.wasGenderUpdated and previousBeardData ~= nil then
+                for i = 1, #self.beardDropdown.options do
+                    if self.beardDropdown:getOptionData(i) == previousBeardData then
+                        self.beardDropdown.selected = i
+                        reselected = true
+                        break
+                    end
+                end
+            end
+
+            if not reselected then
+                -- Select by underlying data ("" = none), not the localized label text - see the
+                -- matching comment in resetHairStyles for why select("None") is unreliable here.
+                for i = 1, #self.beardDropdown.options do
+                    if self.beardDropdown:getOptionData(i) == "" then
+                        self.beardDropdown.selected = i
+                        break
+                    end
+                end
             end
 
             self:onBeardChanged(self.beardDropdown)

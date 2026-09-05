@@ -99,24 +99,8 @@ FrameworkZ.Characters.DefaultCharacterData = {
     [FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] = {r = 0.3, g = 0.2, b = 0.2},
     [FZ_ENUM_CHARACTER_INFO_EYE_COLOR] = {r = 0.2, g = 0.4, b = 0.6},
     
-    -- Equipment slots
-    [FZ_ENUM_EQUIPMENT_SLOT_HAT] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_MASK] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_EARS] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_BACK] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_HANDS] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_TSHIRT] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_SHIRT] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_TORSO_EXTRA_VEST] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_BELT] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_PANTS] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_SOCKS] = nil,
-    [FZ_ENUM_EQUIPMENT_SLOT_SHOES] = nil,
-    
     -- Inventory data
-    [FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL] = {},
-    [FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = { items = {}, equippedItems = {} },
-    [FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = {},
+    [FZ_ENUM_CHARACTER_INVENTORY] = { items = {} },
     
     -- Position and stats
     [FZ_ENUM_CHARACTER_META_POSITION_X] = nil,
@@ -159,8 +143,14 @@ function CHARACTER:Save(callback)
     end
     FrameworkZ.Players:ResetCharacterSaveInterval()
 
-    -- Sync all current data from isoPlayer before saving
-    self:Sync()
+    local saveToken = FrameworkZ.Players:BeginCharacterSave(isoPlayer:getUsername(), self:GetID())
+
+    -- Sync all current data from isoPlayer before saving.
+    local synced, syncMessage = self:Sync()
+    if not synced then
+        if callback then callback(false, syncMessage) end
+        return false, syncMessage
+    end
     
     -- Get saveable data with filtered properties
     local characterData = self:GetSaveableData()
@@ -169,8 +159,14 @@ function CHARACTER:Save(callback)
         return false, "Failed to get saveable data." 
     end
     
+    local characterID = self:GetID()
+    if not FrameworkZ.Players:CanWriteCharacterSave(isoPlayer:getUsername(), saveToken, characterID) then
+        if callback then callback(false, "Superseded by newer save") end
+        return false, "Superseded by newer save"
+    end
+
     -- Save to database with callback for server confirmation
-    FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {isoPlayer:getUsername(), self:GetID()}, characterData, nil, nil, function(success, message)
+    FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {isoPlayer:getUsername(), characterID}, characterData, nil, nil, function(success, message)
         print("[FrameworkZ] Character data save " .. (success and "confirmed" or "failed: " .. (message or "Unknown error")))
         if callback then 
             callback(success, message or (success and "Character saved successfully" or "Save failed"))
@@ -219,7 +215,9 @@ function CHARACTER:InitializeDefaultItems()
     local faction = FrameworkZ.Factions:GetFactionByID(self.faction)
 
     if faction then
-        for k, v in pairs(faction.defaultItems) do
+        local items = faction.items or faction.defaultItems
+        
+        for k, v in pairs(items) do
            self:GiveItems(k, v)
         end
     end
@@ -267,8 +265,23 @@ function CHARACTER:GetFaction() return self.Faction end
 --! \param faction \string The faction ID to set.
 function CHARACTER:SetFaction(faction) self.Faction = faction end
 
-function CHARACTER:GetFirstLoad() return self[FZ_ENUM_CHARACTER_META_FIRST_LOAD] end
-function CHARACTER:SetFirstLoad(firstLoad) self[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = firstLoad end
+function CHARACTER:DispatchFirstLoadHooks()
+    if self._firstLoadHookFired or self:GetFirstLoad() ~= true then
+        return false
+    end
+
+    self._firstLoadHookFired = true
+
+    if FrameworkZ.Plugins and FrameworkZ.Plugins.Initialize then
+        pcall(function()
+            FrameworkZ.Plugins:Initialize()
+        end)
+    end
+
+    FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", self)
+
+    return true
+end
 
 --! \brief Get the character's gender.
 --! \return \string The character's gender.
@@ -720,7 +733,10 @@ function CHARACTER:GetAllHealth()
         for i = 1, bodyParts:size() do
             local bodyPart = bodyParts:get(i - 1)
             if bodyPart then
-                local index = bodyPart:getIndex()
+                -- Must key by the BodyPartType name (e.g. "Torso_Upper"), not the numeric index -
+                -- CHARACTER:RestoreHealth looks parts up via BodyPartType[name], which returns nil
+                -- for a numeric key, silently skipping restoration entirely.
+                local index = tostring(bodyPart:getType())
                 bodyPartsData[index] = {
                     Health = bodyPart:getHealth(),
                     Bandaged = bodyPart:bandaged(),
@@ -829,50 +845,27 @@ function CHARACTER:GetPerks() return self:GetTraits() end
 --! \param perks \table The perks to set.
 function CHARACTER:SetPerks(perks) self:SetTraits(perks) end
 
---! \brief Get and sync character equipment from isoPlayer.
---! Only extracts equipment slots (Hat, Shirt, Pants, etc.), not inventory contents.
+--! \brief Get equipped item snapshots from the canonical inventory payload.
 --! \return \table The character's equipment data by slot.
 function CHARACTER:GetEquipment()
-    local fullInventoryData, message = FrameworkZ.Inventories:Save(self)
-    if fullInventoryData then
-        -- Equipment is now stored in Equipment sub-table
-        local equipmentData = fullInventoryData.Equipment or {}
-        
-        -- Store equipment data
-        self[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = equipmentData
-        return equipmentData
-    else
-        print("[FrameworkZ] Warning: Failed to get equipment data: " .. (message or "Unknown error"))
-        return self[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] or {}
-    end
-end
-
---! \brief Set the character's equipment data.
---! \param equipment \table The equipment data to set.
-function CHARACTER:SetEquipment(equipment) 
-    self[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = equipment 
-end
-
---! \brief Get and sync inventory contents from the character's Inventory object.
---! Delegates to the Inventory object's Save() method.
---! \return \table The inventory contents data with INVENTORY_LOGICAL and INVENTORY_PHYSICAL.
-function CHARACTER:GetInventoryContents()
-    local inventory = self:GetInventory()
-    if inventory and inventory.Save then
-        local fullInventoryData, message = inventory:Save()
-        if fullInventoryData then
-            self[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = fullInventoryData.INVENTORY_LOGICAL or { items = {}, equippedItems = {} }
-            self[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL] = fullInventoryData.INVENTORY_PHYSICAL or {}
-
-            -- Keep equipment in sync with the same save snapshot.
-            if fullInventoryData.Equipment then
-                self[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = fullInventoryData.Equipment
-            end
+    local equipment = {}
+    local inventoryData = self[FZ_ENUM_CHARACTER_INVENTORY]
+    for _, itemData in ipairs(inventoryData and inventoryData.items or {}) do
+        if itemData.equippedSlot then
+            equipment[itemData.equippedSlot] = itemData
         end
-
-        return fullInventoryData, message
     end
-    return nil, "No inventory object available"
+    return equipment
+end
+
+--! \brief Get and sync the character's complete inventory payload.
+--! \return \table The canonical inventory data.
+function CHARACTER:GetInventoryContents()
+    local inventoryData, message = FrameworkZ.Inventories:Save(self)
+    if inventoryData then
+        self[FZ_ENUM_CHARACTER_INVENTORY] = inventoryData
+    end
+    return inventoryData, message
 end
 
 
@@ -906,18 +899,28 @@ function CHARACTER:Sync()
         {"GetAllHealth", self.GetAllHealth},
         {"GetSkills", self.GetSkills},
         {"GetTraits", self.GetTraits},
-        {"GetEquipment", self.GetEquipment},                   -- Sync worn items (Hat, Shirt, Pants, etc.)
-        {"GetInventoryContents", self.GetInventoryContents},   -- Sync inventory items (logical + physical)
+        {"GetInventoryContents", self.GetInventoryContents},
         {"GetPosition", self.GetPosition},
     }
 
+    local failures = {}
     for _, step in ipairs(steps) do
         local stepName, stepFunc = step[1], step[2]
-        local ok, err = pcall(stepFunc, self)
+        local ok, result, message = pcall(stepFunc, self)
         if not ok then
-            print("[FrameworkZ] Warning: CHARACTER:Sync step '" .. stepName .. "' failed: " .. tostring(err))
+            table.insert(failures, stepName .. ": " .. tostring(result))
+        elseif result == nil then
+            table.insert(failures, stepName .. ": " .. tostring(message or "returned no data"))
         end
     end
+
+    if #failures > 0 then
+        local message = "Character sync failed: " .. table.concat(failures, "; ")
+        print("[FrameworkZ] Warning: " .. message)
+        return false, message
+    end
+
+    return true, "Character synchronized."
 end
 
 --! \brief Get the character's saveable data with filtered properties.
@@ -925,14 +928,12 @@ end
 function CHARACTER:GetSaveableData()
     local ignoreList = {
         "IsoPlayer",
-        "Player"
+        "Player",
+        "Inventory",
+        "InventoryID"
     }
 
-    local encodeList = {
-        "Inventory"
-    }
-
-    return FrameworkZ.Foundation:ProcessSaveableData(self, ignoreList, encodeList)
+    return FrameworkZ.Foundation:ProcessSaveableData(self, ignoreList)
 end
 
 --[[ Note: Setup UID on Player object inside of stored Characters at Character
@@ -945,87 +946,6 @@ function CHARACTER:SetUID(uid)
     return true
 end
 --]]
-
---! \brief Give a character items by the specified amount.
---! \param uniqueID \string The unique ID of the item to give.
---! \param amount \integer The amount of the item to give.
-function CHARACTER:GiveItems(uniqueID, amount, resultCallback)
-    amount = tonumber(amount) or 1
-    if amount < 1 then
-        return false, "Amount must be at least 1."
-    end
-
-    local hasCallback = type(resultCallback) == "function"
-    local granted = 0
-    local failed = false
-    local lastMessage = nil
-    local pending = amount
-    local completedSynchronously = true
-    local callbackFinalized = false
-
-    local function buildResultMessage()
-        if failed then
-            return false, lastMessage or "Failed to give one or more items."
-        end
-
-        if granted == 1 then
-            return true, lastMessage or ("Granted 1x '" .. tostring(uniqueID) .. "'.")
-        end
-
-        return true, "Granted " .. tostring(granted) .. "x '" .. tostring(uniqueID) .. "'."
-    end
-
-    local function finalizeCallbackIfNeeded()
-        if not hasCallback or callbackFinalized or pending > 0 then
-            return
-        end
-
-        callbackFinalized = true
-        local success, message = buildResultMessage()
-        resultCallback(success, message)
-    end
-
-    local function onItemCreated(instances, message)
-        pending = pending - 1
-
-        if type(instances) == "table" and #instances > 0 then
-            granted = granted + #instances
-            lastMessage = message
-        else
-            failed = true
-            lastMessage = message or "Failed to give item."
-        end
-
-        finalizeCallbackIfNeeded()
-    end
-
-    for i = 1, amount do
-        local callbackRan = false
-        self:GiveItem(uniqueID, 1, function(instances, message)
-            callbackRan = true
-            onItemCreated(instances, message)
-        end)
-
-        if not callbackRan then
-            completedSynchronously = false
-        end
-    end
-
-    if hasCallback then
-        if not completedSynchronously then
-            return true, "Grant operation started."
-        end
-
-        local success, message = buildResultMessage()
-        return success, message
-    end
-
-    if pending > 0 then
-        return false, "GiveItems could not complete synchronously in this context. Provide a callback."
-    end
-
-    return buildResultMessage()
-end
 
 --! \brief Take multiple items from a character's inventory by unique ID.
 --! \param uniqueID \string The unique ID of the items to take.
@@ -1040,30 +960,31 @@ end
 --! \param uniqueID \string The ID of the item to give.
 --! \param quantity \integer The number of items to give.
 --! \return \boolean Whether or not the item was successfully given.
-function CHARACTER:GiveItem(uniqueID, quantity, resultCallback)
-    quantity = tonumber(quantity) or 1
-    if quantity < 1 then
-        return false, "Quantity must be at least 1."
-    end
+function CHARACTER:GiveItem(uniqueID)
+    return FrameworkZ.Awaits:Run(function()
+        local isLogical = not string.find(uniqueID, "%.")
+        local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "Character is missing IsoPlayer." end
+        local instance, message = FrameworkZ.Items:CreateItem(isoPlayer, uniqueID, isLogical) if not instance then return false, "Failed to create item for '" .. uniqueID .. "': " .. message end
+        local inventory = self:GetInventory() if not inventory then return false, "Character is missing inventory object." end
 
-    local isoPlayer = self:GetIsoPlayer()
-    if not isoPlayer then return false, "Failed to find ISO player." end
-
-    local inventory = self:GetInventory()
-    if not inventory then return false, "Failed to find inventory." end
-
-    local callback = function(instances, message, worldItems)
-        if #instances == 0 and resultCallback then return resultCallback(false, "Failed to create item: " .. message) end
-
-        -- Track the logical instance for character persistence/save data.
-        for _, instance in ipairs(instances) do
-            inventory:AddItem(instance)
+        local canonicalInstance = FrameworkZ.Items:GetInstance(instance and instance.instanceID) or instance
+        if canonicalInstance and type(canonicalInstance) == "table" then
+            inventory:AddItem(canonicalInstance)
+            return canonicalInstance
         end
 
-        if resultCallback then return resultCallback(instances, message, worldItems) end
-    end
+        inventory:AddItem(instance)
+        return instance
+    end)
+end
 
-    FrameworkZ.Items:CreateItem(uniqueID, quantity, isoPlayer, callback)
+--! \brief Give a character items by the specified amount.
+--! \param uniqueID \string The unique ID of the item to give.
+--! \param amount \integer The amount of the item to give.
+function CHARACTER:GiveItems(uniqueID, quantity)
+    for i = 1, quantity do
+        self:GiveItem(uniqueID)
+    end
 end
 
 --! \brief Take an item from a character's inventory.
@@ -1167,7 +1088,7 @@ end
 --! \param callback \function Callback(characterData|false, message) invoked when restore completes.
 --! \return \boolean Success flag.
 --! \return \string Status or error message.
-function CHARACTER:Restore(characterData)
+function CHARACTER:Restore(characterData, itemManifest)
     if not characterData then return false, "Character data not supplied in parameters." end
 
     local username = self:GetPlayer():GetUsername()
@@ -1175,16 +1096,25 @@ function CHARACTER:Restore(characterData)
     local player = FrameworkZ.Players:GetPlayerByID(username) if not player then return false, "Player not found." end
 
     -- Is this the first load?
-    local firstLoad = characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true
+    local firstLoad = characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD]
 
     -- Hook call
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterRestore", self, characterData, firstLoad)
 
     -- Resolve target position with robust fallback to spawn when saved coords are missing/invalid.
-    local savedX = characterData[FZ_ENUM_CHARACTER_META_POSITION_X] or characterData.POSITION_X
-    local savedY = characterData[FZ_ENUM_CHARACTER_META_POSITION_Y] or characterData.POSITION_Y
-    local savedZ = characterData[FZ_ENUM_CHARACTER_META_POSITION_Z] or characterData.POSITION_Z
-    local savedAngle = characterData[FZ_ENUM_CHARACTER_META_POSITION_ANGLE] or characterData.DIRECTION_ANGLE
+    -- Lua treats 0 as falsey, so explicit nil checks are required here or valid spawn/origin
+    -- positions and a 0-degree facing angle are silently discarded during reload.
+    local savedX = characterData[FZ_ENUM_CHARACTER_META_POSITION_X]
+    if savedX == nil then savedX = characterData.POSITION_X end
+
+    local savedY = characterData[FZ_ENUM_CHARACTER_META_POSITION_Y]
+    if savedY == nil then savedY = characterData.POSITION_Y end
+
+    local savedZ = characterData[FZ_ENUM_CHARACTER_META_POSITION_Z]
+    if savedZ == nil then savedZ = characterData.POSITION_Z end
+
+    local savedAngle = characterData[FZ_ENUM_CHARACTER_META_POSITION_ANGLE]
+    if savedAngle == nil then savedAngle = characterData.DIRECTION_ANGLE end
 
     local hasSavedPosition = type(savedX) == "number" and type(savedY) == "number" and type(savedZ) == "number"
     local useSpawnPosition = firstLoad or not hasSavedPosition
@@ -1194,36 +1124,23 @@ function CHARACTER:Restore(characterData)
     local z = useSpawnPosition and FrameworkZ.Config:GetOption("SpawnZ") or savedZ
 
     local isoPlayer = self:GetIsoPlayer()
+    local inventory = isoPlayer:getInventory()
 
-    -- Only the server-authoritative restore pass should hard-clear worn items/inventory.
-    -- FrameworkZ.Players:LoadCharacterByID triggers a second, non-authoritative Initialize/Restore
-    -- call in the calling (client) realm after receiving the server's response, purely for local
-    -- bookkeeping/visuals. Physical item restoration is intentionally server-only (see
-    -- FrameworkZ.Inventories:Restore), so clearing unconditionally here would wipe out items the
-    -- server already added/synced, with nothing re-adding them on the non-authoritative pass.
-    local onServerRestore = type(isServer) == "function" and isServer() or false
-    local onClientRestore = type(isClient) == "function" and isClient() or false
-    local isAuthoritativeRestore = onServerRestore or not onClientRestore
-
-    if isAuthoritativeRestore then
-        isoPlayer:clearWornItems()
-        isoPlayer:getInventory():clear()
-    end
+    isoPlayer:clearWornItems()
+    inventory:clear()
 
     -- Restoration processes
     local success, restoreDataMessage = self:RestoreData(characterData) if not success then return false, "Failed to restore character data: " .. restoreDataMessage end
     local success2, restoreStatsMessage = self:RestoreStats(characterData) if not success2 then return false, "Failed to restore character stats: " .. restoreStatsMessage end
     local success3, restoreModelMessage = self:RestoreModel(characterData, true) if not success3 then return false, "Failed to restore character model: " .. restoreModelMessage end
-    local success4, restoreInventoryMessage = self:RestoreInventory(characterData) if not success4 then return false, "Failed to restore character inventory: " .. restoreInventoryMessage end
-    local success5, restoreEquipmentMessage = self:RestoreEquipment(characterData) if not success5 then return false, "Failed to restore character equipment: " .. restoreEquipmentMessage end
-    local success6, restorePositionMessage = self:RestorePosition(x, y, z, savedAngle)
-    if not success6 then
-        return false, restorePositionMessage
-    end
-
-    local success7, restoreHealthMessage = self:RestoreHealth(characterData) if not success7 then return false, "Failed to restore character health: " .. restoreHealthMessage end
-    local success8, restoreSkillsMessage = self:RestoreSkills(characterData) if not success8 then return false, "Failed to restore character skills: " .. restoreSkillsMessage end
-    local success9, restoreTraitsMessage = self:RestoreTraits(characterData) if not success9 then return false, "Failed to restore character traits: " .. restoreTraitsMessage end
+    -- Position must be restored before inventory: while still parked at the limbo coordinates,
+    -- the client's network interest isn't on the real spawn area yet, so item sync packets sent
+    -- during RestoreInventory (sendAddItemToContainer) can be silently dropped.
+    local success5, restorePositionMessage = self:RestorePosition(x, y, z, savedAngle) if not success5 then return false, "Failed to restore character position: " .. restorePositionMessage end
+    local success4, restoreInventoryMessage, restoredItemManifest = self:RestoreInventory(characterData, itemManifest) if not success4 then return false, "Failed to restore character inventory: " .. restoreInventoryMessage end
+    local success6, restoreHealthMessage = self:RestoreHealth(characterData) if not success6 then return false, "Failed to restore character health: " .. restoreHealthMessage end
+    local success7, restoreSkillsMessage = self:RestoreSkills(characterData) if not success7 then return false, "Failed to restore character skills: " .. restoreSkillsMessage end
+    local success8, restoreTraitsMessage = self:RestoreTraits(characterData) if not success8 then return false, "Failed to restore character traits: " .. restoreTraitsMessage end
 
     -- Recognize self
     if not self:RecognizesCharacter(self) then
@@ -1235,6 +1152,7 @@ function CHARACTER:Restore(characterData)
 
     -- Ensure character has a UID before cache insertion.
     -- Some legacy or malformed saves can arrive with nil META_UID.
+    --[[
     local resolvedUID = self:GetUID() or characterData[FZ_ENUM_CHARACTER_META_UID]
     if not resolvedUID then
         if player.GenerateUID then
@@ -1255,6 +1173,7 @@ function CHARACTER:Restore(characterData)
             FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {username, characterID}, characterData)
         end
     end
+    --]]
 
     if not self:GetUID() then
         FrameworkZ.Characters:RemoveFromList(username)
@@ -1270,12 +1189,7 @@ function CHARACTER:Restore(characterData)
     -- Hook call
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterRestored", self, firstLoad)
 
-    -- First load complete, mark first load as false for future loads
-    if self:GetFirstLoad() then
-        self:SetFirstLoad(false)
-    end
-
-    return self, "Character restored."
+    return self, "Character restored.", restoredItemManifest
 
     --return player:GetCharacterDataByID(characterID, dataCallback)
 end
@@ -1298,12 +1212,7 @@ function CHARACTER:RestoreData(characterData)
     self:SetHairColor(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR])
     self:SetHairStyle(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_STYLE])
     self:SetHeight(characterData[FZ_ENUM_CHARACTER_INFO_HEIGHT])
-    -- Guard against clobbering an already-valid ID with nil if this characterData payload
-    -- happens to omit META_ID (e.g. a partial/merged update). self.ID is set correctly at
-    -- construction time (FrameworkZ.Characters:New) and should never regress to nil here.
-    if characterData[FZ_ENUM_CHARACTER_META_ID] ~= nil then
-        self:SetID(characterData[FZ_ENUM_CHARACTER_META_ID])
-    end
+    self:SetID(characterData[FZ_ENUM_CHARACTER_META_ID])
     self:SetName(characterData[FZ_ENUM_CHARACTER_INFO_NAME])
     self:SetPhysique(characterData[FZ_ENUM_CHARACTER_INFO_PHYSIQUE])
     self:SetRecognizes(characterData[FZ_ENUM_CHARACTER_META_RECOGNIZES] or {})
@@ -1318,76 +1227,17 @@ function CHARACTER:RestoreData(characterData)
     return true, "Character data restored."
 end
 
---! \brief Restore logical/physical inventory (not worn equipment) from saved character data.
---! \param characterData \table Character data payload containing INVENTORY_LOGICAL and INVENTORY_PHYSICAL.
+--! \brief Restore the complete canonical inventory, including equipped items.
+--! \param characterData \table Character data payload containing InventoryData.
 --! \return \boolean Success flag.
 --! \return \string Descriptive message.
-function CHARACTER:RestoreInventory(characterData)
+function CHARACTER:RestoreInventory(characterData, itemManifest)
     if not characterData then return false, "Character data not supplied in parameters." end
 
-    -- Build inventory data with only logical and physical inventory
-    local inventoryData = {
-        INVENTORY_LOGICAL = characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL],
-        INVENTORY_PHYSICAL = characterData[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL]
-    }
-    
-    -- Use FrameworkZ.Inventories:Restore for inventory restoration (NOT equipment)
-    local success, message = FrameworkZ.Inventories:Restore(self, inventoryData)
-    
-    if not success then
-        print("[FrameworkZ] Warning: Inventories.Restore failed: " .. (message or "Unknown error") .. ". Using fallback.")
-        
-        -- Fallback: legacy rebuild approach for logical inventory
-        local logicalData = characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL]
-        if logicalData then
-            local newInventory = FrameworkZ.Inventories:New(self:GetUsername())
-            local _success, _message, rebuiltInventory = FrameworkZ.Inventories:Rebuild(self:GetIsoPlayer(), newInventory, logicalData)
-            if _success and rebuiltInventory then
-                self:SetInventory(rebuiltInventory)
-                self:SetInventoryID(self:GetInventory().id)
-                self:GetInventory():Initialize()
-            else
-                return false, "Inventory restore failed and fallback rebuild failed: " .. tostring(_message or message or "Unknown error")
-            end
-        else
-            return false, "Inventory restore failed and no logical fallback data available: " .. tostring(message or "Unknown error")
-        end
-    end
-
-    return true, "Character inventory restored."
-end
-
---! \brief Restore worn equipment from saved character data.
---! \param characterData \table Character data payload containing equipment info.
---! \return \boolean Success flag.
---! \return \string Descriptive message.
-function CHARACTER:RestoreEquipment(characterData)
-    if not characterData then return false, "Character data not supplied in parameters." end
-
-    -- IMPORTANT: Do NOT early-return here when equipmentData is nil/missing. A freshly created
-    -- character can legitimately have ZERO saved equipment (e.g. selected no starting clothing),
-    -- but FrameworkZ.Inventories:RestoreEquipment's stale-item-clearing pass still needs to run
-    -- in that case to strip whatever the IsoPlayer is CURRENTLY wearing (e.g. the temporary
-    -- Hospital Gown/Slippers worn during the character-selection "limbo" period via
-    -- FrameworkZ.Foundation:InitializeClient). Returning early here skipped that pass entirely,
-    -- leaving the limbo clothing worn/in-inventory indefinitely after loading such a character.
-    local equipmentData = characterData[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] or {}
-
-    self:SetEquipment(equipmentData)
-    
-    -- Build inventoryData structure that Inventories:RestoreEquipment expects
-    local inventoryData = {
-        Equipment = equipmentData
-    }
-    
-    -- Delegate actual equipment restoration to Inventories module
-    local success, message = FrameworkZ.Inventories:RestoreEquipment(self, inventoryData)
-    
-    if success then
-        return true, "Equipment restored successfully."
-    else
-        return false, "Equipment restoration failed: " .. (message or "Unknown error")
-    end
+    local inventoryData = characterData[FZ_ENUM_CHARACTER_INVENTORY] or { items = {} }
+    local success, message, restoredItemManifest = FrameworkZ.Inventories:Restore(self, inventoryData, itemManifest)
+    if success then self[FZ_ENUM_CHARACTER_INVENTORY] = inventoryData end
+    return success, message, restoredItemManifest
 end
 
 --! \brief Restore visual model (gender, skin, hair, beard) from saved character data.
@@ -1417,6 +1267,15 @@ function CHARACTER:RestoreModel(characterData, reset)
     local isFemale = (self:GetGender() == "Female")
     isoPlayer:setFemale(isFemale)
     isoPlayer:getDescriptor():setFemale(isFemale)
+
+    -- Clear any stale model state before reapplying the saved appearance.
+    -- CharacterView creates a fresh survivor, so it never carries over limbo/default visuals.
+    -- The live IsoPlayer path needs the same clean-start behavior to avoid stale skin/hair/beard state.
+    if humanVisual and humanVisual.clear then
+        pcall(function()
+            humanVisual:clear()
+        end)
+    end
 
     -- Set skin color
     local rawSkin = characterData[FZ_ENUM_CHARACTER_INFO_SKIN_COLOR]
@@ -1459,14 +1318,15 @@ function CHARACTER:RestoreModel(characterData, reset)
         end
     end
 
-    -- Reset model to apply changes.
-    -- Only call resetModel() server-side; the server replicates the updated visual to all clients.
-    -- Calling it on the client after the server has already set worn items resets visuals to limbo defaults.
+    -- Reset model to apply changes. Just mutating humanVisual (setFemale/setHairModel/etc. above)
+    -- does not rebuild what's actually rendered - resetModel() is what applies it. This must also
+    -- run on the client (not just server), otherwise the owning client's own view of themselves
+    -- never picks up the restored gender/hair, even though the server (and everyone else, and the
+    -- saved data/preview) is correct. This is safe on both realms here specifically because
+    -- RestoreModel() runs before the unified inventory restore, so no worn items need refreshing yet.
+    -- have been applied yet at this point, so there's nothing for resetModel() to clobber.
     if reset then
-        local modelOnServer = type(isServer) == "function" and isServer() or false
-        if modelOnServer then
-            isoPlayer:resetModel()
-        end
+        isoPlayer:resetModel()
     end
 
     return true, "Character model restored."
@@ -1480,7 +1340,7 @@ end
 --! \return \boolean Success flag.
 --! \return \string Descriptive message.
 function CHARACTER:RestorePosition(x, y, z, angles)
-    if not x or not y or not z then return false, "Invalid position coordinates." end
+    if x == nil or y == nil or z == nil then return false, "Invalid position coordinates." end
     local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "IsoPlayer not found." end
 
     -- Apply position using both teleport and direct setters for B41/B42 compatibility.
@@ -1497,7 +1357,7 @@ function CHARACTER:RestorePosition(x, y, z, angles)
     if isoPlayer.setLy then isoPlayer:setLy(y) end
     if isoPlayer.setLz then isoPlayer:setLz(z) end
 
-    if angles then
+    if angles ~= nil then
         isoPlayer:setDirectionAngle(angles)
     end
 
@@ -1511,15 +1371,20 @@ end
 function CHARACTER:RestoreStats(characterData)
     if not characterData then return false, "Character data not supplied in parameters." end
 
-    if characterData[FZ_ENUM_CHARACTER_STAT_BOREDOM] then self:SetBoredom(characterData[FZ_ENUM_CHARACTER_STAT_BOREDOM]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_DRUNKENNESS] then self:SetDrunkenness(characterData[FZ_ENUM_CHARACTER_STAT_DRUNKENNESS]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_ENDURANCE] then self:SetEndurance(characterData[FZ_ENUM_CHARACTER_STAT_ENDURANCE]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_FATIGUE] then self:SetFatigue(characterData[FZ_ENUM_CHARACTER_STAT_FATIGUE]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_HUNGER] then self:SetHunger(characterData[FZ_ENUM_CHARACTER_STAT_HUNGER]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_PAIN] then self:SetPain(characterData[FZ_ENUM_CHARACTER_STAT_PAIN]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_PANIC] then self:SetPanic(characterData[FZ_ENUM_CHARACTER_STAT_PANIC]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_STRESS] then self:SetStress(characterData[FZ_ENUM_CHARACTER_STAT_STRESS]) end
-    if characterData[FZ_ENUM_CHARACTER_STAT_THIRST] then self:SetThirst(characterData[FZ_ENUM_CHARACTER_STAT_THIRST]) end
+    local firstLoad = characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true
+    if firstLoad then
+        return true, "Skipped stat restoration for first-load character."
+    end
+
+    if characterData[FZ_ENUM_CHARACTER_STAT_BOREDOM] ~= nil then self:SetBoredom(characterData[FZ_ENUM_CHARACTER_STAT_BOREDOM]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_DRUNKENNESS] ~= nil then self:SetDrunkenness(characterData[FZ_ENUM_CHARACTER_STAT_DRUNKENNESS]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_ENDURANCE] ~= nil then self:SetEndurance(characterData[FZ_ENUM_CHARACTER_STAT_ENDURANCE]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_FATIGUE] ~= nil then self:SetFatigue(characterData[FZ_ENUM_CHARACTER_STAT_FATIGUE]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_HUNGER] ~= nil then self:SetHunger(characterData[FZ_ENUM_CHARACTER_STAT_HUNGER]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_PAIN] ~= nil then self:SetPain(characterData[FZ_ENUM_CHARACTER_STAT_PAIN]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_PANIC] ~= nil then self:SetPanic(characterData[FZ_ENUM_CHARACTER_STAT_PANIC]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_STRESS] ~= nil then self:SetStress(characterData[FZ_ENUM_CHARACTER_STAT_STRESS]) end
+    if characterData[FZ_ENUM_CHARACTER_STAT_THIRST] ~= nil then self:SetThirst(characterData[FZ_ENUM_CHARACTER_STAT_THIRST]) end
 
     return true, "Character stats restored."
 end
@@ -1533,29 +1398,35 @@ function CHARACTER:RestoreHealth(characterData)
     local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "Iso Player not found." end
     local bodyDamage = isoPlayer:getBodyDamage() if not bodyDamage then return false, "Body damage not found." end
 
+    local firstLoad = characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true
+
     -- Restore overall health
-    if characterData[FZ_ENUM_CHARACTER_HEALTH_OVERALL] then
+    if characterData[FZ_ENUM_CHARACTER_HEALTH_OVERALL] ~= nil then
         self:SetHealth(characterData[FZ_ENUM_CHARACTER_HEALTH_OVERALL])
     end
 
     -- Restore environmental/status effects
-    if characterData[FZ_ENUM_CHARACTER_HEALTH_TEMPERATURE] then self:SetTemperature(characterData[FZ_ENUM_CHARACTER_HEALTH_TEMPERATURE]) end
-    if characterData[FZ_ENUM_CHARACTER_HEALTH_WETNESS] then self:SetWetness(characterData[FZ_ENUM_CHARACTER_HEALTH_WETNESS]) end
-    if characterData[FZ_ENUM_CHARACTER_HEALTH_SICKNESS] then self:SetSickness(characterData[FZ_ENUM_CHARACTER_HEALTH_SICKNESS]) end
-    if characterData[FZ_ENUM_CHARACTER_HEALTH_COLD_STRENGTH] then self:SetColdStrength(characterData[FZ_ENUM_CHARACTER_HEALTH_COLD_STRENGTH]) end
+    if characterData[FZ_ENUM_CHARACTER_HEALTH_TEMPERATURE] ~= nil then self:SetTemperature(characterData[FZ_ENUM_CHARACTER_HEALTH_TEMPERATURE]) end
+    if characterData[FZ_ENUM_CHARACTER_HEALTH_WETNESS] ~= nil then self:SetWetness(characterData[FZ_ENUM_CHARACTER_HEALTH_WETNESS]) end
+    if characterData[FZ_ENUM_CHARACTER_HEALTH_SICKNESS] ~= nil then self:SetSickness(characterData[FZ_ENUM_CHARACTER_HEALTH_SICKNESS]) end
+    if characterData[FZ_ENUM_CHARACTER_HEALTH_COLD_STRENGTH] ~= nil then self:SetColdStrength(characterData[FZ_ENUM_CHARACTER_HEALTH_COLD_STRENGTH]) end
     if characterData[FZ_ENUM_CHARACTER_HEALTH_HAS_COLD] ~= nil then self:SetHasCold(characterData[FZ_ENUM_CHARACTER_HEALTH_HAS_COLD]) end
 
     -- Restore body parts data (injuries, bandages, etc.)
     local bodyPartsData = characterData[FZ_ENUM_CHARACTER_HEALTH_BODY_PARTS]
     if bodyPartsData then
         self:SetBodyParts(bodyPartsData)
+
+        if firstLoad then
+            return true, "Skipped body-part restoration for first-load character."
+        end
         
         -- Iterate through each body part and restore its state
         for bodyPartType, partData in pairs(bodyPartsData) do
             local bodyPart = bodyDamage:getBodyPart(BodyPartType[bodyPartType])
             if bodyPart then
                 -- Restore health
-                if partData.Health then bodyPart:SetHealth(partData.Health) end
+                if partData.Health ~= nil then bodyPart:SetHealth(partData.Health) end
                 
                 -- Restore scratched state
                 if partData.Scratched ~= nil then bodyPart:setScratched(partData.Scratched, false) end
@@ -1598,7 +1469,7 @@ function CHARACTER:RestoreHealth(characterData)
                 end
                 
                 -- Restore additional pain
-                if partData.AdditionalPain then bodyPart:setAdditionalPain(partData.AdditionalPain) end
+                if partData.AdditionalPain ~= nil then bodyPart:setAdditionalPain(partData.AdditionalPain) end
             end
         end
     end
@@ -1679,12 +1550,12 @@ end
 
 --! \brief Initialize a character.
 --! \return \boolean \string Whether initialization was successful and a message.
-function CHARACTER:Initialize(characterData)
+function CHARACTER:Initialize(characterData, itemManifest)
 	if not self:GetIsoPlayer() then return false, "IsoPlayer not set." end
 
-    local success, message = self:Restore(characterData) if not success then return false, "Failed to restore character: " .. message end
+    local success, message, restoredItemManifest = self:Restore(characterData, itemManifest) if not success then return false, "Failed to restore character: " .. message end
 
-    return true, "Character initialized started."
+    return true, "Character initialized started.", restoredItemManifest
 end
 
 --! \brief Process character creation data from UI into complete character data structure.
@@ -1725,46 +1596,7 @@ function FrameworkZ.Characters:ProcessCreationData(creationData, player)
     characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] = creationData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR] or creationData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR] or {r = 0.3, g = 0.2, b = 0.2}
     characterData[FZ_ENUM_CHARACTER_INFO_EYE_COLOR] = creationData[FZ_ENUM_CHARACTER_INFO_EYE_COLOR] or {r = 0.2, g = 0.4, b = 0.6}
     
-    -- Process equipment data from appearance customization
-    characterData[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] = creationData[FZ_ENUM_CHARACTER_INFO_EQUIPMENT] or {}
-    
-    -- Initialize default faction items
-    if characterData[FZ_ENUM_CHARACTER_INFO_FACTION] then
-        local faction = FrameworkZ.Factions:GetFactionByID(characterData[FZ_ENUM_CHARACTER_INFO_FACTION])
-        local starterItems = faction and (faction.items or faction.defaultItems) or nil
-        if starterItems then
-            for uniqueID, quantity in pairs(starterItems) do
-                local safeQuantity = math.max(0, math.floor(tonumber(quantity) or 0))
-                local isFrameworkItem = FrameworkZ.Items and FrameworkZ.Items.GetItemByUniqueID and FrameworkZ.Items:GetItemByUniqueID(uniqueID)
-
-                if isFrameworkItem then
-                    local logicalData = characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL]
-                    if not logicalData or type(logicalData) ~= "table" then
-                        logicalData = { items = {}, equippedItems = {} }
-                        characterData[FZ_ENUM_CHARACTER_INVENTORY_LOGICAL] = logicalData
-                    end
-
-                    if not logicalData.items then
-                        logicalData.items = {}
-                    end
-
-                    for i = 1, safeQuantity do
-                        table.insert(logicalData.items, { uniqueID = uniqueID })
-                    end
-                else
-                    local physicalData = characterData[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL]
-                    if not physicalData or type(physicalData) ~= "table" then
-                        physicalData = {}
-                        characterData[FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL] = physicalData
-                    end
-
-                    for i = 1, safeQuantity do
-                        table.insert(physicalData, { id = tostring(uniqueID), type = tostring(uniqueID) })
-                    end
-                end
-            end
-        end
-    end
+    characterData[FZ_ENUM_CHARACTER_INVENTORY] = creationData[FZ_ENUM_CHARACTER_INVENTORY] or { items = {} }
     
     -- Generate unique identifiers - use player's UID generation if available
     if player and player.GenerateUID then
@@ -1810,12 +1642,12 @@ end
 --! \param id \integer The character's ID from the player stored data.
 --! \param characterData \table The character data table to initialize the character with.
 --! \return \table \string The initialized character object or false and an error message.
-function FrameworkZ.Characters:Initialize(isoPlayer, id, characterData)
+function FrameworkZ.Characters:Initialize(isoPlayer, id, characterData, itemManifest)
     local character, message = FrameworkZ.Characters:New(isoPlayer, id) if not character then return false, "Could not create new character object, " .. message end
     local characterInstance = self:AddToList(character:GetUsername(), character) if not characterInstance then return false, "Failed to add character to list." end
-    local success, message2 = characterInstance:Initialize(characterData) if not success then return false, "Failed to initialize character object: " .. message2 end
+    local success, message2, restoredItemManifest = characterInstance:Initialize(characterData, itemManifest) if not success then return false, "Failed to initialize character object: " .. message2 end
 
-    return characterInstance, "Character initialized."
+    return characterInstance, "Character initialized.", restoredItemManifest
 end
 
 local function ensureCharactersStorage(self)
@@ -2093,6 +1925,12 @@ function FrameworkZ.Characters:OnStorageSet(isoPlayer, command, namespace, keys,
                 player:SetCharacters(data)
             end
         end
+    end
+end
+
+function FrameworkZ.Characters:OnCharacterRestored(character, firstLoad)
+    if firstLoad then
+        character:InitializeDefaultItems()
     end
 end
 

@@ -1,7 +1,7 @@
 FrameworkZ.UI.TabSession = FrameworkZ.UI.TabSession or {}
 FrameworkZ.Interfaces:Register(FrameworkZ.UI.TabSession, "TabSession")
 
-local PANEL_WIDTH = getCore():getScreenWidth() * 0.25
+local PANEL_WIDTH = getCore():getScreenWidth() * 0.3
 local PANEL_HEIGHT = getCore():getScreenHeight()
 local PANEL_MARGIN_X = 20
 local PANEL_MARGIN_Y = 20
@@ -68,13 +68,20 @@ end
 if isServer() then
     function FrameworkZ.UI.TabSession.OnRequestPlayerList(data)
         local requester = data.isoPlayer if not requester then return end
-        local requesterCharacter = FrameworkZ.Players:GetLoadedCharacterByID(requester:getUsername()) if not requesterCharacter then return end
+        local requesterUsername = requester:getUsername()
+        local requesterCharacter = nil
+
+        if FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID then
+            requesterCharacter = FrameworkZ.Players:GetLoadedCharacterByID(requesterUsername)
+        end
+        if not requesterCharacter then return end
+
         local characterList = {}
         local players = getOnlinePlayers()
 
         for i = 0, players:size() - 1 do
             local username = players:get(i):getUsername()
-            local character = FrameworkZ.Players:GetLoadedCharacterByID(username)
+            local character = FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID and FrameworkZ.Players:GetLoadedCharacterByID(username) or nil
 
             if character then
                 local isRecognized = requesterCharacter:RecognizesCharacter(character) or requesterCharacter == character

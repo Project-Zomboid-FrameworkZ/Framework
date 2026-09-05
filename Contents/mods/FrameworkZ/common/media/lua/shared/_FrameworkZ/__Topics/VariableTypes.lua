@@ -1,0 +1,25 @@
+--! \page Variable Types
+--! \section string string
+--! A string is a sequence of characters. Strings are used to represent text and are enclosed in double quotes or single quotes.
+--! \section boolean boolean
+--! A boolean is a value that can be either true or false. Booleans are used to represent logical values.
+--! \section integer integer
+--! A integer is a numerical value without any decimal points.
+--! \section float float
+--! A float is a numerical value with decimal points.
+--! \section table table
+--! A table is a collection of key-value pairs. It is the only data structure available in Lua that allows you to store data with arbitrary keys and values. Tables are used to represent arrays, sets, records, and other data structures.
+--! \section function function
+--! A function is a block of code that can be called and executed. Functions are used to encapsulate and reuse code.
+--! \section nil nil
+--! Nil is a special value that represents the absence of a value. Nil is used to indicate that a variable has no value.
+--! \section any any
+--! Any is a placeholder that represents any type of value. It is used to indicate that a variable can hold any type of value.
+--! \section mixed mixed
+--! Mixed is a placeholder that represents a combination of different types of values. It is used to indicate that a variable can hold a variety of different types of values.
+--! \section multiple multiple
+--! Multiple is a placeholder that represents a list of values. It is used to indicate that a function can accept multiple arguments.
+--! \section class class
+--! Class is a placeholder that represents a class of objects by a table set to a metatable.
+--! \section object object
+--! Object is a placeholder that represents an instance of a class.

@@ -22,6 +22,95 @@ FrameworkZ.Players = {}
 --! \brief List of all instanced players in the game.
 FrameworkZ.Players.List = {}
 FrameworkZ.Players._loadInProgress = {}
+FrameworkZ.Players._saveState = {}
+FrameworkZ.Players._remoteSaveState = {}
+FrameworkZ.Players._disconnectInProgress = FrameworkZ.Players._disconnectInProgress or {}
+FrameworkZ.Players._destroyInProgress = FrameworkZ.Players._destroyInProgress or {}
+
+function FrameworkZ.Players:EnsureSaveState(username)
+    if not username then return nil end
+
+    self._saveState[username] = self._saveState[username] or {
+        player = 0,
+        character = 0,
+        characterID = nil,
+    }
+
+    return self._saveState[username]
+end
+
+function FrameworkZ.Players:BeginPlayerSave(username)
+    local state = self:EnsureSaveState(username)
+    if not state then return 0 end
+
+    state.player = (state.player or 0) + 1
+    return state.player
+end
+
+function FrameworkZ.Players:BeginCharacterSave(username, characterID)
+    local state = self:EnsureSaveState(username)
+    if not state then return 0 end
+
+    state.character = (state.character or 0) + 1
+    state.characterID = characterID
+    return state.character
+end
+
+function FrameworkZ.Players:CanWritePlayerSave(username, token)
+    local state = self:EnsureSaveState(username)
+    return state and token ~= nil and token == state.player
+end
+
+function FrameworkZ.Players:CanWriteCharacterSave(username, token, characterID)
+    local state = self:EnsureSaveState(username)
+    if not state or token == nil then return false end
+
+    if token ~= state.character then
+        return false
+    end
+
+    if characterID ~= nil and state.characterID ~= nil and state.characterID ~= characterID then
+        return false
+    end
+
+    return true
+end
+
+function FrameworkZ.Players:EnsureRemoteSaveState(username, isoPlayer)
+    if not username then return nil end
+
+    local state = self._remoteSaveState[username]
+    if not state or state.isoPlayer ~= isoPlayer then
+        state = {
+            isoPlayer = isoPlayer,
+            player = nil,
+            character = nil,
+            characterID = nil,
+        }
+        self._remoteSaveState[username] = state
+    end
+
+    return state
+end
+
+function FrameworkZ.Players:CanAcceptRemotePlayerSave(username, isoPlayer, token)
+    local state = self:EnsureRemoteSaveState(username, isoPlayer)
+    if not state or token == nil then return false end
+    if state.player ~= nil and token <= state.player then return false end
+
+    state.player = token
+    return true
+end
+
+function FrameworkZ.Players:CanAcceptRemoteCharacterSave(username, isoPlayer, token, characterID)
+    local state = self:EnsureRemoteSaveState(username, isoPlayer)
+    if not state or token == nil then return false end
+    if state.character ~= nil and token <= state.character then return false end
+
+    state.character = token
+    state.characterID = characterID
+    return true
+end
 
 --! \brief Roles for players in FrameworkZ.
 FrameworkZ.Players.Roles = {
@@ -55,7 +144,8 @@ function PLAYER:Save(callback)
     local isoPlayer = self:GetIsoPlayer() if not isoPlayer then return false, "Missing Iso Player: PLAYER.Save" end
     local saveablePlayerData = self:GetSaveableData() if not saveablePlayerData then return false, "Missing Saveable Player Data." end
 
-    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.Save", callback, self:GetUsername(), saveablePlayerData)
+    local saveToken = FrameworkZ.Players:BeginPlayerSave(self:GetUsername())
+    FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Players.Save", callback, self:GetUsername(), saveablePlayerData, saveToken)
 
     return true
 end
@@ -71,28 +161,33 @@ function PLAYER:Destroy(callback)
     local username = self:GetUsername()
     local isoPlayer = self:GetIsoPlayer()
     local saveablePlayerData = self:GetSaveableData()
-
-    -- Capture the most up-to-date character data on the client before the socket drops.
-    -- IMPORTANT: Only use self:GetCharacter() (the character this PLAYER object actually has
-    -- loaded/restored). Do NOT fall back to FrameworkZ.Characters:GetCharacterByID(username):
-    -- that global cache can still reference a character that was created but never actually
-    -- loaded into the game (e.g. player created a character, viewed the Load Character menu,
-    -- then disconnected without loading it), or a stale entry from an earlier connection this
-    -- session. Calling :Sync() on such a character reads whatever is CURRENTLY worn on the live
-    -- IsoPlayer (e.g. the limbo Hospital Gown/Slippers from FrameworkZ.Foundation:InitializeClient)
-    -- and permanently bakes that into the character's saved Equipment data, corrupting it even
-    -- though the character was never really dressed/restored. See frameworkz-migration-notes.md.
+    local playerSaveToken = FrameworkZ.Players:BeginPlayerSave(username)
     local saveableCharacterData = nil
     local loadedCharacter = self:GetCharacter()
+    local loadedCharacterID = self:GetLoadedCharacterID()
+    local characterSaveToken = FrameworkZ.Players:BeginCharacterSave(username, loadedCharacterID)
 
     if loadedCharacter then
-        local okSync, syncErr = pcall(function()
-            loadedCharacter:Sync()
+        if loadedCharacterID ~= nil and loadedCharacter.SetID then
+            loadedCharacter:SetID(loadedCharacterID)
+        elseif loadedCharacterID == nil and loadedCharacter.GetID then
+            loadedCharacterID = loadedCharacter:GetID()
+        end
+
+        local okSync, synced, syncMessage = pcall(function()
+            return loadedCharacter:Sync()
         end)
-        if not okSync then
-            print("[FrameworkZ] Warning: Character sync during destroy failed: " .. tostring(syncErr))
+        if not okSync or not synced then
+            local message = "Character sync during destroy failed: " .. tostring(okSync and syncMessage or synced)
+            print("[FrameworkZ] Warning: " .. message)
+            if callback then callback(false, message) end
+            return false, message
         end
         saveableCharacterData = loadedCharacter:GetSaveableData()
+
+        if type(saveableCharacterData) == "table" and loadedCharacterID ~= nil then
+            saveableCharacterData[FZ_ENUM_CHARACTER_META_ID] = loadedCharacterID
+        end
     end
 
     -- Remove auto-save timer when destroying character
@@ -126,7 +221,7 @@ function PLAYER:Destroy(callback)
             if callback then
                 callback(success, message1 or message2 or "Player destroyed")
             end
-        end, username, saveablePlayerData, saveableCharacterData)
+        end, username, saveablePlayerData, saveableCharacterData, loadedCharacterID, playerSaveToken, characterSaveToken)
     else
         -- No data to save, just call callback
         if callback then
@@ -577,8 +672,17 @@ end
 --! \param isoPlayer IsoPlayer The Project Zomboid IsoPlayer object to initialize.
 --! \return PLAYER|boolean The initialized PLAYER object or false if creation failed.
 function FrameworkZ.Players:Initialize(isoPlayer)
+    if not isoPlayer then return false end
+
+    local username = isoPlayer:getUsername()
+    if not username then return false end
+
+    if self.List[username] then
+        print("[FrameworkZ] Skipping duplicate player initialization for: " .. tostring(username))
+        return self.List[username]
+    end
+
     local player = FrameworkZ.Players:New(isoPlayer) if not player then return false end
-    local username = player:GetUsername()
     player:Initialize()
 
     self.List[username] = player
@@ -788,9 +892,7 @@ function FrameworkZ.Players:CreateCharacter(username, characterData, characterID
             characterData[FZ_ENUM_CHARACTER_META_UID] = player:GenerateUID()
         end
 
-        if isServer() then
-            FrameworkZ.Foundation:SetData(nil, "Characters", {username, characterData[FZ_ENUM_CHARACTER_META_ID]}, characterData)
-        end
+        FrameworkZ.Foundation:SetData(player:GetIsoPlayer(), "Characters", {username, characterData[FZ_ENUM_CHARACTER_META_ID]}, characterData)
 
         return characterData[FZ_ENUM_CHARACTER_META_ID]
     end
@@ -853,14 +955,35 @@ function FrameworkZ.Players:Save(username, continueOnFailure, callback)
 end
 
 function FrameworkZ.Players:Destroy(username, callback)
+    if not username then
+        if callback then callback(false, "Missing username") end
+        return false, "Missing username"
+    end
+
+    if self._destroyInProgress[username] then
+        if callback then callback(true, "Destroy already in progress") end
+        return true, "Destroy already in progress"
+    end
+
+    self._destroyInProgress[username] = true
+
     local properlyDestroyed = false
     local message = "Failed to destroy player."
     local player = self:GetPlayerByID(username)
 
+    local finish = function(success, resultMessage)
+        self._destroyInProgress[username] = nil
+        if callback then callback(success, resultMessage) end
+    end
+
     if player then
-        properlyDestroyed, message = player:Destroy(callback)
+        local ok, destroyMessage = player:Destroy(function(success, saveMessage)
+            finish(success, saveMessage or destroyMessage)
+        end)
+        properlyDestroyed = ok
+        message = destroyMessage or message
     else
-        if callback then callback(false, "Player not found") end
+        finish(false, "Player not found")
     end
 
     return properlyDestroyed, message
@@ -883,21 +1006,28 @@ function FrameworkZ.Players:SaveCharacter(username, character)
     local inventoryData, inventoryMessage = FrameworkZ.Inventories:Save(characterObj)
     
     if inventoryData then
-        -- Merge inventory data into character data
-        for key, value in pairs(inventoryData) do
-            character[key] = value
-        end
+        character[FZ_ENUM_CHARACTER_INVENTORY] = inventoryData
         print("[FrameworkZ] Player character inventory saved: " .. inventoryMessage)
     else
         print("[FrameworkZ] Warning: Failed to save player character inventory: " .. (inventoryMessage or "Unknown error"))
         return false
     end
 
-    -- Save character position/direction angle
-    character.POSITION_X = isoPlayer:getX()
-    character.POSITION_Y = isoPlayer:getY()
-    character.POSITION_Z = isoPlayer:getZ()
-    character.DIRECTION_ANGLE = isoPlayer:getDirectionAngle()
+    -- Save character position/direction angle in both legacy and canonical keys so older
+    -- saves continue to load while the modern enum-key path stays consistent.
+    local x = isoPlayer:getX()
+    local y = isoPlayer:getY()
+    local z = isoPlayer:getZ()
+    local angle = isoPlayer:getDirectionAngle()
+
+    character.POSITION_X = x
+    character.POSITION_Y = y
+    character.POSITION_Z = z
+    character.DIRECTION_ANGLE = angle
+    character[FZ_ENUM_CHARACTER_META_POSITION_X] = x
+    character[FZ_ENUM_CHARACTER_META_POSITION_Y] = y
+    character[FZ_ENUM_CHARACTER_META_POSITION_Z] = z
+    character[FZ_ENUM_CHARACTER_META_POSITION_ANGLE] = angle
 
     local getStats = isoPlayer:getStats()
     character.STAT_HUNGER = getStats:getHunger()
@@ -944,7 +1074,13 @@ function FrameworkZ.Players:SaveLoadedCharacterSnapshot(player, loadedCharacter)
     local isoPlayer = player:GetIsoPlayer()
     if not isoPlayer then return false, "Missing IsoPlayer." end
 
-    loadedCharacter:Sync()
+    local characterID = loadedCharacter:GetID()
+    local saveToken = FrameworkZ.Players:BeginCharacterSave(player:GetUsername(), characterID)
+
+    local synced, syncMessage = loadedCharacter:Sync()
+    if not synced then
+        return false, syncMessage
+    end
     local saveableData = loadedCharacter:GetSaveableData()
     if not saveableData then
         return false, "Failed to gather saveable character data."
@@ -953,6 +1089,10 @@ function FrameworkZ.Players:SaveLoadedCharacterSnapshot(player, loadedCharacter)
     local characterID = loadedCharacter:GetID() or saveableData[FZ_ENUM_CHARACTER_META_ID]
     if not characterID then
         return false, "Failed to resolve loaded character ID for snapshot-save."
+    end
+
+    if not FrameworkZ.Players:CanWriteCharacterSave(player:GetUsername(), saveToken, characterID) then
+        return false, "Skipped stale character snapshot-save."
     end
 
     FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {player:GetUsername(), characterID}, saveableData)
@@ -969,7 +1109,8 @@ function PLAYER:SetModel(characterData)
     print("[Players.SetModel] Hair Color: " .. tostring(characterData[FZ_ENUM_CHARACTER_INFO_HAIR_COLOR]))
     print("[Players.SetModel] Beard Color: " .. tostring(characterData[FZ_ENUM_CHARACTER_INFO_BEARD_COLOR]))
 
-    local isFemale = characterData[FZ_ENUM_CHARACTER_INFO_GENDER] == "Female" or not characterData[FZ_ENUM_CHARACTER_INFO_GENDER] == "Male"
+    local gender = characterData[FZ_ENUM_CHARACTER_INFO_GENDER]
+    local isFemale = gender == "Female" or gender ~= "Male"
     isoPlayer:setFemale(isFemale)
     isoPlayer:getDescriptor():setFemale(isFemale)
 
@@ -1036,6 +1177,26 @@ function PLAYER:LoadCharacter(characterID, callback)
     FrameworkZ.Players:LoadCharacterByID(self:GetUsername(), characterID, callback)
 end
 
+if isServer() then
+    function FrameworkZ.Players.ResetIsoPlayer(username)
+        FrameworkZ.Players:ResetIsoPlayer()
+    end
+    FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.ResetIsoPlayer", FrameworkZ.Players.ResetIsoPlayer)
+end
+
+function FrameworkZ.Players:ResetIsoPlayer(username)
+    local player = self:GetPlayerByID(username) if not player then return false, "Player not found." end
+
+    player:ResetIsoPlayer()
+end
+
+function PLAYER:ResetIsoPlayer()
+    local isoPlayer = self:GetIsoPlayer()
+
+    isoPlayer:clearWornItems()
+    isoPlayer:getInventory():clear()
+end
+
 function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
     local player = self:GetPlayerByID(username) if not player then return false, "Player not found." end
     local isoPlayer = player:GetIsoPlayer() if not isoPlayer then return false, "IsoPlayer not found." end
@@ -1043,62 +1204,72 @@ function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
 
     FrameworkZ.Awaits:Run(function()
         if loadedCharacter then
-            loadedCharacter:Sync()
+            local synced, syncMessage = loadedCharacter:Sync()
+            if not synced then
+                FrameworkZ.Notifications:AddToQueue("Failed to save currently loaded character before switch: " .. tostring(syncMessage), FrameworkZ.Notifications.Types.Danger)
+                return
+            end
 
             local loadedCharacterData = loadedCharacter:GetSaveableData()
-            -- Prefer the ID snapshotted by PLAYER:SetCharacter() (captured at the moment it was
-            -- known-good) over loadedCharacter:GetID()/saveable data, which can read back nil if
-            -- something re-ran RestoreData() on this character with an incomplete payload.
             local loadedCharacterID = player:GetLoadedCharacterID() or loadedCharacter:GetID() or loadedCharacterData[FZ_ENUM_CHARACTER_META_ID]
             if not loadedCharacterID then
                 FrameworkZ.Notifications:AddToQueue("Failed to save currently loaded character before switch: Missing character ID.", FrameworkZ.Notifications.Types.Danger)
                 return
             end
 
-            local setResult, setMessage = FrameworkZ.Awaits:SetData(
-                isoPlayer,
-                "Characters",
-                {player:GetUsername(), loadedCharacterID},
-                loadedCharacterData
-            )
+            local setResult, setMessage = FrameworkZ.Awaits:SetData(isoPlayer, "Characters", {player:GetUsername(), loadedCharacterID}, loadedCharacterData)
 
             if setResult == false then
-                FrameworkZ.Notifications:AddToQueue(
-                    "Failed to save currently loaded character before switch: " .. tostring(setMessage or "Unknown error"),
-                    FrameworkZ.Notifications.Types.Danger
-                )
+                FrameworkZ.Notifications:AddToQueue("Failed to save currently loaded character before switch: " .. tostring(setMessage or "Unknown error"), FrameworkZ.Notifications.Types.Danger)
                 return
             end
         end
 
         FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoad", player)
 
-        local data, message = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Players.LoadCharacter", username, characterID)
+        isoPlayer:clearWornItems()
+        isoPlayer:getInventory():clear()
 
-        if not data then
+        local success, message, itemManifest = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Players.LoadCharacter", username, characterID)
+
+        if not success then
             FrameworkZ.Notifications:AddToQueue("Failed to load character: " .. (message or "Unknown error"), FrameworkZ.Notifications.Types.Danger)
             return
         end
 
-        -- Use the server-returned payload as the authoritative restore source.
-        -- A second storage fetch can race and return stale/empty inventory snapshots.
-        local characterData = data
-
-        if type(characterData) ~= "table" then
-            local _, _, _, fetchedCharacterData = FrameworkZ.Awaits:GetData(isoPlayer, "Characters", {player:GetUsername(), characterID})
-            characterData = fetchedCharacterData
-        end
+        local _, _, _, characterData = FrameworkZ.Awaits:GetData(isoPlayer, "Characters", {username, characterID})
 
         if type(characterData) ~= "table" then
             FrameworkZ.Notifications:AddToQueue("Failed to initialize character: No character data payload.", FrameworkZ.Notifications.Types.Danger)
             return
         end
 
-        local character, message2 = FrameworkZ.Characters:Initialize(isoPlayer, characterID, characterData)
+        local character, message2 = FrameworkZ.Characters:Initialize(isoPlayer, characterID, characterData, itemManifest)
 
         if not character then
             FrameworkZ.Notifications:AddToQueue("Failed to initialize character: " .. (message2 or "Unknown error"), FrameworkZ.Notifications.Types.Danger)
             return
+        end
+
+        if characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true then
+            local synced, syncMessage = character:Sync()
+            if not synced then
+                FrameworkZ.Notifications:AddToQueue("Failed to save first-load inventory: " .. tostring(syncMessage), FrameworkZ.Notifications.Types.Danger)
+                return
+            end
+
+            character[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = false
+            local initializedCharacterData = character:GetSaveableData()
+            initializedCharacterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] = false
+
+            local saved, saveMessage = FrameworkZ.Awaits:SetData(isoPlayer, "Characters", {username, characterID}, initializedCharacterData)
+            if saved == false then
+                FrameworkZ.Notifications:AddToQueue("Failed to persist first-load inventory: " .. tostring(saveMessage or "Unknown error"), FrameworkZ.Notifications.Types.Danger)
+                return
+            end
+
+            player:GetCharacters()[characterID] = initializedCharacterData
+            characterData = initializedCharacterData
         end
 
         if callback then
@@ -1106,8 +1277,9 @@ function FrameworkZ.Players:LoadCharacterByID(username, characterID, callback)
         end
 
         FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterLoaded", character:GetPlayer())
-    end)
 
+        player:SetPreviousCharacter(characterID)
+    end)
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoad")
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterLoaded")
@@ -1119,9 +1291,16 @@ if isServer() then
 
         local characterData = FrameworkZ.Foundation:GetData(data.isoPlayer, "Characters", {username, characterID})
         if not characterData then return false, "Character data not found." end
-        local character, message2 = FrameworkZ.Characters:Initialize(data.isoPlayer, characterID, characterData)
+        local character, message, itemManifest = FrameworkZ.Characters:Initialize(data.isoPlayer, characterID, characterData)
+        if not character then return false, message end
 
-        return character and character:GetSaveableData() or false, message2
+        --[[
+        if character and character.DispatchFirstLoadHooks then
+            character:DispatchFirstLoadHooks()
+        end
+        --]]
+
+        return true, message, itemManifest
     end
     FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.LoadCharacter", FrameworkZ.Players.LoadCharacter)
 end
@@ -1222,18 +1401,15 @@ end
 function FrameworkZ.Players:OnPreLoadCharacter(isoPlayer, player, character, characterData)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPreLoad", isoPlayer, player, character, characterData)
 
-    isoPlayer:clearWornItems()
-    isoPlayer:getInventory():clear()
-
-    -- Restoration is handled by CHARACTER:Restore() chain in Initialize()
-    -- No need for DataManager here anymore
-
+    -- Inventory and worn-item state are rebuilt by the restore pipeline itself.
+    -- Clearing them here can discard the target character's saved snapshot before it is restored.
     player:SetModel(characterData)
 
     -- Apply damage/wounds/moodles
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterPreLoad")
 
+--[[
 function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, characterData)
     FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterPostLoad", isoPlayer, player, character, characterData)
 
@@ -1243,8 +1419,6 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
 
     FrameworkZ.Timers:Simple(2, function()
         if characterData[FZ_ENUM_CHARACTER_META_FIRST_LOAD] == true then
-            FrameworkZ.Foundation:ExecuteAllHooks("OnCharacterFirstLoad", character)
-
             local options = FrameworkZ.Config.Options
 
             isoPlayer:setX(options.SpawnX)
@@ -1291,6 +1465,7 @@ function FrameworkZ.Players:OnPostLoadCharacter(isoPlayer, player, character, ch
         end)
     end)
 end
+--]]
 
 --[[
     Steps:
@@ -1410,6 +1585,22 @@ function FrameworkZ.Players:DeleteCharacterByID(username, characterID)
 
 end
 
+function FrameworkZ.Players:BeginDisconnectSave(username)
+    if not username then return false end
+    if self._disconnectInProgress[username] then
+        return false
+    end
+
+    self._disconnectInProgress[username] = true
+    return true
+end
+
+function FrameworkZ.Players:EndDisconnectSave(username)
+    if not username then return end
+    self._disconnectInProgress[username] = nil
+end
+
+--[[
 function FrameworkZ.Players:OnDisconnect()
     local usernames = {}
 
@@ -1429,16 +1620,22 @@ function FrameworkZ.Players:OnDisconnect()
         if username and not processed[username] then
             processed[username] = true
 
-            self:Destroy(username, function(success, message)
-                if success then
-                    print("[FrameworkZ] Player destroyed on disconnect: " .. username)
-                else
-                    print("[FrameworkZ] Warning during disconnect destroy: " .. (message or "Unknown error"))
-                end
-            end)
+            if self:BeginDisconnectSave(username) then
+                self:Destroy(username, function(success, message)
+                    self:EndDisconnectSave(username)
+                    if success then
+                        print("[FrameworkZ] Player destroyed on disconnect: " .. username)
+                    else
+                        print("[FrameworkZ] Warning during disconnect destroy: " .. (message or "Unknown error"))
+                    end
+                end)
+            else
+                print("[FrameworkZ] Skipping duplicate disconnect save for: " .. tostring(username))
+            end
         end
     end
 end
+--]]
 
 function FrameworkZ.Players:OnInitGlobalModData(isNewGame)
     FrameworkZ.Foundation:RegisterNamespace("Players")
@@ -1628,8 +1825,13 @@ function FrameworkZ.Players:OnFillWorldObjectContextMenu(playerNumber, context, 
 end
 
 -- Server-side subscription handlers for save operations
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Save", function(data, username, saveablePlayerData)
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Save", function(data, username, saveablePlayerData, saveToken)
     if isServer() then
+        if not FrameworkZ.Players:CanAcceptRemotePlayerSave(username, data.isoPlayer, saveToken) then
+            print("[FrameworkZ] Skipping stale player save for: " .. tostring(username) .. " (token=" .. tostring(saveToken) .. ")")
+            return true, "Skipped stale player save"
+        end
+
         -- Save player data to storage
         FrameworkZ.Foundation:SetLocalData("Players", username, saveablePlayerData)
         print("[FrameworkZ] Player data saved for: " .. username)
@@ -1637,7 +1839,7 @@ FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Save", function(data, userna
     end
 end)
 
-FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Destroy", function(data, username, clientPlayerData, clientCharacterData)
+FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Destroy", function(data, username, clientPlayerData, clientCharacterData, clientCharacterID, clientPlayerSaveToken, clientCharacterSaveToken)
     if isServer() then
         -- Save both player and character data before destroying
         local player = FrameworkZ.Players:GetPlayerByID(username)
@@ -1658,26 +1860,103 @@ FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Destroy", function(data, use
         local isoPlayer = player and player:GetIsoPlayer() or nil
         local finalPlayerData = player and player:GetSaveableData() or clientPlayerData
         local finalCharacterData = nil
+        local requestedCharacterID = clientCharacterID
+        local clientX, clientY, clientZ, clientAngle = nil, nil, nil, nil
+        local fallbackX, fallbackY, fallbackZ, fallbackAngle = nil, nil, nil, nil
+
+        if type(clientCharacterData) == "table" then
+            clientX = clientCharacterData[FZ_ENUM_CHARACTER_META_POSITION_X]
+            clientY = clientCharacterData[FZ_ENUM_CHARACTER_META_POSITION_Y]
+            clientZ = clientCharacterData[FZ_ENUM_CHARACTER_META_POSITION_Z]
+            clientAngle = clientCharacterData[FZ_ENUM_CHARACTER_META_POSITION_ANGLE]
+        end
+
+        if isoPlayer then
+            fallbackX = isoPlayer:getX()
+            fallbackY = isoPlayer:getY()
+            fallbackZ = isoPlayer:getZ()
+            fallbackAngle = isoPlayer:getDirectionAngle()
+        end
+
+        if not FrameworkZ.Players:CanAcceptRemotePlayerSave(username, data.isoPlayer, clientPlayerSaveToken) then
+            print("[FrameworkZ] Skipping stale disconnect player save for: " .. tostring(username) .. " (token=" .. tostring(clientPlayerSaveToken) .. ")")
+            return true, "Skipped stale disconnect player save"
+        end
 
         if character then
             -- Always prefer the live server character state when it is available.
-            character:Sync()
-            finalCharacterData = character:GetSaveableData()
+            if requestedCharacterID ~= nil and character.SetID then
+                character:SetID(requestedCharacterID)
+            end
+            local synced, syncMessage = character:Sync()
+            if synced then
+                finalCharacterData = character:GetSaveableData()
+            else
+                finalCharacterData = clientCharacterData
+                print("[FrameworkZ] Warning: Server disconnect snapshot failed; preserving validated client snapshot: " .. tostring(syncMessage))
+            end
         else
             finalCharacterData = clientCharacterData
         end
 
-        local logicalCount = 0
-        local physicalCount = 0
+        if type(finalCharacterData) ~= "table" and type(clientCharacterData) == "table" then
+            finalCharacterData = clientCharacterData
+        end
+
+        -- The client captures its transform immediately before this request. Prefer that snapshot
+        -- because the server's replicated IsoPlayer transform can lag during disconnect teardown.
         if type(finalCharacterData) == "table" then
-            local logicalItems = finalCharacterData.INVENTORY_LOGICAL and finalCharacterData.INVENTORY_LOGICAL.items
-            local physicalItems = finalCharacterData.INVENTORY_PHYSICAL
-            if type(logicalItems) == "table" then
-                logicalCount = #logicalItems
+            local finalX = clientX ~= nil and clientX or fallbackX
+            local finalY = clientY ~= nil and clientY or fallbackY
+            local finalZ = clientZ ~= nil and clientZ or fallbackZ
+            local finalAngle = clientAngle ~= nil and clientAngle or fallbackAngle
+
+            if finalX ~= nil then
+                finalCharacterData[FZ_ENUM_CHARACTER_META_POSITION_X] = finalX
+                finalCharacterData.POSITION_X = finalX
             end
-            if type(physicalItems) == "table" then
-                physicalCount = #physicalItems
+            if finalY ~= nil then
+                finalCharacterData[FZ_ENUM_CHARACTER_META_POSITION_Y] = finalY
+                finalCharacterData.POSITION_Y = finalY
             end
+            if finalZ ~= nil then
+                finalCharacterData[FZ_ENUM_CHARACTER_META_POSITION_Z] = finalZ
+                finalCharacterData.POSITION_Z = finalZ
+            end
+            if finalAngle ~= nil then
+                finalCharacterData[FZ_ENUM_CHARACTER_META_POSITION_ANGLE] = finalAngle
+                finalCharacterData.DIRECTION_ANGLE = finalAngle
+            end
+
+            print("[FrameworkZ] Disconnect transform handoff: x=" .. tostring(finalX) .. ", y=" .. tostring(finalY) .. ", z=" .. tostring(finalZ) .. ", angle=" .. tostring(finalAngle))
+        end
+
+        -- The client snapshot was produced immediately before this request from the inventory
+        -- the player can actually see. Server item replication can lag behind disconnect, so a
+        -- server resnapshot must not replace this canonical inventory with a partial list.
+        local clientInventoryData = type(clientCharacterData) == "table" and clientCharacterData[FZ_ENUM_CHARACTER_INVENTORY] or nil
+        if type(finalCharacterData) == "table" and type(clientInventoryData) == "table" and type(clientInventoryData.items) == "table" then
+            local serverInventoryData = finalCharacterData[FZ_ENUM_CHARACTER_INVENTORY]
+            local serverItemCount = type(serverInventoryData) == "table" and type(serverInventoryData.items) == "table" and #serverInventoryData.items or 0
+            local clientItemCount = #clientInventoryData.items
+            finalCharacterData[FZ_ENUM_CHARACTER_INVENTORY] = clientInventoryData
+            print("[FrameworkZ] Disconnect inventory handoff: preserving client snapshot (client=" .. tostring(clientItemCount) .. ", server=" .. tostring(serverItemCount) .. ").")
+        end
+
+        if type(finalCharacterData) == "table" and requestedCharacterID ~= nil then
+            finalCharacterData[FZ_ENUM_CHARACTER_META_ID] = requestedCharacterID
+        end
+
+        if not FrameworkZ.Players:CanAcceptRemoteCharacterSave(username, data.isoPlayer, clientCharacterSaveToken, requestedCharacterID) then
+            print("[FrameworkZ] Skipping stale disconnect character save for: " .. tostring(username) .. " (token=" .. tostring(clientCharacterSaveToken) .. ", characterID=" .. tostring(requestedCharacterID) .. ")")
+            return true, "Skipped stale disconnect character save"
+        end
+
+        local inventoryCount = 0
+        if type(finalCharacterData) == "table" then
+            local inventoryData = finalCharacterData[FZ_ENUM_CHARACTER_INVENTORY]
+            local inventoryItems = inventoryData and inventoryData.items
+            if type(inventoryItems) == "table" then inventoryCount = #inventoryItems end
         end
 
         if finalPlayerData then
@@ -1686,11 +1965,14 @@ FrameworkZ.Foundation:Subscribe("FrameworkZ.Players.Destroy", function(data, use
         end
 
         if finalCharacterData then
-            local characterID = finalCharacterData[FZ_ENUM_CHARACTER_META_ID] or (character and character:GetID())
+            local characterID = requestedCharacterID or finalCharacterData[FZ_ENUM_CHARACTER_META_ID] or (character and character:GetID()) or (player and player:GetLoadedCharacterID())
 
             if characterID then
+                if type(finalCharacterData) == "table" then
+                    finalCharacterData[FZ_ENUM_CHARACTER_META_ID] = characterID
+                end
                 FrameworkZ.Foundation:SetData(isoPlayer, "Characters", {username, characterID}, finalCharacterData)
-                print("[FrameworkZ] Character data saved during destroy for: " .. username .. " (logical=" .. tostring(logicalCount) .. ", physical=" .. tostring(physicalCount) .. ")")
+                print("[FrameworkZ] Character data saved during destroy for: " .. username .. " (items=" .. tostring(inventoryCount) .. ")")
             else
                 print("[FrameworkZ] Warning: Missing character ID during destroy save for: " .. username)
             end

@@ -204,19 +204,11 @@ end
 --! \param hookName \string The name of the hook to execute.
 --! \param ... \vararg Additional arguments to pass to the hook functions.
 function FrameworkZ.Plugins:ExecutePluginHook(hookName, ...)
-    for pluginName, plugin in pairs(self.LoadedPlugins) do
-        if plugin[hookName] then
-            local handlers = FrameworkZ.Hooks.RegisteredHooks[hookName]
+    if not self.LoadedPlugins then return end
 
-            if handlers then
-                for _, handler in ipairs(handlers) do
-                    if handler.object and handler.functionName then
-                        handler.handler(...)
-                    else
-                        plugin[hookName](...)
-                    end
-                end
-            end
+    for pluginName, plugin in pairs(self.LoadedPlugins) do
+        if plugin and type(plugin) == "table" and plugin[hookName] and type(plugin[hookName]) == "function" then
+            plugin[hookName](plugin, ...)
         end
     end
 end

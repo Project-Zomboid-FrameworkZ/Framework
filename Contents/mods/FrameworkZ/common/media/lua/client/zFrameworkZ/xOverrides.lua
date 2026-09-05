@@ -38,7 +38,7 @@ FrameworkZ.Overrides.MainScreen_onConfirmQuitToDesktop = MainScreen.onConfirmQui
 local isDisconnectInProgress = false
 
 function FrameworkZ.Overrides.onMenuItemMouseDownMainMenu(item, x, y)
-    local isoPlayer = getPlayer()
+    local isoPlayer = getPlayer() or (FrameworkZ.UI and FrameworkZ.UI.MainMenu and FrameworkZ.UI.MainMenu.instance and FrameworkZ.UI.MainMenu.instance.playerObject) or nil
 
     if isDisconnectInProgress then
         print("[FZ] Disconnect already in progress; ignoring duplicate request")
@@ -54,27 +54,33 @@ function FrameworkZ.Overrides.onMenuItemMouseDownMainMenu(item, x, y)
 
         print("[FZ] Starting disconnect sequence...")
         isDisconnectInProgress = true
-        
-        -- Destroy saves data and waits for server confirmation via callback
-        FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
-            if success then
-                print("[FZ] Player data saved and destroyed successfully: " .. (message or ""))
-            else
-                print("[FZ] Warning during destroy: " .. (message or "Unknown error"))
-            end
-            
-            -- After save is confirmed, teleport to limbo and disconnect
-            FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limboSuccess)
-                if limboSuccess then
-                    FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
-                    print("[FZ] Player teleported to limbo. Disconnecting now...")
-                else
-                    print("[FZ] Warning: Failed to teleport player to limbo. Disconnecting anyways...")
-                end
 
-                FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
-                isDisconnectInProgress = false
+        -- Awaits gives this sequence a bounded timeout instead of hanging forever if a confirmation is lost.
+        FrameworkZ.Awaits:Run(function()
+            local username = isoPlayer:getUsername()
+
+            local destroySuccess, destroyMessage = FrameworkZ.Awaits:Await(function(resolve)
+                FrameworkZ.Players:Destroy(username, resolve)
             end)
+
+            if destroySuccess then
+                print("[FZ] Player data saved and destroyed successfully: " .. tostring(destroyMessage or ""))
+            else
+                print("[FZ] Warning during destroy: " .. tostring(destroyMessage or "Unknown error"))
+            end
+
+            -- OnTeleportToLimbo's subscriber returns a single boolean, so Awaits:SendFire only yields one value here.
+            local limboSuccess = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo")
+
+            if limboSuccess then
+                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+                print("[FZ] Player teleported to limbo. Disconnecting now...")
+            else
+                print("[FZ] Warning: Failed to teleport player to limbo. Disconnecting anyways...")
+            end
+
+            FrameworkZ.Overrides.MainScreen_onMenuItemMouseDownMainMenu(item, x, y)
+            isDisconnectInProgress = false
         end)
     elseif item.internal == "QUIT_TO_DESKTOP" then
         -- Patch the confirm callback before vanilla creates the dialog so our handler is captured.
@@ -119,32 +125,38 @@ function FrameworkZ.Overrides.onConfirmQuitToDesktop(target, button)
     local dialogRef = target.quitToDesktopDialog
     target.quitToDesktopDialog = nil
 
-    -- Save and destroy player data before quitting
-    FrameworkZ.Players:Destroy(isoPlayer:getUsername(), function(success, message)
-        if success then
-            print("[FZ] Player data saved and destroyed successfully: " .. (message or ""))
+    -- Awaits gives this sequence a bounded timeout instead of hanging forever if a confirmation is lost.
+    FrameworkZ.Awaits:Run(function()
+        local username = isoPlayer:getUsername()
+
+        local destroySuccess, destroyMessage = FrameworkZ.Awaits:Await(function(resolve)
+            FrameworkZ.Players:Destroy(username, resolve)
+        end)
+
+        if destroySuccess then
+            print("[FZ] Player data saved and destroyed successfully: " .. tostring(destroyMessage or ""))
         else
-            print("[FZ] Warning during destroy: " .. (message or "Unknown error"))
+            print("[FZ] Warning during destroy: " .. tostring(destroyMessage or "Unknown error"))
         end
 
-        -- After save is confirmed, teleport to limbo and quit
-        FrameworkZ.Foundation:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo", function(data, limboSuccess)
-            if limboSuccess then
-                FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
-                print("[FZ] Player teleported to limbo. Quitting to desktop...")
-            else
-                print("[FZ] Warning: Failed to teleport player to limbo. Quitting anyway...")
-            end
+        -- OnTeleportToLimbo's subscriber returns a single boolean, so Awaits:SendFire only yields one value here.
+        local limboSuccess = FrameworkZ.Awaits:SendFire(isoPlayer, "FrameworkZ.Foundation.OnTeleportToLimbo")
 
-            -- Call quit directly — do NOT re-invoke the vanilla confirm handler with a
-            -- potentially stale button object (button.internal would be nil by now, causing
-            -- vanilla to take its else-branch and show the bottom panel instead of quitting).
-            setGameSpeed(1)
-            pauseSoundAndMusic()
-            setShowPausedMessage(true)
-            isDisconnectInProgress = false
-            getCore():quitToDesktop()
-        end)
+        if limboSuccess then
+            FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
+            print("[FZ] Player teleported to limbo. Quitting to desktop...")
+        else
+            print("[FZ] Warning: Failed to teleport player to limbo. Quitting anyway...")
+        end
+
+        -- Call quit directly — do NOT re-invoke the vanilla confirm handler with a
+        -- potentially stale button object (button.internal would be nil by now, causing
+        -- vanilla to take its else-branch and show the bottom panel instead of quitting).
+        setGameSpeed(1)
+        pauseSoundAndMusic()
+        setShowPausedMessage(true)
+        isDisconnectInProgress = false
+        getCore():quitToDesktop()
     end)
 end
 

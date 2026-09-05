@@ -27,12 +27,27 @@ function FrameworkZ.UI.TabMenu:initialise()
     self.tabButton:ignoreHeightChange()
 
     self:setHeight(self.tabButton:getBottom())
+
+    -- Start hidden: this panel is added to the UI manager during PreInitializeClient, well before
+    -- Introduction/character creation/load screens finish, so it would otherwise flash on top of
+    -- them for a frame before :update() gets a chance to hide it.
+    self:setVisible(false)
 end
 
 function FrameworkZ.UI.TabMenu:onOptionMouseDown(button, x, y)
     if button.internal == "TAB_MENU" then
-        if FrameworkZ.UI.TabPanel.instance then
-            FrameworkZ.UI.TabPanel.instance:close()
+        local instance = FrameworkZ.UI.TabPanel.instance
+
+        -- Guard against a stale instance reference (e.g. detached/removed from the UI
+        -- manager some other way without going through :close()) so the menu can never
+        -- get permanently stuck unable to reopen.
+        if instance and (not instance:isVisible() or not instance:isReallyVisible()) then
+            FrameworkZ.UI.TabPanel.instance = nil
+            instance = nil
+        end
+
+        if instance then
+            instance:close()
         else
             local modal = FrameworkZ.UI.TabPanel:new(self.isoPlayer)
             modal:initialise()
@@ -63,6 +78,35 @@ function FrameworkZ.UI.TabMenu:prerender()
 end
 
 function FrameworkZ.UI.TabMenu:update()
+    -- Hide until a character is actually loaded - covers Introduction, character creation, and
+    -- the load-character screen uniformly (unlike checking individual menu instances, which stay
+    -- set/stale after closing and don't reliably reflect "no character loaded yet").
+    -- NOTE: Once a character is loaded, do NOT hide this just because MainMenu is open (e.g. when
+    -- MainMenu is reopened transparently from the Tab Panel's "Characters" button to switch
+    -- characters) - MainMenu can be fully transparent there, so the icon abruptly vanishing is
+    -- jarring/noticeable. Keep it visible and let bringToTop below (which already only acts while
+    -- TabPanel itself isn't open) handle z-order against it.
+    -- NOTE: GetLoadedCharacterByID returns `false` (not nil) when there's no character, and
+    -- `false ~= nil` is true in Lua - so this must check truthiness, not compare against nil.
+    -- Also guard against early startup when the Players module may not have initialized yet.
+    local isoPlayer = getPlayer and getPlayer() or nil
+    local hasLoadedCharacter = false
+
+    if isoPlayer and FrameworkZ.Players and FrameworkZ.Players.GetLoadedCharacterByID then
+        hasLoadedCharacter = FrameworkZ.Players:GetLoadedCharacterByID(isoPlayer:getUsername())
+    end
+
+    if not hasLoadedCharacter then
+        if self:isVisible() then
+            self:setVisible(false)
+        end
+
+        ISPanel.update(self)
+        return
+    elseif not self:isVisible() then
+        self:setVisible(true)
+    end
+
     local sidebar = ISEquippedItem and ISEquippedItem.instance or nil
     if sidebar and sidebar.getX and sidebar.getY and sidebar.getWidth then
         -- Don't trust sidebar:getHeight() here. Vanilla's shrinkWrap() (ISEquippedItem:initialise(),
@@ -108,17 +152,44 @@ function FrameworkZ.UI.TabMenu:update()
         local desiredY = sidebar:getY() + relativeBottom + 10
         local desiredW = sidebar:getWidth()
 
-        if self:getX() ~= desiredX then
+        -- Clamp so extra sidebar buttons (e.g. admin/safety/war-manager becoming visible)
+        -- can never push the button below the visible screen, making it unclickable.
+        local maxY = getCore():getScreenHeight() - self:getHeight()
+        if desiredY > maxY then
+            desiredY = maxY
+        end
+
+        -- Use an epsilon instead of exact equality: sidebar:getX/Y/Width can jitter by sub-pixel
+        -- floating-point amounts every frame, and re-setting position/size that often can leave
+        -- the panel's hit-box momentarily out of sync with the coordinates a click was captured
+        -- against, making the button appear visible but not register clicks.
+        local EPSILON = 0.5
+
+        if math.abs(self:getX() - desiredX) > EPSILON then
             self:setX(desiredX)
         end
 
-        if self:getY() ~= desiredY then
+        if math.abs(self:getY() - desiredY) > EPSILON then
             self:setY(desiredY)
         end
 
-        if self:getWidth() ~= desiredW then
+        if math.abs(self:getWidth() - desiredW) > EPSILON then
             self:setWidth(desiredW)
         end
+    end
+
+    -- Vanilla panels (e.g. the admin panel) can get added/re-added to the UI manager above us
+    -- after we've already been added once, silently stealing clicks over our region even while
+    -- we still render fine visually. Re-assert top z-order every frame so nothing can outrank us -
+    -- but only while our own TabPanel modal isn't open (otherwise we'd punch through on top of it),
+    -- and only while MainMenu isn't visible (e.g. the transparent reopen from the Tab Panel's
+    -- "Characters" button to switch characters) - we still want the icon visible there, just not
+    -- fighting MainMenu for z-order.
+    local mainMenu = FrameworkZ.UI.MainMenu and FrameworkZ.UI.MainMenu.instance
+    local mainMenuVisible = mainMenu ~= nil and mainMenu.isVisible and mainMenu:isVisible()
+
+    if self.bringToTop and not FrameworkZ.UI.TabPanel.instance and not mainMenuVisible then
+        self:bringToTop()
     end
 
     ISPanel.update(self)

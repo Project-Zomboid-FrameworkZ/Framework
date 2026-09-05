@@ -233,8 +233,8 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
         end
 
         if self2.mouseOver and self2.enable then
-            -- Store current color state before applying hover effect
-            -- This preserves any user-set overrides since theme application
+            self2.textColor = theme.HoverTextColor
+
             if self2.backgroundColorMouseOver and not button._preHoverBackgroundColor then
                 button._preHoverBackgroundColor = {r = self2.backgroundColor.r, g = self2.backgroundColor.g, b = self2.backgroundColor.b, a = self2.backgroundColor.a}
                 self2.backgroundColor = {r = self2.backgroundColorMouseOver.r, g = self2.backgroundColorMouseOver.g, b = self2.backgroundColorMouseOver.b, a = self2.backgroundColorMouseOver.a}
@@ -249,7 +249,8 @@ function FrameworkZ.Themes:ApplyButtonTheme(button, theme)
         end
 
         if not self2.mouseOver and self2.enable then
-            -- Restore to the pre-hover color (which respects user overrides)
+            self2.textColor = theme.TextColor
+
             if button._preHoverBackgroundColor then
                 self2.backgroundColor = {r = button._preHoverBackgroundColor.r, g = button._preHoverBackgroundColor.g, b = button._preHoverBackgroundColor.b, a = button._preHoverBackgroundColor.a}
                 button._preHoverBackgroundColor = nil  -- Reset for next hover

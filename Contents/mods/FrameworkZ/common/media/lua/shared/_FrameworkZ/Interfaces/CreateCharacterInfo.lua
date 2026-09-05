@@ -80,14 +80,14 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
     local sectionY = 15
     self.basicInfoHeader = FrameworkZ.Interfaces:CreateLabel({
         x = labelX, y = sectionY, height = 25,
-        text = "▎Basic Information",
+        text = "Basic Information",
         font = FZ_FONT_LARGE,
         variant = FrameworkZ.Themes.PrimaryLabelTheme,
         parent = self.contentPanel
     })
     self.physicalHeader = FrameworkZ.Interfaces:CreateLabel({
         x = rightLabelX, y = sectionY, height = 25,
-        text = "▎Physical Attributes",
+        text = "Physical Attributes",
         font = FZ_FONT_LARGE,
         variant = FrameworkZ.Themes.PrimaryLabelTheme,
         parent = self.contentPanel
@@ -111,6 +111,17 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
         options = { "Male", "Female" },
         parent = self.contentPanel
     })
+    -- Force a real widget selection matching self.gender's default - without this, a player who
+    -- finalizes without ever touching this dropdown gets whatever the combo's internal .selected
+    -- defaults to (read directly via getSelectedText() in onFinalizeCharacter), which can disagree
+    -- with self.gender (only updated by onGenderChanged) and the 3D appearance preview built from it.
+    -- IMPORTANT: set .selected directly instead of calling :select(), which also fires onChange
+    -- (onGenderChanged) - re-deriving self.gender from the not-yet-fully-set-up widget right here
+    -- can flip it to the wrong value, which then cascades into resetGender/resetHairStyles picking
+    -- the wrong gender's hair list entirely.
+    if self.genderDropdown then
+        self.genderDropdown.selected = 1 -- "Male", first option
+    end
     fieldY = fieldY + 40
 
     -- Name
@@ -229,7 +240,7 @@ function FrameworkZ.UI.CreateCharacterInfo:initialise()
     -- Appearance header
     self.appearanceHeader = FrameworkZ.Interfaces:CreateLabel({
         x = rightLabelX, y = rightFieldY, height = 25,
-        text = "▎Appearance",
+        text = "Appearance",
         font = FZ_FONT_LARGE,
         variant = FrameworkZ.Themes.PrimaryLabelTheme,
         parent = self.contentPanel

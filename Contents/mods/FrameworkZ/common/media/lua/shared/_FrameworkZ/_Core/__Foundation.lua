@@ -1,84 +1,3 @@
---[[ Documentation
-
-
-
-██████   ██████   ██████ ██    ██ ███    ███ ███████ ███    ██ ████████  █████  ████████ ██  ██████  ███    ██ 
-██   ██ ██    ██ ██      ██    ██ ████  ████ ██      ████   ██    ██    ██   ██    ██    ██ ██    ██ ████   ██ 
-██   ██ ██    ██ ██      ██    ██ ██ ████ ██ █████   ██ ██  ██    ██    ███████    ██    ██ ██    ██ ██ ██  ██ 
-██   ██ ██    ██ ██      ██    ██ ██  ██  ██ ██      ██  ██ ██    ██    ██   ██    ██    ██ ██    ██ ██  ██ ██ 
-██████   ██████   ██████  ██████  ██      ██ ███████ ██   ████    ██    ██   ██    ██    ██  ██████  ██   ████ 
-
-
-
---]]
-
---! \mainpage Main Page
---! Created By RJ_RayJay
---! \section Introduction
---! FrameworkZ is a roleplay framework for the game Project Zomboid. This framework is designed to be a base for roleplay servers, providing a variety of features and systems to help server owners create a unique and enjoyable roleplay experience for their players.
---! \section Features
---! FrameworkZ includes a variety of features and systems to help server owners create a unique and enjoyable roleplay experience for their players. Some of the features and systems include:
---! - Characters
---! - Factions
---! - Entities
---! - Items
---! - Inventories
---! - Modules
---! - Plugins
---! - Hooks
---! - Notifications
---! - ...and more!
---! \section Installation
---! To install the FrameworkZ framework, simply download the latest release from the Steam Workshop and add the Workshop ID/Mod ID into your Project Zomboid server's config file. After installing, you can start your server and the framework will be ready to use. Typically you would also install a gamemode alongside the framework for additional functionality. Refer to your gamemode of choice for additional installation instructions.
---! \section Usage
---! The FrameworkZ framework is designed to be easy to use and extend. The framework is built using Lua, a lightweight, multi-paradigm programming language designed primarily for embedded use in applications. The framework is designed to be modular, allowing server owners to easily add, remove, and modify features and systems to suit their needs. The framework also includes extensive documentation to help server owners understand how to use and extend the framework.
---! \section Contributing
---! The FrameworkZ framework is an open-source project and we welcome contributions from the community. If you would like to contribute to the framework, you can do so by forking the GitHub repository, making your changes, and submitting a pull request. We also welcome bug reports, feature requests, and feedback from the community. If you have any questions or need help with the framework, you can join the FrameworkZ Discord server and ask for assistance in the #support channel.
---! \section License
---! The FrameworkZ framework is licensed under the MIT License, a permissive open-source license that allows you to use, modify, and distribute the framework for free. You can find the full text of the MIT License in the LICENSE file included with the framework. We chose the MIT License because we believe in the power of open-source software and want to encourage collaboration and innovation in the Project Zomboid community.
---! \section Support
---! If you need help with the FrameworkZ framework, you can join the FrameworkZ Discord server and ask for assistance in the #support channel. We have a friendly and knowledgeable community that is always willing to help with any questions or issues you may have. We also have a variety of resources available to help you get started with the framework, including documentation, tutorials, and example code.
---! \section Conclusion
---! The FrameworkZ framework is a powerful and flexible tool for creating roleplay servers in Project Zomboid. Whether you are a server owner looking to create a unique roleplay experience for your players or a developer looking to contribute to an open-source project, the FrameworkZ framework has something for everyone. We hope you enjoy using the framework and look forward to seeing the amazing roleplay experiences you create with it.
---! \section Links
---! - Steam Workshop: Coming Soon(tm)
---! - GitHub Repository: https://github.com/Project-Zomboid-FrameworkZ/Framework
---! - Bug Reports: https://github.com/Project-Zomboid-FrameworkZ/Framework/issues
---! - Discord Server: https://discord.gg/PgNTyva3xk
---! - Documentation: https://frameworkz.projectzomboid.life/documentation/
-
---! \page Global Variables
---! \section FrameworkZ FrameworkZ
---! FrameworkZ
---! The global table that contains all of the framework.
---! [table]: /variable_types.html#table "table"
-
---! \page Variable Types
---! \section string string
---! A string is a sequence of characters. Strings are used to represent text and are enclosed in double quotes or single quotes.
---! \section boolean boolean
---! A boolean is a value that can be either true or false. Booleans are used to represent logical values.
---! \section integer integer
---! A integer is a numerical value without any decimal points.
---! \section float float
---! A float is a numerical value with decimal points.
---! \section table table
---! A table is a collection of key-value pairs. It is the only data structure available in Lua that allows you to store data with arbitrary keys and values. Tables are used to represent arrays, sets, records, and other data structures.
---! \section function function
---! A function is a block of code that can be called and executed. Functions are used to encapsulate and reuse code.
---! \section nil nil
---! Nil is a special value that represents the absence of a value. Nil is used to indicate that a variable has no value.
---! \section any any
---! Any is a placeholder that represents any type of value. It is used to indicate that a variable can hold any type of value.
---! \section mixed mixed
---! Mixed is a placeholder that represents a combination of different types of values. It is used to indicate that a variable can hold a variety of different types of values.
---! \section multiple multiple
---! Multiple is a placeholder that represents a list of values. It is used to indicate that a function can accept multiple arguments.
---! \section class class
---! Class is a placeholder that represents a class of objects by a table set to a metatable.
---! \section object object
---! Object is a placeholder that represents an instance of a class.
-
 --[[ Setup
 
 
@@ -1394,6 +1313,7 @@ function FrameworkZ.Foundation:OnCharacterReady(character)
     setGameSpeed(1) -- "Unpause" the game, this will unmute the game world
 end
 FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterReady") -- TODO rework hook system to add handlers and then initialize them at a last loaded Lua file
+FrameworkZ.Foundation:AddAllHookHandlers("OnCharacterFirstLoad")
 
 --! \brief Called when the game starts. Executes the OnGameStart function for all modules.
 function FrameworkZ.Foundation:OnGameStart()
@@ -1445,6 +1365,16 @@ end
 --! \brief Pre-initialization phase for client setup. Sets up the UI and executes module hooks.
 --! \param isoPlayer \object The player object being initialized.
 function FrameworkZ.Foundation:PreInitializeClient(isoPlayer)
+    if not FrameworkZ.Plugins then
+        print("[FZ] Warning: Plugins module not ready during PreInitializeClient; deferring client init.")
+        return false
+    end
+
+    if not FrameworkZ.Interfaces then
+        print("[FZ] Warning: Interfaces module not ready during PreInitializeClient; deferring client init.")
+        return false
+    end
+
     FrameworkZ.Plugins:Initialize() -- Note: Plugins are initialized server side on server start, but client-side initializes here.
     FrameworkZ.Interfaces:Initialize() -- Note: Interfaces are NOT initialized server side and only need to be initialized for the client side.
 
@@ -1477,7 +1407,7 @@ FrameworkZ.Foundation:AddAllHookHandlers("PreInitializeClient")
 function FrameworkZ.Foundation:InitializeClient(isoPlayer)
     self:SendFire(isoPlayer, "FrameworkZ.Foundation.OnInitializePlayer", function(data, serverSideInitialized, playerData, charactersData)
         if not serverSideInitialized then
-            FrameworkZ.Notifications:AddToQueue("Failed to initialize player on server. Please rejoin the server.", 10, FrameworkZ.Notifications.Types.Danger)
+            FrameworkZ.Notifications:AddToQueue("Failed to initialize player on server. Please rejoin the server.", FrameworkZ.Notifications.Types.Danger, 10)
             return
         end
 
@@ -1591,8 +1521,21 @@ end
 function FrameworkZ.Foundation:InitializePlayer(isoPlayer, playerData, charactersData)
     if not isoPlayer then return false, nil, nil end
 
+    local username = isoPlayer:getUsername()
+    if not username then return false, nil, nil end
+
+    if FrameworkZ.Players and FrameworkZ.Players.List and FrameworkZ.Players.List[username] then
+        print("[FZ] Skipping duplicate player initialization for '" .. tostring(username) .. "'.")
+        return true, playerData, charactersData
+    end
+
+    if not FrameworkZ.Players then
+        print("[FZ] Warning: Players module not ready during InitializePlayer for '" .. tostring(username) .. "'; deferring.")
+        return false, nil, nil
+    end
+
     local player = FrameworkZ.Players:Initialize(isoPlayer) if not player then return false end
-    local username = player:GetUsername()
+    username = player:GetUsername()
     --[[local options = FrameworkZ.Config.Options
     local x, y, z = options.LimboX, options.LimboY, options.LimboZ
 
@@ -1660,12 +1603,9 @@ FrameworkZ.Foundation:AddAllHookHandlers("PostInitializeClient")
 --! \param data \table The data containing the isoPlayer object.
 --! \return \boolean Returns true if successful, false otherwise.
 function FrameworkZ.Foundation.OnTeleportToLimbo(data)
-    local isoPlayer = data.isoPlayer
+    local isoPlayer = data.isoPlayer if not isoPlayer then return false end
 
-    if not isoPlayer then print("[FZ] ERROR: Failed to teleport player to limbo, isoPlayer is nil.") return false end
-    if not FrameworkZ.Foundation:TeleportToLimbo(isoPlayer) then print("[FZ] ERROR: Failed to teleport player to limbo.") return false end
-
-    return true
+    return FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
 end
 
 --! \brief Teleports a player to the configured limbo location.
@@ -1675,25 +1615,8 @@ function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
     if not isoPlayer then return false end
 
     local x, y, z = FrameworkZ.Config:GetOption("LimboX"), FrameworkZ.Config:GetOption("LimboY"), FrameworkZ.Config:GetOption("LimboZ")
-    local nx = tonumber(x) or 0
-    local ny = tonumber(y) or 0
-    local nz = tonumber(z) or 0
+    isoPlayer:teleportTo(x, y, z)
 
-    -- Set player position (server handles this).
-    -- B42 replaced setLx/setLy/setLz with teleportTo; use it when available.
-    if isoPlayer.teleportTo then
-        isoPlayer:teleportTo(nx, ny, nz)
-    else
-        isoPlayer:setX(nx)
-        isoPlayer:setY(ny)
-        isoPlayer:setZ(nz)
-        if isoPlayer.setLx then isoPlayer:setLx(nx) end
-        if isoPlayer.setLy then isoPlayer:setLy(ny) end
-        if isoPlayer.setLz then isoPlayer:setLz(nz) end
-    end
-
-    -- Client-side: validate grid square and create floor tile if needed.
-    -- Use bounded retries with a 1s cadence to avoid per-frame log spam.
     if isClient() then
         local timerName = "FZ_Validate_Create_Limbo_Floor"
         local maxAttempts = 20
@@ -1706,9 +1629,9 @@ function FrameworkZ.Foundation:TeleportToLimbo(isoPlayer)
         FrameworkZ.Timers:Create(timerName, 1, 0, function()
             attempts = attempts + 1
 
-            if self:ValidateAndCreateLimboFloor(math.floor(nx), math.floor(ny), math.floor(nz), attempts) then
+            if self:ValidateAndCreateLimboFloor(math.floor(x), math.floor(y), math.floor(z), attempts) then
                 FrameworkZ.Timers:Remove(timerName)
-                return
+                return true
             end
 
             if attempts >= maxAttempts then
@@ -1837,11 +1760,19 @@ function FrameworkZ.Foundation:GetLocalData(namespace, keys)
 
     if ns then
         if not keys then
-            return ns or "FZ ERROR CODE: 1"
+            return ns
         elseif type(keys) == "string" then
-            return ns[keys] or "FZ ERROR CODE: 1"
+            local value = ns[keys]
+            if value == nil then
+                return "FZ ERROR CODE: 1"
+            end
+            return value
         elseif type(keys) == "table" then
-            return self:GetNestedValue(ns, keys) or "FZ ERROR CODE: 1"
+            local value = self:GetNestedValue(ns, keys)
+            if value == nil then
+                return "FZ ERROR CODE: 1"
+            end
+            return value
         end
     end
 

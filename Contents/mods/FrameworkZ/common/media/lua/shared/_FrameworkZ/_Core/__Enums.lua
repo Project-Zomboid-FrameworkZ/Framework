@@ -24,7 +24,6 @@ FZ_ENUM_CHARACTER_INFO_NAME = "Name"
 FZ_ENUM_CHARACTER_INFO_PHYSIQUE = "Physique"
 FZ_ENUM_CHARACTER_INFO_SKIN_COLOR = "SkinColor"
 FZ_ENUM_CHARACTER_INFO_WEIGHT = "Weight"
-FZ_ENUM_CHARACTER_INFO_EQUIPMENT = "Equipment"
 
 FZ_ENUM_CHARACTER_STAT_HUNGER = "Hunger"
 FZ_ENUM_CHARACTER_STAT_THIRST = "Thirst"
@@ -66,8 +65,7 @@ FZ_ENUM_CHARACTER_XP_SKILLS = "Skills"
 FZ_ENUM_CHARACTER_TRAITS = "Traits"
 FZ_ENUM_CHARACTER_PERKS = "Perks"
 
-FZ_ENUM_CHARACTER_INVENTORY_LOGICAL = "InventoryLogical"
-FZ_ENUM_CHARACTER_INVENTORY_PHYSICAL = "InventoryPhysical"
+FZ_ENUM_CHARACTER_INVENTORY = "InventoryData"
 
 FZ_ENUM_CHARACTER_META_FIRST_LOAD = "FirstLoad"
 FZ_ENUM_CHARACTER_META_ID = "ID"
@@ -112,10 +110,7 @@ FZ_ENUM_EQUIPMENT_SLOT_LEFT_RING_FINGER = "Left_RingFinger"
 FZ_ENUM_EQUIPMENT_SLOT_LEFT_WRIST = "LeftWrist"
 FZ_ENUM_EQUIPMENT_SLOT_LEGS1 = "Legs1"
 FZ_ENUM_EQUIPMENT_SLOT_LEGS5 = "Legs5"
--- NOTE: "Dress" (short dress) and "LongDress" are two DISTINCT PZ body locations.
--- Project Zomboid's Hospital Gown (Base.HospitalGown) uses BodyLocation base:longdress,
--- NOT base:dress, so it needs its own slot entry here or the stale-item-clearing pass in
--- FrameworkZ.Inventories:RestoreEquipment will never check/clear it (see frameworkz-migration-notes.md).
+-- NOTE: "Dress" (short dress) and "LongDress" are two distinct PZ body locations.
 FZ_ENUM_EQUIPMENT_SLOT_LONG_DRESS = "LongDress"
 FZ_ENUM_EQUIPMENT_SLOT_MAKEUP_EYES = "MakeUp_Eyes"
 FZ_ENUM_EQUIPMENT_SLOT_MAKEUP_EYES_SHADOW = "MakeUp_EyesShadow"
